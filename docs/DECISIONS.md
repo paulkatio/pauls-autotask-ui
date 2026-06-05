@@ -1657,4 +1657,31 @@ Entscheidung gezielt nur für den Push-Pfad aufweichen.)
   braucht HTTPS-Hosting (Vercel), lokal `next start` ist `http://localhost` (zwar
   „secure context", aber kein Mobilgerät im Test).
 
+### B16a – Entra-ID-Login live + Sandbox-E-Mail-Mapping (2026-06-05)
+- **Umstellung auf `AUTH_MODE=entra` verifiziert.** Microsoft-OIDC-Flow läuft:
+  Login-Button → `login.microsoftonline.com/<tenant>/oauth2/v2.0/authorize` mit
+  korrektem Tenant, `client_id`, `redirect_uri`
+  (`http://localhost:3000/api/auth/callback/microsoft-entra-id`), Scope
+  `openid profile email User.Read`, PKCE. Microsoft zeigt die echte Anmeldemaske
+  (kein AADSTS-Fehler) ⇒ Azure-App-Registrierung + Redirect-URI stimmen.
+- **Env-Variablennamen:** Paul hat die Geheimnisse als `ENTRA_CLIENT_ID` /
+  `ENTRA_CLIENT_SECRET` / `ENTRA_TENANT_ID` angelegt – NICHT als die bare-Provider-
+  Defaults `AUTH_MICROSOFT_ENTRA_ID_*`. `lib/auth/authjs.ts` konfiguriert den
+  `MicrosoftEntraID`-Provider deshalb explizit aus diesen Namen; tenant-spezifischer
+  Issuer (`…/<tenant>/v2.0`) beschränkt auf die eigene Organisation.
+- **Sandbox-E-Mail-Realität (verifiziert über die App-Creds):** Der Autotask-
+  Sandbox-Refresh hängt allen Resource-Mails ein Plus-Tag an
+  (`Paul.Katio+psasandbox@ssig-it.com`, `koenig+psasandbox@…`,
+  `vitalii.morgunov+psasandbox@…`). Die echte Microsoft-Login-Mail
+  (`Paul.Katio@ssig-it.com`) hat diesen Zusatz nicht ⇒ **exakter** `byEmail`-
+  Abgleich scheitert → `/no-access`. In **Produktion** stimmen die Mails überein.
+- **Fix – toleranter Fallback in `resources.byEmail`:** zuerst exakt (Produktionspfad,
+  unverändert streng); bei Misserfolg werden – **nur wenn `ENTRA_EMAIL_LOOSE_MATCH=1`** –
+  alle aktiven Resources normalisiert verglichen (Kleinschreibung + Plus-Tag entfernt:
+  `local+tag@domain` → `local@domain`). Verifiziert: `Paul.Katio@ssig-it.com` →
+  Resource **29682926 / Paul-Harald Katio**. Flag ist in `.env.local` (Sandbox)
+  gesetzt; **Produktion lässt es weg** → streng exakter Abgleich, kein Fabrizieren.
+- **`/no-access`** zeigt jetzt die empfangene Login-Mail an (erleichtert dem Admin
+  das Hinterlegen/Abgleichen der Resource).
+
 <!-- Neue Entscheidungen hier anhängen -->

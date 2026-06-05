@@ -9,6 +9,18 @@ function fullName(r: Resource): string {
   return `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim();
 }
 
+// Normalisiert eine E-Mail für den toleranten Sandbox-Abgleich: Kleinschreibung +
+// „Plus-Tag" entfernen (local+tag@domain -> local@domain). Nötig, weil der Autotask-
+// Sandbox-Refresh den Resource-Mails einen Suffix anhängt (z. B.
+// `Paul.Katio+psasandbox@…`), während die echte Microsoft-Login-Mail keinen hat.
+function normalizeEmail(email: string): string {
+  const lower = email.trim().toLowerCase();
+  const at = lower.indexOf("@");
+  if (at < 0) return lower;
+  const local = lower.slice(0, at).split("+")[0];
+  return `${local}${lower.slice(at)}`;
+}
+
 export interface ResourceOption {
   id: number;
   name: string;
@@ -19,14 +31,20 @@ export const resources = {
     autotask.get<Resource>("Resources", id),
 
   // Aktive Resource per E-Mail (Entra-Login-Mapping, B16). Erster Treffer oder null
-  // (KEIN Fabrizieren). Hinweis: in der Sandbox teilen sich mehrere Resources die
-  // Sammel-Mail – fürs Mapping zählt die individuelle, eindeutige Mail.
+  // (KEIN Fabrizieren).
+  //
+  // 1) Exakter Abgleich – der Produktionspfad. Echte Resource-Mails == Login-Mail.
+  // 2) Optionaler Sandbox-Fallback (nur wenn ENTRA_EMAIL_LOOSE_MATCH=1): da der
+  //    Sandbox-Refresh den Mails ein „+tag" anhängt (Paul.Katio+psasandbox@…),
+  //    werden bei Misserfolg alle aktiven Resources normalisiert (Kleinschreibung +
+  //    Plus-Tag entfernt) verglichen. Produktion lässt das Flag weg -> streng exakt.
   async byEmail(
     email: string,
   ): Promise<{ id: number; name: string } | null> {
     const e = email.trim();
     if (!e) return null;
-    const rows = await autotask.query<Resource>(
+
+    const exact = await autotask.query<Resource>(
       "Resources",
       {
         MaxRecords: 5,
@@ -38,8 +56,21 @@ export const resources = {
       },
       { autoPage: false },
     );
-    const r = rows[0];
-    return r ? { id: r.id, name: fullName(r) || `#${r.id}` } : null;
+    const hit = exact[0];
+    if (hit) return { id: hit.id, name: fullName(hit) || `#${hit.id}` };
+
+    if (process.env.ENTRA_EMAIL_LOOSE_MATCH !== "1") return null;
+
+    const target = normalizeEmail(e);
+    const active = await autotask.query<Resource>("Resources", {
+      MaxRecords: 500,
+      IncludeFields: ["id", "firstName", "lastName", "email", "isActive"],
+      Filter: [{ op: "eq", field: "isActive", value: true }],
+    });
+    const loose = active.find(
+      (r) => r.email && normalizeEmail(r.email) === target,
+    );
+    return loose ? { id: loose.id, name: fullName(loose) || `#${loose.id}` } : null;
   },
 
   // Aktive interne Mitarbeiter (licenseType 1) für die Zuweisungs-Auswahl.
