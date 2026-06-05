@@ -42,7 +42,10 @@ function allWithParent(values: PicklistValue[] | null): SubPicklist {
 }
 
 // Lädt status/priority/queue aus Tickets/entityInformation/fields.
-// Gecacht (revalidate 60 s) – Picklists ändern sich selten; schont das Rate-Limit.
+// LANG gecacht (6 h): Feld-/Picklist-DEFINITIONEN ändern sich praktisch nie (nur wenn
+// ein Autotask-Admin Felder/Queues umkonfiguriert). Das frühere `revalidate: 60` hat
+// `getFieldInfo("Tickets")` ~jede Minute neu gefeuert und unnötig Threads gegen das
+// 3-Threads-pro-Tabelle-Limit verbraucht (API-Threshold-Alert „getFieldInfo / Ticket").
 export const getTicketPicklists = unstable_cache(
   async (): Promise<TicketPicklists> => {
     const fields = await autotask.fieldInfo("Tickets");
@@ -61,7 +64,7 @@ export const getTicketPicklists = unstable_cache(
     };
   },
   ["ticket-picklists"],
-  { revalidate: 60 },
+  { revalidate: 21600 }, // 6 h
 );
 
 export interface NotePicklists {
@@ -70,7 +73,7 @@ export interface NotePicklists {
 }
 
 // noteType/publish aus TicketNotes/entityInformation/fields (für die Aktivitäts-
-// Anzeige). Ebenfalls gecacht.
+// Anzeige). Ebenfalls LANG gecacht (6 h) – statische Metadaten, s. o.
 export const getNotePicklists = unstable_cache(
   async (): Promise<NotePicklists> => {
     const fields = await autotask.fieldInfo("TicketNotes");
@@ -82,5 +85,5 @@ export const getNotePicklists = unstable_cache(
     };
   },
   ["note-picklists"],
-  { revalidate: 60 },
+  { revalidate: 21600 }, // 6 h
 );
