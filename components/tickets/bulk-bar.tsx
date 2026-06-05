@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import {
   CheckIcon,
   ChevronsUpDownIcon,
+  ExternalLinkIcon,
   MergeIcon,
   Undo2Icon,
   UserPlusIcon,
@@ -225,6 +227,7 @@ export function BulkBar({
   onApplied: () => void;
 }) {
   const count = selected.length;
+  const router = useRouter();
 
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [roleStep, setRoleStep] = React.useState<{
@@ -549,6 +552,14 @@ export function BulkBar({
     setMergePhase("pick");
     setMergeOutcome(null);
     if (anyOk) onApplied();
+  }
+
+  // Ziel-Ticket aus dem Ergebnis-Dialog heraus öffnen.
+  function openTarget() {
+    if (mergeTargetId == null) return;
+    const id = mergeTargetId;
+    closeMerge();
+    router.push(`/tickets/${id}`);
   }
 
   const statusItems = picklists.status.map((s) => ({
@@ -937,6 +948,10 @@ export function BulkBar({
                 </Alert>
               )}
               <AlertDialogFooter>
+                <Button variant="outline" onClick={openTarget}>
+                  <ExternalLinkIcon />
+                  Ziel-Ticket öffnen
+                </Button>
                 <AlertDialogAction onClick={closeMerge}>Schließen</AlertDialogAction>
               </AlertDialogFooter>
             </>
