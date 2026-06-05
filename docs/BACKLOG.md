@@ -539,6 +539,29 @@ leisten flex-wrap, Suchfeld mobil volle Breite. Verifiziert Mobile. Siehe DECISI
 
 ---
 
+## B26 — Tickets zusammenführen (Link & Close) — geplant
+**Abhängigkeit:** BULK (Mehrfachauswahl steht)
+**Befund (2026-06-05, verifiziert — DECISIONS):** Autotask REST kann nicht nativ mergen;
+Zeiteinträge NICHT umhängbar (PATCH 200, aber ignoriert), Anhänge/Checklisten RO. Daher
+**Link & Close** (kein Datentransfer).
+**Ziel:** Mehrere markierte Tickets **derselben Firma** in ein Ziel-Ticket zusammenführen —
+Dubletten schließen, Inhalt im Ziel sichtbar machen.
+**Schritte:**
+- Neue Bulk-Aktion „Zusammenführen" in der BULK-Leiste; **nur aktiv, wenn alle markierten
+  Tickets dieselbe `companyID` haben** (sonst deaktiviert + Hinweis). Server-seitig erzwingen.
+- Ziel-Ticket wählen (eines der markierten). Confirm-Dialog mit Zusammenfassung
+  (n Quelltickets → Ziel; Hinweis „Zeiten/Anhänge bleiben am Quellticket").
+- Ausführung (server, BFF) nur über bestehende Schreibpfade:
+  - Ziel: INTERNE Notiz (noteType 2/publish 1) „Zusammengeführt aus <Nummern>", je Quelle
+    angereichert „<Nummer>: <Titel>" + Beschreibungstext.
+  - Je Quelle: INTERNE Notiz „Zusammengeführt in <Ziel-Nummer>" (+ Hinweis, dass Zeiten/
+    Anhänge hier verbleiben) + Status → **Abgeschlossen (5)**.
+- Teilfehler wie Bulk: pro Ticket melden, nichts stillschweigend.
+**Fertig wenn:** Markieren (gleiche Firma) → Zusammenführen → Quelltickets geschlossen +
+beidseitig verlinkt, Ziel zeigt die Quell-Inhalte; cross-Firma blockiert; an ZZZ-Tickets belegt.
+
+---
+
 ### Wenn du unsicher bist
 Bei einem Befund, der den Plan umwirft, oder bei fehlenden Zugangsdaten/Werten:
 **stoppen, in DECISIONS.md notieren, Paul fragen.** Nicht eigenmächtig eine andere

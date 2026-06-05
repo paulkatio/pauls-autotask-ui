@@ -1469,4 +1469,21 @@ Folgeentscheidungen von Paul (überschreiben Teile der B17-DISCOVERY-Skizze):
 - **Upstash** zuvor komplett entfernt (war nur Doku/.env, kein Code) → Caching nur via
   Next.js `unstable_cache`.
 
+### [2026-06-05] Ticket-Zusammenführung — Reparent unmöglich → „Link & Close"
+Schreib-Test an ZZZ-Tickets (TE 30548: 43180→43181, danach restauriert; alle companyID 0):
+- **Kein natives Merge in der REST-API:** kein Merge-Feld auf Tickets; `TicketMerge` /
+  `TicketMergeHistory` = 404. Das UI-Merge erzeugt nur noteType 93/94 (UI-only).
+- **`TimeEntries.ticketID` NICHT umhängbar:** PATCH liefert **HTTP 200 `{itemId}`**, der
+  `ticketID` bleibt aber **unverändert** (silently ignored — wie `noteExist`). Metadata
+  `isReadOnly=false` ist hier irreführend; Zeiteinträge sind fest ans Ticket gebunden.
+- **Anhänge** (`TicketAttachments.ticketID`/`parentID` = RO) und **Checklisten**
+  (`TicketChecklistItems.ticketID` RO) ebenfalls nicht umhängbar.
+- **Entscheidung (Pauls Fallback greift):** „+Zeiten" entfällt → **„Nur Link & Close"**.
+  Merge = Quelltickets auf **Abgeschlossen (5)** + beidseitige **INTERNE** Verlinkungsnotizen
+  (noteType 2 / publish 1, kundenunsichtbar): Quelle „Zusammengeführt in <Ziel-Nr>",
+  Ziel „Zusammengeführt aus <Quell-Nr(n)>" angereichert mit **Titel + Beschreibung** der
+  Quelltickets. Zeiten/Anhänge bleiben am (geschlossenen) Quellticket, in der Notiz erwähnt.
+  Nutzt nur bestehende, verifizierte Schreibpfade (`ticketNotes.createInternal` +
+  Status-PATCH) — kein neuer Schreibpfad, kein Reparenting.
+
 <!-- Neue Entscheidungen hier anhängen -->
