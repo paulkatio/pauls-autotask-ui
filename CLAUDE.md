@@ -46,7 +46,8 @@ Den vollständigen fachlichen Bauplan findest du in `docs/BLUEPRINT.md`.
 - **Auth:** eigene Abstraktionsschicht (siehe Abschnitt 4). Phase 1 = Mock,
   später Microsoft Entra ID via Auth.js.
 - **Hosting-Ziel:** Vercel (aber lokale Entwicklung steht an erster Stelle).
-- **Caching (optional, später):** Upstash Redis / Vercel KV für Picklists.
+- **Caching:** serverseitig über Next.js `unstable_cache` (kurze Revalidate, z. B.
+  Picklists/KPIs 60 s); ein externer Cache-Dienst ist nicht vorgesehen.
 
 **Verboten:**
 - Keine weitere UI-Library (MUI, Chakra, Bootstrap, Mantine, Ant, DaisyUI …).

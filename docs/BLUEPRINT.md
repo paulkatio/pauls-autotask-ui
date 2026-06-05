@@ -207,7 +207,8 @@ erwartet.
 - **Auth:** `lib/auth/`-Abstraktion (Mock -> Entra, siehe CLAUDE.md §4).
 - **Autotask-Client:** `lib/autotask/client.ts`, server-only, mit Concurrency-
   Limiter (max 3/Tabelle), 429-Backoff, Picklist-Cache.
-- **Caching (optional, später):** Upstash Redis / Vercel KV.
+- **Caching:** serverseitig über Next.js `unstable_cache` (kurze Revalidate); kein
+  externer Cache-Dienst.
 
 Prinzipien: Autotask-Creds nur im Backend; keine zusätzliche UI-Library; neue
 UI-Komponenten nur als dünne Wrapper um shadcn.

@@ -70,11 +70,12 @@ ausschließlich aus Doku (`docs/*`, `DEPLOY.md`) und `package-lock.json`
 In `.env.local` gesetzt (Werte bewusst nicht zitiert):
 `AUTH_MODE` (= **mock**), `AUTOTASK_BASE_URL`, `AUTOTASK_API_USERNAME`,
 `AUTOTASK_API_SECRET`, `AUTOTASK_INTEGRATION_CODE`, `ENTRA_CLIENT_ID`,
-`ENTRA_CLIENT_SECRET`, `ENTRA_TENANT_ID`, `AUTH_SECRET`, `NEXTAUTH_URL`,
-`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`.
+`ENTRA_CLIENT_SECRET`, `ENTRA_TENANT_ID`, `AUTH_SECRET`, `NEXTAUTH_URL`.
+(Upstash-Variablen entfernt — kein externer Cache mehr vorgesehen; 2026-06-05.)
 
-- **Kein** `RESEND_API_KEY` / `RESEND_FROM` / Mailbox-Variable vorhanden → muss für
-  B17 neu angelegt werden.
+- **Resend-Platzhalter ergänzt (2026-06-05):** `MAIL_PROVIDER` (Default `autotask`),
+  `RESEND_API_KEY`, `RESEND_FROM`, `AUTOTASK_INBOUND_MAILBOX` (Reply-To) sind jetzt in
+  `.env.example` + `.env.local` angelegt (leer; Werte = Paul-Fragen, siehe §5).
 - **Nebenbefund (nicht B17, aber notieren):** Die Entra-Namen in `.env.local`
   (`ENTRA_CLIENT_ID/…SECRET/…TENANT_ID`, `NEXTAUTH_URL`) weichen von `.env.example`
   ab, das `AUTH_MICROSOFT_ENTRA_ID_*` und `AUTH_URL`/`AUTH_TRUST_HOST` vorgibt. Für
