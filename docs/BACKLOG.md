@@ -360,7 +360,8 @@ verschicken UND am Ticket als Anhang ablegen.
 - **Fehlersemantik:** Mail scheitert → Datei + Notiz bleiben am Ticket; UI meldet
   „gespeichert, aber nicht zugestellt".
 - **V1 nur Anhänge** (kein Inline/cid-Embed).
-- Betreff trägt IMMER die Ticketnummer (Threading über Ticketnummer lt. Mailbox-Config).
+- Betreff trägt IMMER die Ticketnummer (Threading über Ticketnummer lt. Mailbox-Config)
+  — beim Cutover mit EINER kontrollierten echten Antwort verifizieren (präzisiertes B17a).
 - Inbound: Kundenantwort mit Datei → Autotask hängt sie automatisch ans Ticket
   (kein eigener Code).
 **Fertig wenn:** Drop verschickt die Datei per Resend UND legt sie am Ticket ab (an
