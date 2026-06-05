@@ -31,14 +31,28 @@ export const ticketNotes = {
       Filter: [{ op: "eq", field: "ticketID", value: ticketId }],
     }),
 
-  // Nur bestimmte noteTypes (Chat-Konversation) – schlanker Payload fürs Polling.
-  byTicketTypes: (ticketId: number, typeIds: number[]): Promise<TicketNote[]> =>
+  // Konversations-Notizen fürs Chat-Polling: kundenseitige noteTypes (typeIds, z. B.
+  // 18/101) ODER jede vom Kontakt erstellte Notiz (`createdByContactID` gesetzt).
+  // Der OR-Zweig deckt echte Inbound-Mailantworten ab, die in der Praxis als
+  // noteType 3 (Aufgabennotizen) + createdByContactID ankommen – NICHT als 101
+  // (mandantenweit belegt, B17-DISCOVERY). Interne Resource-Notizen (Typ 1/2/3 OHNE
+  // Kontakt) bleiben ausgeschlossen, gehören also weiter nur in den Aktivität-Feed.
+  byTicketConversation: (
+    ticketId: number,
+    typeIds: number[],
+  ): Promise<TicketNote[]> =>
     autotask.query<TicketNote>("TicketNotes", {
       MaxRecords: 500,
       IncludeFields: NOTE_FIELDS,
       Filter: [
         { op: "eq", field: "ticketID", value: ticketId },
-        { op: "in", field: "noteType", value: typeIds },
+        {
+          op: "or",
+          items: [
+            { op: "in", field: "noteType", value: typeIds },
+            { op: "exist", field: "createdByContactID" },
+          ],
+        },
       ],
     }),
 

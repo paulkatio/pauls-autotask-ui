@@ -21,7 +21,9 @@ Ampel-Badges, Spotlight-Suche + `/search`-Paginierung, layout-treue Skeletons, L
 - **Prod-Autotask-Creds** – `AUTOTASK_*` von Sandbox auf Prod (manuell, eigener Schritt).
 - **B17 Kundenmail via Resend** (BLOCKER) – Workflow/UDF-Race ersetzen durch app-eigene
   Mail mit `Reply-To` = Autotask-Inbound.
-- **B17a Inbound-noteType in Prod bestätigen** – Chat filtert auf noteTypes 18+101.
+- **B17a Inbound-noteType** – aus Sandbox-Historie geklärt: Inbound = noteType 3 +
+  `createdByContactID` (nicht 101); Chat-Fetch + Notify-Schalter gefixt (2026-06-05).
+  Offen für Prod: nur noch Threading ohne Autotask-Token.
 - Aufgeschoben: Rollen-Gating (B12), Anhang-Löschen (API 405).
 
 ---
@@ -315,6 +317,14 @@ ohne UDF zu setzen; keine Mail bei AUS; kein „stuck Ja"-Leck mehr möglich.
 ## B17a — Pre-Production: Inbound-noteType in Prod bestätigen
 **Abhängigkeit:** Prod-Mailverarbeitung steht (Nähe B17)
 **Ziel:** Sicherstellen, dass eingehende Kundenantworten im Chat erscheinen.
+
+**TEILWEISE GEKLÄRT (2026-06-05, aus Sandbox-Historie — `docs/B17-DISCOVERY.md`):** Echte
+Kundenantworten sind **`noteType 3` + `createdByContactID`**, NICHT 101 (mandantenweit
+0× 101). Chat-Fetch deshalb auf OR-Gruppe umgestellt (`byTicketConversation`: Typen
+18/101 ODER `createdByContactID` gesetzt) + Notify-Schalter zurück in die UI; an
+historischen Daten (Ticket 11807) belegt. **Offen für Prod bleibt nur noch:**
+(a) frische Antwort kommt 2026 ebenfalls als 3+Kontakt an, (b) **Threading** ohne
+Autotask-`[Ticket#…]`-Token (der Knackpunkt, nur mit echter Prod-Mail testbar).
 **Problem:** Der Chat filtert auf `CONVERSATION_TYPE_IDS` = **18 (outbound) / 101
 (inbound)**. Dass eine echte Antwort als **noteType 101** ankommt, ist eine
 **Annahme** (Sandbox kann keine echte Mail empfangen, DECISIONS V2). Kommt sie in

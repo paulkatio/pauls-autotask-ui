@@ -23,7 +23,10 @@ export interface ChatMessage {
 
 // Schlanker Chat-Payload (nur Konversations-noteTypes), Sender batched aufgelöst.
 export async function getTicketChat(ticketId: number): Promise<ChatMessage[]> {
-  const notes = await ticketNotes.byTicketTypes(ticketId, CONVERSATION_TYPE_IDS);
+  const notes = await ticketNotes.byTicketConversation(
+    ticketId,
+    CONVERSATION_TYPE_IDS,
+  );
 
   const resourceIds = notes
     .filter((n) => directionOf(n) === "outbound")

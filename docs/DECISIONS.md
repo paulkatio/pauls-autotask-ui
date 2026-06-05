@@ -1408,4 +1408,48 @@ sehen bzw. eine Paginierung.
 - Verifiziert „000": Ticket-Name 25/435, Ticket-Nummer 25/11784; „Mehr laden" → 50/435
   (nur die geklickte Spalte wächst, andere unverändert). Build + e2e 10/10 grün.
 
+### [2026-06-05] B17-DISCOVERY + Chat-Inbound-Fix + Notify-Schalter
+Lese-Bestandsaufnahme für B17/B17a in **`docs/B17-DISCOVERY.md`** (Quelle: App-Sandbox
+über `.env.local`, read-only; NICHT MCP). Kernbefunde + daraus gezogener Sofort-Slice:
+
+- **Inbound ≠ 101 (mandantenweit belegt).** In 209.639 TicketNotes gibt es **0** vom
+  `noteType 101`. Echte Kundenantworten sind **`noteType 3` (Aufgabennotizen) +
+  gesetztes `createdByContactID`** (2.715 kunden-erstellte Typ-3-Notizen; 976 mit
+  Mail-Antwort-Präfix „AW:"). `noteType 3` ist gemischt (1.389 intern) → zuverlässiger
+  Inbound-Diskriminator = **`createdByContactID` gesetzt**, nicht der noteType.
+- **Threading-Token** in Autotask-Mails = **`[Ticket#<16 Ziffern>]`** (Autotask-generiert,
+  NICHT die Ticketnummer) → von außen nicht reproduzierbar. **Mailbox-Adresse + Workflow-
+  Regel sind per REST nicht auslesbar** (404). UDF „Kunde benachrichtigen" existiert real
+  (Picklist `Ja|Nein`, verifiziert via `Tickets/entityInformation/userDefinedFields`).
+
+**Code-Änderung 1 — Chat-Inbound reparieren** (`entities/ticket-notes.ts`): `byTicketTypes`
+→ **`byTicketConversation`**. Filter jetzt `ticketID == X` UND **OR-Gruppe**
+`(noteType in [18,101])` ODER `(createdByContactID exist)`. Holt damit auch die als
+`noteType 3` ankommenden Kundenantworten; interne Resource-Notizen (Typ 1/2/3 OHNE Kontakt)
+bleiben ausgeschlossen. `directionOf()` unverändert (createdByContactID → inbound).
+Caller in `entities/ticket-chat.ts` angepasst.
+
+**Code-Änderung 2 — Notify-Schalter** (`components/tickets/ticket-chat.tsx`): shadcn
+`Switch` + `Label` „Kunde per E-Mail benachrichtigen" (Default AN), steuert den schon
+vorhandenen `notify`-Parameter der Route (vorher hartkodiert `true`). **Sende-Pfad sonst
+unverändert** (UDF Ja/Nein, kein Resend in diesem Slice).
+
+**Verifiziert (2026-06-05):**
+- `npm run build` grün.
+- Browser, **historisches Ticket 11807** (Demo Teamlead, Mock): `/api/tickets/11807/chat`
+  liefert jetzt **2 Inbound-Notizen `noteType 3`** (Sender „Hubert Rauschmaier",
+  chronologisch); interne Notizen (Typ 1/2/13) erscheinen NICHT im Chat. Screenshots
+  Hell + Dunkel + Mobile (Chat im Mobile-Layout im Collapsible „Kontext & Chat").
+- Browser, **Testticket 43180** (Schreibtest erlaubt): UDF vorab via Helper auf „Ja"
+  gesetzt → Schalter AUS → Senden „ZZZ TEST B17a notify-off". Netz-Request-Body
+  `{"text":"…","notify":false}` (HTTP 200), danach UDF **„Ja" → „Nein"** (per API gelesen).
+  Keine Mail (endet „Nein"; 43180 = Sandbox-Catch-all `qalab@autotask.com`).
+
+**B17a-Status präzisiert:** Inbound-noteType ist damit **aus Daten geklärt** (= 3 +
+`createdByContactID`, 101 widerlegt). **Offen für Prod** bleibt **nur noch die
+Threading-Frage**: threadet eine Antwort auf eine selbst (Resend) versendete Mail ohne
+den Autotask-`[Ticket#…]`-Token? Mailbox-Adresse (Reply-To) + Workflow-Regel-Deaktivierung
+sind Paul-Punkte (siehe B17-DISCOVERY §5). Throwaway-Probe-/Helper-Skripte nach Lauf
+entfernt; keine Autotask-Daten außer dem 43180-Schreibtest verändert.
+
 <!-- Neue Entscheidungen hier anhängen -->
