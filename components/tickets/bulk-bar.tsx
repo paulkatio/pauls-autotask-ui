@@ -59,6 +59,10 @@ import type { ResourceOption } from "@/lib/autotask/entities/resources";
 // „Rückgängig" wieder zurückgesetzt werden kann (Undo der letzten Aktion).
 const MAX_PARALLEL = 3;
 
+// „Mir zuweisen" nutzt immer diese Rolle (keine Rollen-Abfrage), sofern die Resource
+// sie hält – sonst Fallback auf die einzige/erste Rolle.
+const PREFERRED_SELF_ROLE = "Netzwerkadministrator";
+
 type FieldKey =
   | "status"
   | "priority"
@@ -368,6 +372,38 @@ export function BulkBar({
     });
   }
 
+  // „Mir zuweisen": KEINE Rollenfrage. Immer Rolle „Netzwerkadministrator" (falls
+  // vorhanden), sonst die einzige/erste Rolle. Danach normale Bestätigung (mit
+  // Ticket-Liste im Dialog).
+  async function assignToMe() {
+    setBusyRoles(true);
+    try {
+      const roles = await loadRoles(myResourceId);
+      if (roles.length === 0) {
+        toast.error("Du hast keine Rolle – Zuweisung nicht möglich.");
+        return;
+      }
+      const role =
+        roles.find((r) => r.name === PREFERRED_SELF_ROLE) ??
+        roles.find((r) => /netzwerkadmin/i.test(r.name)) ??
+        roles[0];
+      startConfirm({
+        body: {
+          assignedResourceID: myResourceId,
+          assignedResourceRoleID: role.roleID,
+        },
+        fields: ["assignedResourceID", "assignedResourceRoleID"],
+        verb: "dir zuweisen",
+      });
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Rollen konnten nicht geladen werden.",
+      );
+    } finally {
+      setBusyRoles(false);
+    }
+  }
+
   async function run() {
     if (!pending) return;
     const p = pending;
@@ -625,7 +661,7 @@ export function BulkBar({
             variant="outline"
             size="sm"
             disabled={busyRoles}
-            onClick={() => pickResource(myResourceId, "dir")}
+            onClick={assignToMe}
           >
             <UserPlusIcon />
             Mir zuweisen
@@ -675,6 +711,23 @@ export function BulkBar({
                   {count} {count === 1 ? "Ticket" : "Tickets"} {pending.verb}?
                 </AlertDialogDescription>
               </AlertDialogHeader>
+              <ScrollArea className="max-h-40 rounded-md border">
+                <ul className="flex flex-col p-1">
+                  {selected.map((t) => (
+                    <li
+                      key={t.id}
+                      className="flex items-center gap-2 px-2 py-1 text-sm"
+                    >
+                      <span className="font-medium tabular-nums">
+                        {t.ticketNumber}
+                      </span>
+                      <span className="text-muted-foreground truncate">
+                        {t.title ?? ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </ScrollArea>
               <AlertDialogFooter>
                 <AlertDialogCancel>Abbrechen</AlertDialogCancel>
                 <AlertDialogAction onClick={run}>Ausführen</AlertDialogAction>
@@ -788,7 +841,6 @@ export function BulkBar({
                             key={t.id}
                             type="button"
                             onClick={() => setMergeTargetId(t.id)}
-                            aria-pressed={isSel ? "true" : "false"}
                             className={cn(
                               "hover:bg-accent flex items-center justify-between gap-2 px-3 py-2 text-left text-sm",
                               isSel && "bg-accent",

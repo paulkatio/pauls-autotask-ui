@@ -68,6 +68,9 @@ export default async function TeamTicketsPage({
   if (sp.resource && Number.isFinite(resourceId)) {
     filter.push({ op: "eq", field: "assignedResourceID", value: resourceId });
   }
+  // Sicht ist bereits auf eine Person eingegrenzt (Chart-Klick) → der Assignment-
+  // Filter „Alle / nur nicht zugewiesene" ergibt hier keinen Sinn und wird ausgeblendet.
+  const scopedToResource = Boolean(sp.resource) && Number.isFinite(resourceId);
   // Textsuche (Nummer/Titel) – Paul-Feedback.
   filter.push(...ticketSearchFilter(sp.q));
   // Autotask verlangt mindestens eine Filterbedingung: bei "Alle" einen No-Op setzen.
@@ -112,7 +115,7 @@ export default async function TeamTicketsPage({
             assigned: sp.assigned ?? "",
           }}
           columns={{ queue: true, assigned: true }}
-          assignmentFilter
+          assignmentFilter={!scopedToResource}
           selectable
           resources={assignableResources}
           myResourceId={session.autotaskResourceId}
