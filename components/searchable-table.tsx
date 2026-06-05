@@ -42,6 +42,7 @@ export function SearchableTable<T extends { id: number | string }>({
   searchText,
   searchPlaceholder,
   hrefFor,
+  onRowClick,
   emptyIcon,
   emptyTitle,
   emptyDescription,
@@ -53,6 +54,8 @@ export function SearchableTable<T extends { id: number | string }>({
   searchText: (row: T) => string;
   searchPlaceholder: string;
   hrefFor?: (row: T) => string;
+  // Alternativ zu hrefFor: beliebige Aktion beim Zeilenklick (z. B. Overlay öffnen).
+  onRowClick?: (row: T) => void;
   emptyIcon: React.ReactNode;
   emptyTitle: string;
   emptyDescription: string;
@@ -76,6 +79,12 @@ export function SearchableTable<T extends { id: number | string }>({
     columns.map((c) => c.key),
   );
   const orderedColumns = order.map((k) => columnMap[k]).filter(Boolean);
+
+  const handleRow = onRowClick
+    ? onRowClick
+    : hrefFor
+      ? (row: T) => router.push(hrefFor(row))
+      : undefined;
 
   return (
     <div className="flex flex-col gap-3">
@@ -137,10 +146,8 @@ export function SearchableTable<T extends { id: number | string }>({
               {filtered.map((row) => (
                 <TableRow
                   key={String(row.id)}
-                  className={hrefFor ? "cursor-pointer" : undefined}
-                  onClick={
-                    hrefFor ? () => router.push(hrefFor(row)) : undefined
-                  }
+                  className={handleRow ? "cursor-pointer" : undefined}
+                  onClick={handleRow ? () => handleRow(row) : undefined}
                 >
                   {orderedColumns.map((c) => (
                     <TableCell key={c.key} className={c.cellClassName}>

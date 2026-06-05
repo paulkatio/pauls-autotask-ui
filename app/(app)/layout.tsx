@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { CommandPalette } from "@/components/command-palette";
+import { ContactModal } from "@/components/contacts/contact-modal";
 import { HeaderSearch } from "@/components/header-search";
 import { HeaderTitle } from "@/components/header-title";
 import { HistorySheet } from "@/components/history-sheet";
@@ -58,6 +59,7 @@ export default async function AppLayout({
         </div>
       </SidebarInset>
       <CommandPalette />
+      <ContactModal />
       <Toaster />
     </SidebarProvider>
   );

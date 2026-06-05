@@ -27,6 +27,7 @@ import {
   ResultGrid,
   type SearchResultItem,
 } from "@/components/search/result-column";
+import { openContactModal } from "@/lib/open-contact";
 
 // Event-Name, mit dem die Header-Suche die Palette öffnet.
 export const OPEN_COMMAND_PALETTE = "open-command-palette";
@@ -166,6 +167,15 @@ export function CommandPalette() {
     router.push(url);
   }
 
+  // Kontakt: Palette schließen und das In-App-Overlay öffnen (kein Seitenwechsel).
+  function selectContact(href: string) {
+    const id = Number(href.split("/").pop());
+    setOpen(false);
+    setQuery("");
+    clearHits();
+    if (Number.isFinite(id)) openContactModal(id);
+  }
+
   const hasQuery = query.trim().length > 0;
   const navFiltered = hasQuery
     ? NAV.filter((n) => n.title.toLowerCase().includes(query.trim().toLowerCase()))
@@ -266,7 +276,7 @@ export function CommandPalette() {
               icon={<ContactIcon className="size-3.5 shrink-0" />}
               items={contactItems}
               loading={loading}
-              onSelect={go}
+              onSelect={selectContact}
               className="bg-popover"
             />
             <ResultColumn

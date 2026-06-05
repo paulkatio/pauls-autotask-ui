@@ -1,5 +1,6 @@
 import { requireSession } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
+import { ContactModal } from "@/components/contacts/contact-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ export default async function PopupLayout({
   return (
     <div className="min-h-screen p-4 md:p-6">
       {children}
+      <ContactModal />
       <Toaster />
     </div>
   );

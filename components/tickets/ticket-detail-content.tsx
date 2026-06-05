@@ -83,10 +83,11 @@ export async function ticketMetadata(id: number): Promise<Metadata> {
       autoPage: false,
     });
     const t = rows[0];
-    if (!t) return { title: `Ticket #${id}` };
-    // Nur der Ticket-Titel im Fenster-/Tab-Titel (Paul) – Nummer nur als Fallback.
-    const title = (t.title ?? "").trim();
-    return { title: title || t.ticketNumber || `Ticket #${id}` };
+    if (!t) return { title: `T - Ticket #${id}` };
+    // Fenster-/Taskleisten-Titel: „T - " + Ticket-Titel, damit erkennbar ist, dass
+    // es ein Ticket ist (Paul). Nummer nur als Fallback ohne Titel.
+    const title = (t.title ?? "").trim() || t.ticketNumber || `Ticket #${id}`;
+    return { title: `T - ${title}` };
   } catch {
     return { title: `Ticket #${id}` };
   }

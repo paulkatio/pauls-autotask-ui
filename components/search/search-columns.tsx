@@ -9,6 +9,7 @@ import {
   ResultGrid,
   type SearchResultItem,
 } from "@/components/search/result-column";
+import { openContactModal } from "@/lib/open-contact";
 
 export type SearchKind = "firma" | "kontakt" | "ticket-name" | "ticket-nummer";
 
@@ -101,6 +102,12 @@ export function SearchColumns({
             hasMore={!!s.nextToken}
             loadingMore={s.loadingMore}
             onLoadMore={() => loadMore(c.kind)}
+            // Kontakt = In-App-Overlay (gleiches Fenster); übrige Spalten navigieren.
+            onSelect={
+              c.kind === "kontakt"
+                ? (href) => openContactModal(Number(href.split("/").pop()))
+                : undefined
+            }
             className="bg-card"
           />
         );

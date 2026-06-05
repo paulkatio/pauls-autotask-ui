@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import {
   ArrowDownIcon,
   ArrowUpDownIcon,
@@ -44,6 +43,7 @@ import {
 } from "@/components/ui/empty";
 import { TruncatedText } from "@/components/truncated-text";
 import { useColumnOrder } from "@/hooks/use-column-order";
+import { openContactModal } from "@/lib/open-contact";
 import type { ContactListRow } from "@/lib/autotask/entities/contact-list";
 
 type SortKey = "name" | "companyName" | "email" | "phone";
@@ -53,9 +53,8 @@ type CompanyFilter = { id: number; name: string } | null;
 // Kontaktliste (B4 + Paul-Feedback): erste Seite vom Server, beim Tippen
 // serverseitige contains-Suche (debounced) auf Vor-/Nachname, optional auf eine
 // Firma eingegrenzt (Firma-Combobox, async). Sortierung clientseitig; Zeilenklick
-// führt auf die Kontaktseite.
+// öffnet das kompakte Kontakt-Overlay (gleiches Fenster).
 export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
-  const router = useRouter();
   const [q, setQ] = React.useState("");
   const [company, setCompany] = React.useState<CompanyFilter>(null);
   const [rows, setRows] = React.useState<ContactListRow[]>(initial);
@@ -263,7 +262,7 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
                 <TableRow
                   key={c.id}
                   className="cursor-pointer"
-                  onClick={() => router.push(`/contacts/${c.id}`)}
+                  onClick={() => openContactModal(c.id)}
                 >
                   {orderedCols.map((col) => (
                     <TableCell key={col.id} className={col.cellClassName}>

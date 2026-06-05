@@ -5,6 +5,7 @@ import { FileTextIcon, MonitorIcon, UsersIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SearchableTable } from "@/components/searchable-table";
 import { TruncatedText } from "@/components/truncated-text";
+import { openContactModal } from "@/lib/open-contact";
 import type { ContactRow } from "@/lib/autotask/entities/contacts";
 import type { DeviceRow } from "@/lib/autotask/entities/config-items";
 import type { ContractRow } from "@/lib/autotask/entities/contracts";
@@ -30,6 +31,7 @@ export function ContactsPanel({ rows }: { rows: ContactRow[] }) {
       storageKey="cols:kundenakte-kontakte"
       searchText={(r) => `${r.name} ${r.email} ${r.phone}`}
       searchPlaceholder="Kontakt suchen …"
+      onRowClick={(r) => openContactModal(r.id)}
       emptyIcon={<UsersIcon />}
       emptyTitle="Keine Kontakte"
       emptyDescription="Für diese Firma sind keine aktiven Kontakte hinterlegt."
