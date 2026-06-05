@@ -14,7 +14,9 @@ export async function generateMetadata({
   return companyMetadata(Number(id));
 }
 
-export default async function CompanyDetailPage({
+// Kundenakte im eigenen Browser-Fenster (Pop-out), OHNE Sidebar. KPI-Kacheln/Tabs
+// bleiben im Popup (basePath=/popup/companies).
+export default async function PopupCompanyPage({
   params,
   searchParams,
 }: {
@@ -29,8 +31,8 @@ export default async function CompanyDetailPage({
       tabParam={sp.tab}
       cursor={sp.cursor}
       q={sp.q}
-      basePath="/companies"
-      showBackLink
+      basePath="/popup/companies"
+      showBackLink={false}
     />
   );
 }

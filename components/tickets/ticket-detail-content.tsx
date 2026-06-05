@@ -84,9 +84,9 @@ export async function ticketMetadata(id: number): Promise<Metadata> {
     });
     const t = rows[0];
     if (!t) return { title: `Ticket #${id}` };
+    // Nur der Ticket-Titel im Fenster-/Tab-Titel (Paul) – Nummer nur als Fallback.
     const title = (t.title ?? "").trim();
-    const number = t.ticketNumber ?? `#${id}`;
-    return { title: title ? `${number} – ${title}` : number };
+    return { title: title || t.ticketNumber || `Ticket #${id}` };
   } catch {
     return { title: `Ticket #${id}` };
   }

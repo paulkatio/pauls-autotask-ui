@@ -24,5 +24,5 @@ export function openTicketPopup(id: number): void {
 }
 
 export function openCompanyPopup(id: number): void {
-  openRecordPopup(`/companies/${id}`, `company-${id}`);
+  openRecordPopup(`/popup/companies/${id}`, `company-${id}`);
 }
