@@ -7,14 +7,26 @@ import { resources } from "@/lib/autotask/entities/resources";
 
 // Auth.js v5 (Microsoft Entra ID, reines OIDC-Sign-in). JWT-Session = stateless,
 // keine DB -> deployment-agnostisch (Hetzner/Docker hinter Caddy UND Vercel).
-// Liest AUTH_MICROSOFT_ENTRA_ID_ID / _SECRET / _ISSUER + AUTH_SECRET aus der
-// Umgebung. Nur server-seitig (server-only); kein middleware.ts.
+// Liest ENTRA_CLIENT_ID / ENTRA_CLIENT_SECRET / ENTRA_TENANT_ID + AUTH_SECRET aus
+// der Umgebung. Der tenant-spezifische Issuer beschränkt den Login auf die eigene
+// Organisation (nur Org-Konten, keine privaten MS-Accounts). Nur server-seitig
+// (server-only); kein middleware.ts.
 //
 // Beim Sign-in wird die E-Mail aus dem ID-Token auf eine Autotask-Resource
 // gemappt und das Ergebnis im JWT gecacht (kein Query pro Request). Kein Treffer
 // -> atError "NO_RESOURCE" (es wird NIE eine resourceId fabriziert).
+const entraTenantId = process.env.ENTRA_TENANT_ID;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [MicrosoftEntraID],
+  providers: [
+    MicrosoftEntraID({
+      clientId: process.env.ENTRA_CLIENT_ID,
+      clientSecret: process.env.ENTRA_CLIENT_SECRET,
+      issuer: entraTenantId
+        ? `https://login.microsoftonline.com/${entraTenantId}/v2.0`
+        : undefined,
+    }),
+  ],
   session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, account, profile }) {
