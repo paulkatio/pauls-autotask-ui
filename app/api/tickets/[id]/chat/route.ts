@@ -65,8 +65,8 @@ export async function POST(
   }
 
   try {
-    const itemId = await sendTicketChatNote(num, text, notify);
-    return NextResponse.json({ itemId });
+    const result = await sendTicketChatNote(num, text, notify);
+    return NextResponse.json(result);
   } catch (e) {
     if (e instanceof AutotaskError) {
       const rateLimited = e.status === 429;
