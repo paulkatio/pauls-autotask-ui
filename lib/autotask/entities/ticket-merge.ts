@@ -3,14 +3,13 @@ import "server-only";
 import { autotask } from "@/lib/autotask/client";
 import { ticketNotes } from "@/lib/autotask/entities/ticket-notes";
 
-// Ticket-Zusammenführung „Link & Close" (B26). Autotask REST kann NICHT nativ mergen
-// und Zeit-/Anhang-Reparenting ist nicht möglich (DECISIONS 2026-06-05). Daher:
-// Quelltickets schließen (Status 5) + beidseitige INTERNE Verlinkungsnotizen
-// (ticketNotes.createInternal = noteType 2/publish 1, kundenunsichtbar). Die Ziel-Notiz
-// wird mit Titel + Beschreibung jeder Quelle angereichert. Nur bestehende, verifizierte
-// Schreibpfade – kein neuer Schreibmechanismus.
+// Ticket-Zusammenführung „Link" (B26). Autotask REST kann NICHT nativ mergen und Zeit-/
+// Anhang-Reparenting ist nicht möglich (DECISIONS 2026-06-05). Daher NUR beidseitige
+// INTERNE Verlinkungsnotizen (ticketNotes.createInternal = noteType 2/publish 1,
+// kundenunsichtbar); die Ziel-Notiz wird mit Titel + Beschreibung jeder Quelle
+// angereichert. WICHTIG (Paul, 2026-06-05): es wird NICHTS geschlossen und KEIN Status
+// geändert – weder Quelle noch Ziel. Zusammenführen heißt verlinken, nicht schließen.
 
-const STATUS_COMPLETE = 5;
 const MERGE_FIELDS = [
   "id",
   "ticketNumber",
@@ -101,11 +100,8 @@ export async function mergeTickets(
     try {
       await ticketNotes.createInternal(s.id, {
         title: "Zusammengeführt",
-        description:
-          `Dieses Ticket wurde in ${num(target)} zusammengeführt. ` +
-          "Zeiteinträge und Anhänge verbleiben an diesem Ticket.",
+        description: `Dieses Ticket wurde mit ${num(target)} zusammengeführt (Inhalt dort als Notiz verlinkt).`,
       });
-      await autotask.update("Tickets", { id: s.id, status: STATUS_COMPLETE });
       results.push({ id: s.id, ticketNumber: num(s), ok: true });
     } catch (e) {
       results.push({

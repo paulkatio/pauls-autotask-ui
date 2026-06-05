@@ -827,10 +827,10 @@ export function BulkBar({
               <AlertDialogHeader>
                 <AlertDialogTitle>Tickets zusammenführen</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Die {count} markierten Tickets werden in das gewählte Ziel-Ticket
-                  zusammengeführt (geschlossen + dort verlinkt). Ziel aus den Tickets
-                  dieser Firma wählen. Zeiteinträge und Anhänge bleiben am jeweiligen
-                  Quellticket.
+                  Die {count} markierten Tickets werden mit dem gewählten Ziel-Ticket
+                  verknüpft; Titel + Beschreibung jeder Quelle landen als Notiz im Ziel.
+                  Es wird nichts geschlossen und kein Status geändert (auch das Ziel
+                  bleibt unverändert). Ziel aus den Tickets dieser Firma wählen.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <div className="flex min-w-0 flex-col gap-2">
@@ -912,7 +912,7 @@ export function BulkBar({
                 <AlertDialogDescription>
                   Ziel: {mergeOutcome.targetTicketNumber}.{" "}
                   {mergeOutcome.sources.filter((s) => s.ok).length} von{" "}
-                  {mergeOutcome.sources.length} Quelltickets geschlossen.
+                  {mergeOutcome.sources.length} Quelltickets verlinkt.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               {mergeOutcome.sources.some((s) => !s.ok) && (
