@@ -20,12 +20,14 @@ Farbsystem v2 (warm-achromatisch nach ElevenLabs-Vorbild; ersetzt Indigo — s. 
 - **B16a Entra-ID live** – Code fertig, fehlt: echter OIDC-Round-Trip + E-Mail→Resource-
   Mapping in Prod; dann `AUTH_MODE=entra`.
 - **Prod-Autotask-Creds** – `AUTOTASK_*` von Sandbox auf Prod (manuell, eigener Schritt).
-- **B17 Kundenmail via Resend** (BLOCKER) – Workflow/UDF-Race ersetzen durch app-eigene
-  Mail mit `Reply-To` = Autotask-Inbound.
-- **B17a Inbound-noteType** – aus Sandbox-Historie geklärt: Inbound = noteType 3 +
-  `createdByContactID` (nicht 101); Chat-Inbound-Fetch gefixt (2026-06-05). Threading
-  geklärt (Paul): Ticketnummer im Betreff → Antwort threadet zurück. Offen für Prod:
-  nur ein einmaliger Gegencheck mit echter Inbound-Mailbox als Reply-To.
+- **B17 Kundenmail via Resend** – ERLEDIGT (Sandbox, 2026-06-05): Chat sendet Notiz +
+  Resend-Mail (`Reply-To` = Inbound), Zustellung verifiziert; Mail-Status in der UI;
+  Fallback auf alten UDF-Pfad ohne Resend-Konfig. Prod-Cutover offen (Workflow-Regel
+  deaktivieren, Inbound-Mailbox gegenprüfen). Details DECISIONS „B17".
+- **B17a Inbound-noteType + Threading** – ERLEDIGT (Sandbox): Inbound = noteType 3 +
+  `createdByContactID` (nicht 101); Chat holt + zeigt sie; `cleanInboundBody` kürzt
+  zitierten Thread. **Threading in der Sandbox live bestätigt** (Antwort → zurück ans
+  Ticket via Betreff-Ticketnummer). Offen für Prod: einmaliger Gegencheck.
 - **B17b Datei-Anhänge per Drag&Drop im Chat** – nach B17-Kern; Drop → Upload ans Ticket
   (A3-Pfad) + Resend-Anhang. Nur Anhänge (kein Inline).
 - Aufgeschoben: Rollen-Gating (B12), Anhang-Löschen (API 405).

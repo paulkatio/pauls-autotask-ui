@@ -11,8 +11,11 @@ verlinkten Dateien.
 - **Fachlicher Bauplan:** [`BLUEPRINT.md`](BLUEPRINT.md). **Repo-Karte:** [`ARCHITECTURE.md`](ARCHITECTURE.md).
 - **Deployment + Env:** [`../DEPLOY.md`](../DEPLOY.md).
 
-Stand: 2026-06-04. Läuft gegen die **Autotask-Sandbox** mit **Mock-Login**. Produktiv-
-Cutover steht aus (siehe §9).
+Stand: 2026-06-05. Läuft gegen die **Autotask-Sandbox**, **Entra-ID-Login live**
+(`AUTH_MODE=entra`, B16a). **Chat→Kundenmail via Resend** ist verkabelt + zugestellt
+verifiziert, **Inbound-Threading in der Sandbox bestätigt** (B17 – noteType 3 +
+`createdByContactID`, Ticketnummer im Betreff genügt; Details in DECISIONS „B17").
+Profilbild aus Microsoft Graph (B16b). Produktiv-Cutover steht aus (siehe §9).
 
 ---
 
@@ -250,13 +253,15 @@ Funktional ist die App **fertig für den Sandbox-MVP**. Vor echtem Kundeneinsatz
 2. **Prod-Autotask-Creds.** `AUTOTASK_*` von Sandbox auf den Produktiv-Mandanten umstellen
    (eigener, freigegebener Schritt; **keine Runtime-Sperre** – manuelle Config). Bis dahin
    gilt die Sandbox-Schreibregel weiter.
-3. **Kundenmail app-eigen via Resend (B17, BLOCKER).** Aktuell triggert eine Autotask-
-   Workflow-Regel + UDF die Mail (asynchron, Race; „stecken bleibendes Ja" möglich, wenn
-   Fremdcode eine Notiz postet). Lösung: beim Senden mit `notify=true` selbst per Resend
-   mailen, `Reply-To` = Autotask-Inbound-Mailbox, UDF-Logik raus.
-4. **Inbound-noteType in Prod bestätigen (B17a).** Chat filtert auf noteTypes 18+101; ob
-   Kundenantworten wirklich als 101 ankommen, ist in der Sandbox nicht testbar → in Prod mit
-   echter Antwort prüfen.
+3. **Kundenmail app-eigen via Resend (B17).** ERLEDIGT in der Sandbox: Chat sendet die
+   Notiz (noteType 18) + Resend-Mail (`Reply-To` = Inbound-Mailbox), Zustellung verifiziert.
+   Mail-Status geht an die UI; ohne Resend-Konfig greift der alte UDF/Workflow-Pfad.
+   **Prod-Cutover offen:** alte Autotask-Workflow-Regel „Kunde benachrichtigen"
+   deaktivieren (sonst Doppel-Mail), Inbound-Mailbox als Prod-Adresse gegenprüfen,
+   `ENTRA_EMAIL_LOOSE_MATCH` weglassen. Rest: Anhänge (B17b). Details DECISIONS „B17".
+4. **Inbound-Anzeige (B17a).** Kundenantworten kommen als **noteType 3 + `createdByContactID`**
+   (NICHT 101); Chat holt + zeigt sie jetzt. **Threading in der Sandbox bestätigt** (Antwort
+   landet via Ticketnummer im Betreff wieder am Ticket). Offen: einmaliger Prod-Gegencheck.
 5. **Bewusst aufgeschoben:** Rollen-Gating (alle sehen alles, B12) · Anhang-Löschen (Autotask-
    API erlaubt es nicht) · optional Webhook statt Polling für den Chat.
 

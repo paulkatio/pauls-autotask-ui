@@ -1684,4 +1684,56 @@ Entscheidung gezielt nur für den Push-Pfad aufweichen.)
 - **`/no-access`** zeigt jetzt die empfangene Login-Mail an (erleichtert dem Admin
   das Hinterlegen/Abgleichen der Resource).
 
+### B17 – Chat→Kundenmail via Resend + Inbound-Threading (2026-06-05)
+- **Resend live + zugestellt verifiziert.** Eine Chat-Nachricht legt jetzt die
+  Notiz (noteType 18) an UND versendet die Kundenmail über Resend. Reale Zustellung
+  an ein kontrolliertes Postfach (`paul.katio@ssig-it.com`) bestätigt.
+- **Verkabelung:** `lib/mail/resend.ts` (Versand über die Resend-REST-API, **kein**
+  npm-Paket; Secrets server-only). `sendTicketChatNote` (Reihenfolge umgedreht ggü.
+  früher): **Notiz zuerst** → Notiz scheitert = Abbruch, keine Mail; **dann** Mail.
+  Notiz ok / Mail scheitert ⇒ Notiz bleibt, Status `{itemId, mail}` geht an die UI
+  („Nachricht gespeichert, aber E-Mail nicht zugestellt: …"), kein stilles Schlucken.
+  **Ohne Resend-Konfig** fällt der Code auf den alten UDF/Workflow-Pfad zurück.
+- **Betreff/Threading:** `[<ticketNumber>] <Titel>`, `Reply-To` =
+  `AUTOTASK_INBOUND_MAILBOX` (Sandbox-Eingang, Domain `@email.eu.autotask.net`).
+- **Inbound-Threading funktioniert in der SANDBOX (widerlegt „nur Prod beweisbar").**
+  Antwort auf die Resend-Mail kam zurück ans Ticket 43186 als **`noteType 3` +
+  `createdByContactID`** (Kontakt 30685221). **Ticketnummer im Betreff genügt** –
+  Autotask konsumiert den `[T…]`-Token (Betreff wird zu „AW: [] …"). Der historische
+  16-stellige Token ist NICHT nötig.
+- **Inbound-Anzeige:** Kundenantworten erscheinen im Chat (`byTicketConversation`
+  holt `createdByContactID`-Notizen). `cleanInboundBody` schneidet den zitierten
+  Original-Thread ab (Outlook/Apple-Mail-Trenner) und entfernt `[cid:…]`/`<mailto:>`-
+  Rauschen; konservativ (Signatur bleibt). Lange Inhalte klappen via „Mehr anzeigen".
+- **Zustelladresse:** Empfänger = Mail des Ticket-Kontakts. Sandbox-Catch-all
+  `qalab@autotask.com` = **keine** Zustellung (Autotask maskiert beim Refresh fast
+  alle Kontaktmails). Für Empfangs-Tests Kontakt mit echter Mail nötig (hier 30685221).
+- **Offen:** Signatur/Disclaimer nicht abgeschnitten (bewusst konservativ);
+  Anhänge (B17b); Prod-Cutover = alte Autotask-Workflow-Regel „Kunde benachrichtigen"
+  deaktivieren (sonst Doppel-Mail), `ENTRA_EMAIL_LOOSE_MATCH` in Prod weglassen,
+  Inbound-Mailbox als Prod-Adresse gegenprüfen.
+
+### B16b – Entra-Profilbild aus Microsoft Graph (2026-06-05)
+- Der `MicrosoftEntraID`-Provider holt in `profile()` selbst das Graph-Foto
+  (48×48, Scope `User.Read`) und liefert es als **base64-data-URI** in `user.image`.
+  Beim Sign-in im JWT gecacht (`token.picture`), gespiegelt auf
+  `SessionUser.avatarUrl`. **Kein** Graph-Call pro Request.
+- Der Provider setzt `data:image/jpeg;base64, <…>` MIT Leerzeichen nach dem Komma
+  (im Data-URI ungültig) → in `authjs.ts` entfernt, sonst rendern manche Browser nicht.
+- Angezeigt: Sidebar unten links (`NavUser`) + eigene Outbound-Bubbles im Chat
+  (an der **Richtung** festgemacht, nicht am Sender-Namen – Notizen entstehen über den
+  API-User, daher matcht der Name nicht). **Erscheint erst nach frischem Sign-in.**
+
+### Ticketdetail – Layout/Responsive-Politur (2026-06-05)
+- Kopf auf **eine Zeile**: „<Nummer> – <Titel>" fett, direkt daneben „Erstellt …"
+  (Breadcrumb, Typ-Badge, doppelte Nummer, Extra-Zeile entfernt).
+- Beschreibung = eigene Karte mit **„Bearbeiten"-Button oben rechts** (`CardAction`)
+  und **„Mehr anzeigen"** bei langen Texten (weitergeleitete Mail-Ketten).
+- **Feine Trennlinie** (`border-b`) unter jeder Sektions-Überschrift.
+- **Überlauf-Schutz:** `break-words` an allen Freitext-Feldern; `ExpandableText`
+  (Lösung, Notizen) klappt lange Inhalte ein. Ultra-lange URLs/Mails sprengen nichts.
+- **Mobil:** Chat aus dem eingeklappten Akkordeon gelöst → **immer offen**, oben in
+  der rechten Spalte (auf dem Smartphone direkt nach der Mitte). Kontext (Firma/Zeit/
+  Gerät) bleibt einklappbar. `npm run build` grün.
+
 <!-- Neue Entscheidungen hier anhängen -->
