@@ -3,13 +3,18 @@ import "server-only";
 import { autotask } from "@/lib/autotask/client";
 import { ticketNotes } from "@/lib/autotask/entities/ticket-notes";
 
-// Ticket-Zusammenführung „Link" (B26). Autotask REST kann NICHT nativ mergen und Zeit-/
-// Anhang-Reparenting ist nicht möglich (DECISIONS 2026-06-05). Daher NUR beidseitige
-// INTERNE Verlinkungsnotizen (ticketNotes.createInternal = noteType 2/publish 1,
-// kundenunsichtbar); die Ziel-Notiz wird mit Titel + Beschreibung jeder Quelle
-// angereichert. WICHTIG (Paul, 2026-06-05): es wird NICHTS geschlossen und KEIN Status
-// geändert – weder Quelle noch Ziel. Zusammenführen heißt verlinken, nicht schließen.
+// Ticket-Zusammenführung (B26) — bildet das NATIVE Autotask-Merge nach, weil die REST-
+// API kein Merge kennt (kein Endpoint/keine Funktion; recherchiert 2026-06-05: Datto-PSA-
+// Doku „Merging tickets" + GitHub ecitsolutions/Autotask#56). Autotask-Verhalten, das
+// wir 1:1 nachbilden:
+//   - Quell-/„merged"-Tickets  → Status ABGESCHLOSSEN (5); bleiben im System.
+//   - Ziel-/„absorber"-Ticket  → Status UNVERÄNDERT.
+//   - Beidseitige interne System-Notizen; die Beschreibung der Quelle landet im Ziel.
+// Umsetzung: ticketNotes.createInternal (noteType 2/publish 1, kundenunsichtbar) +
+// Status-Update der Quellen. Zeit-/Anhang-Reparenting ist per API nicht möglich → die
+// bleiben am (abgeschlossenen) Quellticket. Nur bestehende, verifizierte Schreibpfade.
 
+const STATUS_COMPLETE = 5;
 const MERGE_FIELDS = [
   "id",
   "ticketNumber",
@@ -100,8 +105,9 @@ export async function mergeTickets(
     try {
       await ticketNotes.createInternal(s.id, {
         title: "Zusammengeführt",
-        description: `Dieses Ticket wurde mit ${num(target)} zusammengeführt (Inhalt dort als Notiz verlinkt).`,
+        description: `Dieses Ticket wurde abgeschlossen und in ${num(target)} zusammengeführt. Zeiteinträge und Anhänge verbleiben hier.`,
       });
+      await autotask.update("Tickets", { id: s.id, status: STATUS_COMPLETE });
       results.push({ id: s.id, ticketNumber: num(s), ok: true });
     } catch (e) {
       results.push({
