@@ -1520,6 +1520,17 @@ Schreib-Test an ZZZ-Tickets (TE 30548: 43180→43181, danach restauriert; alle c
   bereits nach einer Person gefiltert sind (Chart-Klick `?resource=`).
 - **Stoppuhr:** Stop-Button entfernt (nur Play/Pause; „Zeit erfassen" hält an).
 
+### [2026-06-05] B26 Korrektur: Zusammenführen = verlinken, NICHT schließen (Paul)
+„Zusammenführen heißt nicht schließen." **Überschreibt die frühere „Link & Close"-
+Entscheidung:** Quelltickets werden beim Merge **nicht mehr auf Status 5 gesetzt** — es
+ändert sich **KEIN Status** (weder Quelle noch Ziel). Der Merge legt nur die beidseitigen
+internen Verlinkungsnotizen an (Ziel-Notiz mit Titel + Beschreibung der Quellen). Der
+`autotask.update`-Status-Schritt wurde aus `ticket-merge.ts` entfernt; Dialog-/Ergebnis-
+Text „verknüpft" statt „geschlossen". Verifiziert (ZZZ 43180, offen): vor Merge Status 8 →
+nach Merge weiter 8. Dialog zudem breiter (`max-w-xl` 576px) + Listen-Überlauf behoben
+(Picker-Buttons `w-full min-w-0`, Titel trunkieren); AlertDialog sichtbarer
+(`shadow-lg` + `ring/20` + Overlay `bg-black/30`); Icon `GitMerge`→`Merge`.
+
 ### [2026-06-05] Farbsystem v2 — warm-achromatisch nach ElevenLabs-Vorbild
 **Ersetzt die bisherige Indigo-Entscheidung** (Memory `design-system-indigo`,
 2026-06-03). Kompletter Farb-Tokens-Tausch in `app/globals.css` (`:root` + `.dark`),
