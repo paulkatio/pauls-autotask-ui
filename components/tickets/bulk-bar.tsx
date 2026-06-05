@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   CheckIcon,
   ChevronsUpDownIcon,
-  GitMergeIcon,
+  MergeIcon,
   Undo2Icon,
   UserPlusIcon,
   XIcon,
@@ -695,7 +695,7 @@ export function BulkBar({
             }
             onClick={openMerge}
           >
-            <GitMergeIcon />
+            <MergeIcon />
             Zusammenführen
           </Button>
 
