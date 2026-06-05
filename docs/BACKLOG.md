@@ -13,7 +13,8 @@ Legende Abhängigkeit: das genannte Item muss vorher fertig sein.
 Gesamtüberblick: **[`STATE.md`](STATE.md)**. Der MVP gegen die **Sandbox** ist fertig:
 B00–B25, A1–A3, B1–B4 (Firmen/Kontakte), C1–C2 (Suche), BULK + FB1–FB7 (Tabellen-/UX-
 Feinschliff), sowie Folge-Slices: Bulk-Undo, Spalten-Truncate+Hover, Spalten-Drag&Drop,
-Ampel-Badges, Spotlight-Suche + `/search`-Paginierung, layout-treue Skeletons, Logo.
+Ampel-Badges, Spotlight-Suche + `/search`-Paginierung, layout-treue Skeletons, Logo,
+Farbsystem v2 (warm-achromatisch nach ElevenLabs-Vorbild; ersetzt Indigo — s. DECISIONS).
 
 **Offen / Blocker vor Produktiv-Cutover** (Details unten + in DECISIONS):
 - **B16a Entra-ID live** – Code fertig, fehlt: echter OIDC-Round-Trip + E-Mail→Resource-

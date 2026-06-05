@@ -1520,4 +1520,69 @@ Schreib-Test an ZZZ-Tickets (TE 30548: 43180→43181, danach restauriert; alle c
   bereits nach einer Person gefiltert sind (Chart-Klick `?resource=`).
 - **Stoppuhr:** Stop-Button entfernt (nur Play/Pause; „Zeit erfassen" hält an).
 
+### [2026-06-05] Farbsystem v2 — warm-achromatisch nach ElevenLabs-Vorbild
+**Ersetzt die bisherige Indigo-Entscheidung** (Memory `design-system-indigo`,
+2026-06-03). Kompletter Farb-Tokens-Tausch in `app/globals.css` (`:root` + `.dark`),
+**ausschließlich Tokens** — kein Komponenten-, Schrift- oder Radius-Umbau. Prinzip:
+warmes Fast-Weiß als Grund, reinweiße Cards heben minimal ab; alle Grautöne mit
+warmem Stein/Sand-Unterton (Hue 60–75, **nie** kühl-blau); **Primärfarbe = Warm-
+Schwarz (hell) / Off-White (dunkel)** — der Indigo-Akzent entfällt komplett.
+Buntfarbe nur als kleines Funktionssignal (Badges, Chart-Linien), nie als Fläche
+oder Buttonfarbe; Semantik deutlich entsättigt.
+
+**Konsequenz für Badges:** Das Mapping (`statusVariant`/`priorityVariant` in
+`lib/autotask/mappers.ts`) **bleibt unverändert**; die Varianten ziehen ihre Farbe
+aus den neuen Tokens. Der `default`-Badge (Status „Neu"/„In Bearbeitung" …) ist
+jetzt **Schwarz/Weiß statt Indigo — gewollt** (in Dunkel invertierter Off-White-Pill).
+Aktiver Nav-Eintrag = neutraler `primary/10`-Pill + `primary`-Icon; mit achromatischem
+Primary ist die frühere „aktiver Nav-Text ≠ text-primary"-AA-Sorge gegenstandslos.
+
+**Token-Tabelle (OKLCH → sRGB):**
+
+| Token | Hell (oklch) | ≈hex | Dunkel (oklch) | ≈hex |
+|---|---|---|---|---|
+| background | 0.992 0.0015 60 | #fdfcfb | 0.175 0.006 60 | #13100e |
+| foreground | 0.205 0.006 60 | #191714 | 0.955 0.003 80 | #f1f0ee |
+| card / popover | 1 0 0 | #ffffff | 0.213 0.007 60 | #1b1816 |
+| primary | 0.205 0.006 60 | #191714 | 0.955 0.003 80 | #f1f0ee |
+| primary-foreground | 0.992 0.0015 60 | #fdfcfb | 0.205 0.006 60 | #191714 |
+| muted / secondary / accent | 0.965 0.003 70 | #f5f3f1 | 0.27 0.008 65 | #292622 |
+| muted-foreground | 0.555 0.012 65 | #78726c | 0.715 0.014 70 | #a9a29a |
+| border / input | 0.916 0.003 70 | #e4e3e1 | 0.30 / 0.33 0.006 65 | #302d2b |
+| ring | 0.62 0.012 65 | #8b857f | 0.50 0.010 65 | #67625d |
+| destructive | 0.505 0.155 32 | #ab3724 | 0.70 0.16 30 | #f17260 |
+| warning | 0.515 0.097 68 | #8c5c20 | 0.80 0.105 75 | #e5b46e |
+| success | 0.515 0.085 150 | #41754d | 0.75 0.10 152 | #7cc08f |
+| chart-1..5 | Anthrazit-Stein · Stahlblau · Ember · Stein · Taupe | — | analog (aufgehellt) | — |
+| sidebar | 0.965 0.003 70 | #f5f3f1 | 0.198 0.006 60 | #181513 |
+
+**Kontrast — rechnerisch verifiziert** (`node scripts/color-audit.mjs`: OKLCH→sRGB
+Ottosson, WCAG-Kontrast, Alpha-Tints im gamma-sRGB-Raum kompositiert; **alle
+Pflicht-Checks bestanden, Hell + Dunkel**). Werte je Hell / Dunkel:
+- Text ≥ 4.5:1 — foreground/bg **17.5 / 16.6**; muted-foreground/bg **4.65 / 7.50**;
+  primary-foreground/primary (default-Badge) **17.5 / 15.7**.
+- Tint-Badges (Token-Text auf Token-Tint über Karte): destructive **5.43 / 4.52**,
+  success **4.74 / 5.58**, warning **4.67 / 6.07** — alle ≥ 4.5.
+- UI-Kanten ≥ 3:1 — Focus-Ring/bg **3.57 / 3.16**; aktives Nav-Icon/Pill **13.2 / 12.4**;
+  Chart-Füllungen/Karte alle ≥ 3 (chart-5 knapp: **3.18 / 3.33**).
+- **Bewusst < 3:1 (dekorativ, kein AA-Pflichtwert nach WCAG 1.4.11):** die EINE
+  Hairline-Border (Chalk) — Border/bg ≈ **1.25 / 1.39**. Die Karte trennt sich
+  zusätzlich über die Füllung (Weiß vs. Eggshell) vom Canvas, nicht nur über die Kante.
+- **N/A:** weiß-auf-Vollflächen-destructive existiert in der App nicht — Button **und**
+  Badge nutzen `destructive/10–20`-Tint, kein `bg-destructive` solid.
+
+**Migration/Sweep:** Repo nach hartkodierten Palettenfarben (indigo-/blue-/red-/green-/
+amber-/slate-/zinc-/gray- als bg-/text-/border-, Hex, `style=`, manuelle `dark:`-Farb-
+Overrides) gegrept → **außerhalb von `globals.css` nichts zu migrieren.** Einzige
+bewusste Ausnahme belassen: 3 Modal-Scrims (`bg-black/10` in `alert-dialog`/`dialog`/
+`sheet`) — shadcn-Standard, neutral, modus-unabhängig, kein Theme-Hue. Ein veralteter
+„Indigo"-Kommentar in `components/nav-main.tsx` auf neutral korrigiert (Kommentar, kein
+Umbau).
+
+**Verifikation:** `npm run build` grün; Screenshots Hell/Dunkel/Mobile (Dashboard inkl.
+Mitarbeiter-Chart, Ticketliste mit allen Prio-/Status-Badges, Ticketdetail 3-Spalten +
+Chat, Kundenakte, Command-Palette) unter `docs/visual-refresh/v2/` (gitignored; Skripte
+`scripts/shots.mjs` + `scripts/shots-kundenakte.mjs`). Hinweis: das schwebende „N" unten
+rechts in den Shots ist der Next-Dev-Tools-Indikator, keine App-UI.
+
 <!-- Neue Entscheidungen hier anhängen -->

@@ -33,10 +33,11 @@ export function NavMain({ items }: { items: NavItem[] }) {
             <SidebarMenuButton
               tooltip={item.title}
               isActive={isActiveRoute(pathname, item.url)}
-              // Aktiv = dezenter Indigo-Pill + Indigo-Icon + fettere, kontrast-
-              // starke Beschriftung (klar erkennbar wo man ist und AA-konform in
-              // Hell UND Dunkel); Hover bleibt neutral (sidebar-accent). Nur
-              // semantische Tokens + Opacity-Utilities, kein erfundenes CSS.
+              // Aktiv = dezenter neutraler Pill (primary/10 = Warm-Schwarz-Tint)
+              // + Akzent-Icon (primary) + kontraststarke Beschriftung (klar
+              // erkennbar wo man ist, AA-konform in Hell UND Dunkel); Hover bleibt
+              // neutral (sidebar-accent). Nur semantische Tokens + Opacity-
+              // Utilities, kein erfundenes CSS. Farbsystem v2 (warm-achromatisch).
               className="transition-colors data-active:bg-primary/10 data-active:hover:bg-primary/15 data-active:[&>svg]:text-primary"
               render={<Link href={item.url} />}
             >

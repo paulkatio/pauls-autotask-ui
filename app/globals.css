@@ -51,87 +51,89 @@
 }
 
 :root {
-  /* Heller Modus – zurückhaltendes Indigo als Akzent (Linear-/Geist-Niveau).
-     Faint kühles Off-White als Canvas, reinweiße Cards für klare Elevation.
-     Alle Werte in OKLCH; Akzent-Hue ~266. */
-  --background: oklch(0.984 0.004 264);
-  --foreground: oklch(0.21 0.02 266);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.02 266);
+  /* Farbsystem v2 – warm-achromatisch, editorial (ElevenLabs-Vorbild).
+     Eggshell-Canvas (warmes Fast-Weiß), reinweiße Cards heben minimal ab.
+     ALLE Grautöne mit warmem Stein/Sand-Unterton (Hue 60-75), nie kühl-blau.
+     Primärfarbe = Warm-Schwarz (kein Indigo mehr). Buntfarbe nur als kleines
+     Funktionssignal (Badges/Charts), nie als Fläche. Alle Werte OKLCH.
+     Kontrast rechnerisch verifiziert: scripts/color-audit.mjs. */
+  --background: oklch(0.992 0.0015 60);   /* Eggshell #fdfcfb */
+  --foreground: oklch(0.205 0.006 60);    /* Warm-Schwarz #191714 */
+  --card: oklch(1 0 0);                    /* reines Weiß #ffffff */
+  --card-foreground: oklch(0.205 0.006 60);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.02 266);
-  --primary: oklch(0.545 0.17 266);
-  --primary-foreground: oklch(0.985 0.006 264);
-  --secondary: oklch(0.967 0.005 264);
-  --secondary-foreground: oklch(0.30 0.02 266);
-  --muted: oklch(0.967 0.005 264);
-  --muted-foreground: oklch(0.476 0.018 266);
-  --accent: oklch(0.955 0.013 266);
-  --accent-foreground: oklch(0.34 0.045 266);
-  --destructive: oklch(0.577 0.245 27.325);
-  /* Ampel-Akzente (als Text auf /10-Tint nutzbar, AA in Hell). Gruen=gut/niedrig,
-     Amber=warten/mittel; Rot bleibt --destructive. */
-  --success: oklch(0.55 0.14 152);
-  --warning: oklch(0.60 0.12 70);
-  --border: oklch(0.912 0.006 264);
-  --input: oklch(0.898 0.007 264);
-  --ring: oklch(0.545 0.17 266);
-  /* Echte 5er-Chart-Palette: Indigo-verankert, analoge Hues, einheitliche
-     Helligkeit/Sättigung -> harmonisch, nicht bunt. */
-  --chart-1: oklch(0.545 0.17 266);
-  --chart-2: oklch(0.60 0.13 230);
-  --chart-3: oklch(0.64 0.11 196);
-  --chart-4: oklch(0.57 0.15 300);
-  --chart-5: oklch(0.66 0.12 162);
+  --popover-foreground: oklch(0.205 0.006 60);
+  --primary: oklch(0.205 0.006 60);        /* Warm-Schwarz */
+  --primary-foreground: oklch(0.992 0.0015 60);
+  --secondary: oklch(0.965 0.003 70);      /* Powder #f5f3f1 */
+  --secondary-foreground: oklch(0.205 0.006 60);
+  --muted: oklch(0.965 0.003 70);          /* Powder #f5f3f1 */
+  --muted-foreground: oklch(0.555 0.012 65); /* Gravel #78726c */
+  --accent: oklch(0.965 0.003 70);         /* Powder (Hover-Flächen) */
+  --accent-foreground: oklch(0.205 0.006 60);
+  /* Semantik gedämpft/entsättigt. Als Text auf /10–/15-Tint AA in Hell. */
+  --destructive: oklch(0.505 0.155 32);    /* gedämpftes warmes Rot #ab3724 */
+  --success: oklch(0.515 0.085 150);       /* gedämpftes warmes Grün #41754d */
+  --warning: oklch(0.515 0.097 68);        /* gedämpftes Amber/Ocker #8c5c20 */
+  --border: oklch(0.916 0.003 70);         /* Chalk #e4e3e1 – EINE Borderfarbe */
+  --input: oklch(0.916 0.003 70);          /* Chalk */
+  --ring: oklch(0.62 0.012 65);            /* mittleres Warm-Grau (Focus) */
+  /* Zurückhaltende Chart-Reihe: warme Steintöne + EIN gedämpftes Blau + EIN
+     gedämpftes Ember als Akzente. Keine Regenbogen-Palette. */
+  --chart-1: oklch(0.45 0.015 60);         /* Warm-Anthrazit-Stein (Haupt) */
+  --chart-2: oklch(0.52 0.10 250);         /* gedämpftes Stahlblau */
+  --chart-3: oklch(0.585 0.13 38);         /* gedämpftes Ember/Terrakotta */
+  --chart-4: oklch(0.60 0.013 70);         /* mittlerer Warm-Stein */
+  --chart-5: oklch(0.655 0.012 75);        /* helles Taupe */
   --radius: 0.625rem;
-  --sidebar: oklch(0.975 0.004 264);
-  --sidebar-foreground: oklch(0.30 0.02 266);
-  --sidebar-primary: oklch(0.545 0.17 266);
-  --sidebar-primary-foreground: oklch(0.985 0.006 264);
-  --sidebar-accent: oklch(0.955 0.008 264);
-  --sidebar-accent-foreground: oklch(0.30 0.02 266);
-  --sidebar-border: oklch(0.912 0.006 264);
-  --sidebar-ring: oklch(0.545 0.17 266);
+  --sidebar: oklch(0.965 0.003 70);        /* Powder – minimal vom Content abgesetzt */
+  --sidebar-foreground: oklch(0.37 0.008 60);
+  --sidebar-primary: oklch(0.205 0.006 60);
+  --sidebar-primary-foreground: oklch(0.992 0.0015 60);
+  --sidebar-accent: oklch(0.935 0.004 70); /* dezenter Hover auf Powder */
+  --sidebar-accent-foreground: oklch(0.205 0.006 60);
+  --sidebar-border: oklch(0.916 0.003 70); /* Chalk */
+  --sidebar-ring: oklch(0.62 0.012 65);
 }
 
 .dark {
-  /* Dunkler Modus – gemeinsam mit Hell durchdesignt. Indigo-Akzent bleibt die
-     Marke (Buttons/Chat/aktiver Nav), white-on-indigo erfüllt AA. Cards heben
-     sich klar vom near-black Canvas ab. */
-  --background: oklch(0.165 0.006 264);
-  --foreground: oklch(0.97 0.004 264);
-  --card: oklch(0.205 0.008 264);
-  --card-foreground: oklch(0.97 0.004 264);
-  --popover: oklch(0.205 0.008 264);
-  --popover-foreground: oklch(0.97 0.004 264);
-  --primary: oklch(0.55 0.17 266);
-  --primary-foreground: oklch(0.985 0.008 264);
-  --secondary: oklch(0.27 0.012 264);
-  --secondary-foreground: oklch(0.97 0.004 264);
-  --muted: oklch(0.27 0.012 264);
-  --muted-foreground: oklch(0.715 0.02 264);
-  --accent: oklch(0.285 0.018 266);
-  --accent-foreground: oklch(0.97 0.004 264);
-  --destructive: oklch(0.704 0.191 22.216);
-  /* Dunkel: heller, damit als Text auf dunklem /20-Tint AA erfuellt ist. */
-  --success: oklch(0.74 0.15 155);
-  --warning: oklch(0.80 0.13 80);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.55 0.17 266);
-  --chart-1: oklch(0.64 0.16 266);
-  --chart-2: oklch(0.68 0.13 230);
-  --chart-3: oklch(0.72 0.11 196);
-  --chart-4: oklch(0.66 0.15 300);
-  --chart-5: oklch(0.74 0.12 162);
-  --sidebar: oklch(0.185 0.008 264);
-  --sidebar-foreground: oklch(0.97 0.004 264);
-  --sidebar-primary: oklch(0.55 0.17 266);
-  --sidebar-primary-foreground: oklch(0.985 0.008 264);
-  --sidebar-accent: oklch(0.27 0.014 266);
-  --sidebar-accent-foreground: oklch(0.97 0.004 264);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.55 0.17 266);
+  /* Farbsystem v2 – Dunkel, aus denselben Prinzipien abgeleitet.
+     Warmes Fast-Schwarz als Canvas (brauner Unterton, KEIN kaltes Slate/Zinc),
+     Cards eine Spur heller. Primär = Off-White (invertierter Pill-Look).
+     Semantik aufgehellt -> als Text auf /20-Tint AA in Dunkel. OKLCH. */
+  --background: oklch(0.175 0.006 60);     /* Warm-Fast-Schwarz #13100e */
+  --foreground: oklch(0.955 0.003 80);     /* Warm-Off-White #f1f0ee */
+  --card: oklch(0.213 0.007 60);           /* #1b1816 */
+  --card-foreground: oklch(0.955 0.003 80);
+  --popover: oklch(0.213 0.007 60);
+  --popover-foreground: oklch(0.955 0.003 80);
+  --primary: oklch(0.955 0.003 80);        /* Off-White */
+  --primary-foreground: oklch(0.205 0.006 60);
+  --secondary: oklch(0.27 0.008 65);       /* dunkle warme Flächenstufe */
+  --secondary-foreground: oklch(0.955 0.003 80);
+  --muted: oklch(0.27 0.008 65);
+  --muted-foreground: oklch(0.715 0.014 70); /* warmes Mittelgrau #a9a29a */
+  --accent: oklch(0.285 0.009 65);         /* Hover-Fläche, eine Spur heller */
+  --accent-foreground: oklch(0.955 0.003 80);
+  --destructive: oklch(0.70 0.16 30);      /* aufgehelltes warmes Rot #f17260 */
+  --success: oklch(0.75 0.10 152);         /* aufgehelltes Grün #7cc08f */
+  --warning: oklch(0.80 0.105 75);         /* aufgehelltes Amber #e5b46e */
+  --border: oklch(0.30 0.006 65);          /* dunkles Warm-Grau, Hairline */
+  --input: oklch(0.33 0.006 65);
+  --ring: oklch(0.50 0.010 65);
+  --chart-1: oklch(0.78 0.013 75);         /* helles Warm-Stein (Haupt) */
+  --chart-2: oklch(0.62 0.10 250);         /* gedämpftes Stahlblau */
+  --chart-3: oklch(0.66 0.13 40);          /* gedämpftes Ember */
+  --chart-4: oklch(0.58 0.013 70);         /* mittlerer Warm-Stein */
+  --chart-5: oklch(0.53 0.012 65);         /* tiefer Warm-Stein */
+  --sidebar: oklch(0.198 0.006 60);
+  --sidebar-foreground: oklch(0.78 0.010 75);
+  --sidebar-primary: oklch(0.955 0.003 80);
+  --sidebar-primary-foreground: oklch(0.205 0.006 60);
+  --sidebar-accent: oklch(0.255 0.008 65);
+  --sidebar-accent-foreground: oklch(0.955 0.003 80);
+  --sidebar-border: oklch(0.30 0.006 65);
+  --sidebar-ring: oklch(0.50 0.010 65);
 }
 
 @layer base {
