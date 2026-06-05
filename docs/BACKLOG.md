@@ -22,8 +22,11 @@ Ampel-Badges, Spotlight-Suche + `/search`-Paginierung, layout-treue Skeletons, L
 - **B17 Kundenmail via Resend** (BLOCKER) – Workflow/UDF-Race ersetzen durch app-eigene
   Mail mit `Reply-To` = Autotask-Inbound.
 - **B17a Inbound-noteType** – aus Sandbox-Historie geklärt: Inbound = noteType 3 +
-  `createdByContactID` (nicht 101); Chat-Fetch + Notify-Schalter gefixt (2026-06-05).
-  Offen für Prod: nur noch Threading ohne Autotask-Token.
+  `createdByContactID` (nicht 101); Chat-Inbound-Fetch gefixt (2026-06-05). Threading
+  geklärt (Paul): Ticketnummer im Betreff → Antwort threadet zurück. Offen für Prod:
+  nur ein einmaliger Gegencheck mit echter Inbound-Mailbox als Reply-To.
+- **B17b Datei-Anhänge per Drag&Drop im Chat** – nach B17-Kern; Drop → Upload ans Ticket
+  (A3-Pfad) + Resend-Anhang. Nur Anhänge (kein Inline).
 - Aufgeschoben: Rollen-Gating (B12), Anhang-Löschen (API 405).
 
 ---
@@ -340,6 +343,28 @@ Prod mit anderem noteType, **erscheint sie NICHT im Chat**.
 - Optional: Near-Realtime via **`TicketNoteWebhook`** statt 45-s-Polling (V4).
 **Fertig wenn:** Eingehende Kundenantwort erscheint im Chat (belegt), noteType in
 DECISIONS bestätigt.
+
+---
+
+## B17b — Pre-Production: Datei-Anhänge per Drag & Drop im Chat
+**Abhängigkeit:** B17-Kern (Resend-Versand steht), A3 (Attachment-Upload)
+**Reihenfolge:** erst B17-Kern, dann B17b.
+**Ziel:** Dateien (z. B. Bilder) per Drag & Drop ins Chatfenster → mit der Kundenmail
+verschicken UND am Ticket als Anhang ablegen.
+**Schritte:**
+- Drop-Zone im Chatfenster; pro Datei clientseitige Vorprüfung (Typ/Größe, **10-MB-
+  Limit**) mit klarer Fehlermeldung.
+- Beim Senden: **(1)** Upload als TicketAttachment über den bestehenden **A3-Pfad**
+  (`attachments.upload` / `POST /api/tickets/[id]/attachments`), **(2)** Chat-Notiz,
+  **(3)** Resend-Mail mit denselben Dateien als Anhang.
+- **Fehlersemantik:** Mail scheitert → Datei + Notiz bleiben am Ticket; UI meldet
+  „gespeichert, aber nicht zugestellt".
+- **V1 nur Anhänge** (kein Inline/cid-Embed).
+- Betreff trägt IMMER die Ticketnummer (Threading über Ticketnummer lt. Mailbox-Config).
+- Inbound: Kundenantwort mit Datei → Autotask hängt sie automatisch ans Ticket
+  (kein eigener Code).
+**Fertig wenn:** Drop verschickt die Datei per Resend UND legt sie am Ticket ab (an
+einem **ZZZ-Testticket** belegt); Fehlerfall sauber gemeldet.
 
 ---
 
