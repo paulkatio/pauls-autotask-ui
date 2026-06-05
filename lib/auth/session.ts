@@ -11,4 +11,5 @@ export interface SessionUser {
   displayName: string;
   roles: Role[]; // Mock: frei gewählt; Entra: aus groups/roles-Claims
   autotaskResourceId: number; // Mapping auf Autotask-Resource, nötig für "Meine Tickets"
+  avatarUrl?: string | null; // Profilbild (Entra: Graph-Foto als data:-URI); Mock: null
 }

@@ -80,7 +80,11 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter>
         <NavUser
-          user={{ name: user.displayName, email: user.email, avatar: "" }}
+          user={{
+            name: user.displayName,
+            email: user.email,
+            avatar: user.avatarUrl ?? "",
+          }}
         />
       </SidebarFooter>
       <SidebarRail />

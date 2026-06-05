@@ -18,6 +18,7 @@ export const entraProvider: AuthProvider = {
           displayName?: string;
           autotaskResourceId?: number;
           atError?: string;
+          avatarUrl?: string | null;
         }
       | undefined;
     if (!u) return null;
@@ -29,6 +30,7 @@ export const entraProvider: AuthProvider = {
       displayName: u.displayName || u.email,
       roles: ["agent"], // kein Gating (B12); später optional aus Entra-App-Rollen
       autotaskResourceId: u.autotaskResourceId,
+      avatarUrl: u.avatarUrl ?? null,
     };
   },
 };

@@ -29,11 +29,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account, profile, user }) {
       const t = token as Record<string, unknown>;
       // Nur beim initialen Sign-in (account vorhanden) auflösen + cachen.
       if (account && profile) {
         const p = profile as Record<string, unknown>;
+        // Profilbild: der Entra-Provider holt das Graph-Foto (48×48) und liefert es
+        // als base64-data-URI in user.image. Im JWT cachen (kein Graph-Call/Request).
+        // Der Provider setzt „data:image/jpeg;base64, <…>" MIT Leerzeichen nach dem
+        // Komma – das ist im Data-URI ungültig und bricht das Rendern in manchen
+        // Browsern. Leerzeichen direkt nach „base64," entfernen.
+        const rawImage = (user?.image as string | null | undefined) ?? null;
+        t.picture = rawImage ? rawImage.replace(/;base64,\s+/, ";base64,") : null;
         const claim =
           (p.email as string | undefined) ??
           (p.preferred_username as string | undefined) ??
@@ -67,6 +74,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         u.displayName = t.displayName as string | undefined;
         u.autotaskResourceId = t.autotaskResourceId as number | undefined;
         u.atError = t.atError as string | undefined;
+        u.avatarUrl = (t.picture as string | null | undefined) ?? null;
       }
       return session;
     },
