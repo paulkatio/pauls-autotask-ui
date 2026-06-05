@@ -26,10 +26,9 @@ AUTOTASK_INTEGRATION_CODE=...
 AUTH_MODE=mock     # oder: entra
 ```
 
-**Kundenmail-Versand (B17, app-eigene Resend-Mail):**
+**Kundenmail-Versand (B17, app-eigene Resend-Mail — einziger Weg):**
 ```
-MAIL_PROVIDER=autotask         # autotask = UDF+Workflow (heute); resend = app-eigen (erst nach B17a)
-RESEND_API_KEY=...             # nur bei MAIL_PROVIDER=resend; https://resend.com -> API Keys
+RESEND_API_KEY=...             # https://resend.com -> API Keys
 RESEND_FROM=...                # verifizierte Resend-Domain, z. B. SSIG-IT Service Desk <service@ssig-it.com>
 AUTOTASK_INBOUND_MAILBOX=...   # Reply-To = Autotask-Eingangspostfach (Antwort-Threading)
 ```

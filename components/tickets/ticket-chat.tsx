@@ -9,8 +9,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Empty,
@@ -53,9 +51,6 @@ export function TicketChat({ ticketId }: { ticketId: number }) {
   const [text, setText] = React.useState("");
   const [sending, setSending] = React.useState(false);
   const [sendError, setSendError] = React.useState<string | null>(null);
-  // Steuert, ob beim Senden die Kunden-Mail ausgelöst wird (heute: Ticket-UDF
-  // "Kunde benachrichtigen" Ja/Nein; ab B17: app-eigener Resend-Versand).
-  const [notify, setNotify] = React.useState(true);
   const tempId = React.useRef(-1);
 
   const load = React.useCallback(async () => {
@@ -120,7 +115,7 @@ export function TicketChat({ ticketId }: { ticketId: number }) {
       const res = await fetch(`/api/tickets/${ticketId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: body, notify }),
+        body: JSON.stringify({ text: body, notify: true }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -232,17 +227,7 @@ export function TicketChat({ ticketId }: { ticketId: number }) {
             rows={2}
             aria-label="Nachricht"
           />
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="chat-notify"
-                checked={notify}
-                onCheckedChange={setNotify}
-              />
-              <Label htmlFor="chat-notify">
-                Kunde per E-Mail benachrichtigen
-              </Label>
-            </div>
+          <div className="flex justify-end">
             <Button type="submit" size="sm" disabled={sending || !text.trim()}>
               Senden
             </Button>

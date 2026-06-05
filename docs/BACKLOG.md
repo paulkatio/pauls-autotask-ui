@@ -323,8 +323,10 @@ Kundenantworten sind **`noteType 3` + `createdByContactID`**, NICHT 101 (mandant
 0× 101). Chat-Fetch deshalb auf OR-Gruppe umgestellt (`byTicketConversation`: Typen
 18/101 ODER `createdByContactID` gesetzt) + Notify-Schalter zurück in die UI; an
 historischen Daten (Ticket 11807) belegt. **Offen für Prod bleibt nur noch:**
-(a) frische Antwort kommt 2026 ebenfalls als 3+Kontakt an, (b) **Threading** ohne
-Autotask-`[Ticket#…]`-Token (der Knackpunkt, nur mit echter Prod-Mail testbar).
+(a) frische Antwort kommt 2026 ebenfalls als 3+Kontakt an; (b) **Threading geklärt
+(Paul, 2026-06-05):** Ticketnummer im Betreff → Antwort threadet zurück ans Ticket
+(kein `[Ticket#…]`-Token nötig); nur noch einmaliger Prod-Gegencheck mit echter
+Inbound-Mailbox als Reply-To. **Resend = einziger Weg, kein Notify-Toggle.**
 **Problem:** Der Chat filtert auf `CONVERSATION_TYPE_IDS` = **18 (outbound) / 101
 (inbound)**. Dass eine echte Antwort als **noteType 101** ankommt, ist eine
 **Annahme** (Sandbox kann keine echte Mail empfangen, DECISIONS V2). Kommt sie in

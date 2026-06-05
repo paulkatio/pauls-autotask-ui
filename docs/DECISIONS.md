@@ -1452,4 +1452,21 @@ den Autotask-`[Ticket#…]`-Token? Mailbox-Adresse (Reply-To) + Workflow-Regel-D
 sind Paul-Punkte (siehe B17-DISCOVERY §5). Throwaway-Probe-/Helper-Skripte nach Lauf
 entfernt; keine Autotask-Daten außer dem 43180-Schreibtest verändert.
 
+### [2026-06-05] B17 — Resend-only, kein Notify-Toggle, Threading via Ticketnummer im Betreff
+Folgeentscheidungen von Paul (überschreiben Teile der B17-DISCOVERY-Skizze):
+- **Resend ist der EINZIGE Versandweg** der Chat-Kundenmail. **Kein `MAIL_PROVIDER`-
+  Flag**, kein Autotask-Workflow-Fallback. Der zwischenzeitliche `MAIL_PROVIDER`-
+  Platzhalter wurde wieder aus `.env.example`/`.env.local`/`DEPLOY.md` entfernt;
+  verbleibend nur `RESEND_API_KEY`, `RESEND_FROM`, `AUTOTASK_INBOUND_MAILBOX`.
+- **Notify-Schalter wieder aus der Chat-UI entfernt** (`ticket-chat.tsx`): eine
+  Chat-Nachricht IST die Kundenmail; interne Vermerke laufen über die separate interne
+  Notiz (noteType 2). Sende-Body wieder `notify:true` (bis B17 den Resend-Pfad baut).
+  Der Inbound-Fix (`byTicketConversation`) BLEIBT.
+- **Threading geklärt (Paul):** Steht die **Ticketnummer im Betreff**, landet die Antwort
+  wieder am Ticket — der Autotask-`[Ticket#…]`-Token ist NICHT nötig. Damit ist das
+  frühere Haupt-Risiko (Threading-Bruch) vom Tisch; Rest = einmaliger Prod-Gegencheck mit
+  echter Inbound-Mailbox als `Reply-To`.
+- **Upstash** zuvor komplett entfernt (war nur Doku/.env, kein Code) → Caching nur via
+  Next.js `unstable_cache`.
+
 <!-- Neue Entscheidungen hier anhängen -->
