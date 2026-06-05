@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import {
   CheckIcon,
   ChevronsUpDownIcon,
@@ -54,6 +53,7 @@ import { cn } from "@/lib/utils";
 import type { TicketPicklists } from "@/lib/autotask/types";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import { recordHistory } from "@/lib/history";
+import { openTicketPopup } from "@/lib/open-popup";
 
 // Bulk-Aktionen für die ausgewählten Tickets. KEIN neuer Schreibpfad: pro Ticket
 // das bestehende PATCH /api/tickets/[id] (Whitelist). Ausführung mit Limiter
@@ -227,7 +227,6 @@ export function BulkBar({
   onApplied: () => void;
 }) {
   const count = selected.length;
-  const router = useRouter();
 
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [roleStep, setRoleStep] = React.useState<{
@@ -559,7 +558,7 @@ export function BulkBar({
     if (mergeTargetId == null) return;
     const id = mergeTargetId;
     closeMerge();
-    router.push(`/tickets/${id}`);
+    openTicketPopup(id);
   }
 
   const statusItems = picklists.status.map((s) => ({

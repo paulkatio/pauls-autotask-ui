@@ -43,6 +43,7 @@ import {
 } from "@/lib/autotask/mappers";
 import type { Ticket, TicketPicklists } from "@/lib/autotask/types";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
+import { openTicketPopup } from "@/lib/open-popup";
 
 // Gemeinsame, parametrisierbare Ticket-Liste für "Meine Tickets" (B07) und
 // "Teamtickets" (B12). Datenquelle/Filter kommen serverseitig; die Spalten
@@ -533,7 +534,7 @@ export function TicketsList({
                   <TableRow
                     key={t.id}
                     className="cursor-pointer"
-                    onClick={() => router.push(`/tickets/${t.id}`)}
+                    onClick={() => openTicketPopup(t.id)}
                   >
                     {selectableActive && (
                       <TableCell

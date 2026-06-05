@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import {
   ArrowDownIcon,
   ArrowUpDownIcon,
@@ -46,6 +45,7 @@ import {
   COMPANY_TYPE_ORDER,
 } from "@/lib/autotask/company-types";
 import type { CompanyRow } from "@/lib/autotask/entities/company-list";
+import { openCompanyPopup } from "@/lib/open-popup";
 
 type SortKey = "name" | "city" | "companyType" | "phone" | "openTickets";
 type SortDir = "asc" | "desc";
@@ -62,7 +62,6 @@ export function CompaniesTable({
   companiesCapped: boolean;
   openCapped: boolean;
 }) {
-  const router = useRouter();
   const [q, setQ] = React.useState("");
   const [typeFilter, setTypeFilter] = React.useState(
     String(COMPANY_TYPE_CUSTOMER),
@@ -313,7 +312,7 @@ export function CompaniesTable({
                 <TableRow
                   key={c.id}
                   className="cursor-pointer"
-                  onClick={() => router.push(`/companies/${c.id}`)}
+                  onClick={() => openCompanyPopup(c.id)}
                 >
                   {orderedCols.map((col) => (
                     <TableCell key={col.id} className={col.cellClassName}>
