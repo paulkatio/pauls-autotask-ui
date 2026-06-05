@@ -51,6 +51,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { TicketPicklists } from "@/lib/autotask/types";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
+import { recordHistory } from "@/lib/history";
 
 // Bulk-Aktionen für die ausgewählten Tickets. KEIN neuer Schreibpfad: pro Ticket
 // das bestehende PATCH /api/tickets/[id] (Whitelist). Ausführung mit Limiter
@@ -437,6 +438,14 @@ export function BulkBar({
 
     const okCount = acc.filter((r) => r.ok).length;
     const failedCount = acc.length - okCount;
+    // In den globalen Verlauf eintragen (rückgängig über das Verlauf-Sheet im Header).
+    if (reverse.length > 0) {
+      recordHistory({
+        label: `${okCount} Ticket(s): ${p.verb}`,
+        reversible: true,
+        reverse,
+      });
+    }
     setResults(acc);
     setUndoOps(reverse);
     setPhase("result");
@@ -509,6 +518,14 @@ export function BulkBar({
       if (!res.ok) throw new Error(j.error ?? "Zusammenführen fehlgeschlagen.");
       setMergeOutcome(j);
       setMergePhase("result");
+      const okSources = (j.sources ?? []).filter((s) => s.ok).length;
+      if (okSources > 0) {
+        // Merge ist nicht automatisch rückgängig (Notizen bleiben) -> nur Log-Eintrag.
+        recordHistory({
+          label: `Zusammengeführt in ${j.targetTicketNumber} (${okSources} Quellticket(s))`,
+          reversible: false,
+        });
+      }
       const failed = (j.sources ?? []).filter((s) => !s.ok).length;
       if (failed === 0) toast.success(`In ${j.targetTicketNumber} zusammengeführt.`);
       else

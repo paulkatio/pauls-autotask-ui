@@ -1502,4 +1502,22 @@ Schreib-Test an ZZZ-Tickets (TE 30548: 43180→43181, danach restauriert; alle c
   `w-auto min-w-*` gesetzt → lange Status-Labels werden nicht mehr abgeschnitten
   (`tickets-list.tsx`).
 
+### [2026-06-05] UX-Feedback: Verlauf+Undo, Mir-zuweisen, Assignment-Filter, Stoppuhr
+- **Globaler Verlauf + Undo (neu):** clientseitiger Aktions-Verlauf (`lib/history.ts`,
+  localStorage + Event) + Verlauf-Sheet im Header (`components/history-sheet.tsx`, shadcn
+  `Sheet`). **Reversibel** (Re-PATCH der Alt-Werte) für Feldänderungen: Bulk-Aktionen
+  (Status/Priorität/Queue/Zuweisung) + Inline-Edits (Status/Priorität/Queue, Kategorie/
+  Unterkategorie, Beschreibung). **Log-only** (nicht autom. rückgängig): Merge.
+  **Bewusst (noch) NICHT erfasst:** Inline-Zuweisung/Firmenwechsel (Alt-Rolle/Kaskade
+  nicht sicher reversibel) sowie Notizen/Zeiten/Anhänge/Neue-Tickets/Chat — **die
+  Autotask-API kann Notizen nicht löschen (405) und Mails nicht zurücknehmen**, ein
+  „Undo bei allem" ist daher prinzipiell auf Feldänderungen begrenzt. Verifiziert
+  (Browser, ZZZ 43180): Inline-Status 8→11 → Verlauf-Eintrag → „Rückgängig" → Status
+  zurück 8, Eintrag „rückgängig".
+- **„Mir zuweisen" ohne Rollenfrage:** immer Rolle „Netzwerkadministrator" (Fallback
+  einzige/erste Rolle); Bestätigungsdialog listet die markierten Tickets.
+- **Assignment-Filter** (Alle / nur nicht zugewiesene) ausgeblendet, wenn Teamtickets
+  bereits nach einer Person gefiltert sind (Chart-Klick `?resource=`).
+- **Stoppuhr:** Stop-Button entfernt (nur Play/Pause; „Zeit erfassen" hält an).
+
 <!-- Neue Entscheidungen hier anhängen -->

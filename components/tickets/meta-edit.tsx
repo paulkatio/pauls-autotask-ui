@@ -46,6 +46,7 @@ import type {
 } from "@/lib/autotask/types";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import type { RefOption } from "@/lib/autotask/entities/contacts";
+import { recordHistory } from "@/lib/history";
 
 const UNASSIGNED = "none";
 
@@ -96,6 +97,13 @@ export function DescriptionEdit({
       });
       const j = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(j.error ?? "Speichern fehlgeschlagen.");
+      recordHistory({
+        label: "Beschreibung geändert",
+        reversible: true,
+        reverse: [
+          { id: ticketId, ticketNumber: `#${ticketId}`, body: { description: value ?? "" } },
+        ],
+      });
       toast.success("Beschreibung gespeichert.");
       setEditing(false);
       router.refresh();
@@ -218,6 +226,13 @@ export function TicketFieldSelect({
     setError(null);
     try {
       await patchTicket(ticketId, { [field]: Number(next) });
+      recordHistory({
+        label: `${ariaLabel} geändert`,
+        reversible: true,
+        reverse: [
+          { id: ticketId, ticketNumber: `#${ticketId}`, body: { [field]: value ?? null } },
+        ],
+      });
       toast.success("Gespeichert.");
       router.refresh();
     } catch (e) {
@@ -288,6 +303,17 @@ export function CategoryEdit({
     setError(null);
     try {
       await patchTicket(ticketId, { issueType: Number(next), subIssueType: null });
+      recordHistory({
+        label: "Kategorie geändert",
+        reversible: true,
+        reverse: [
+          {
+            id: ticketId,
+            ticketNumber: `#${ticketId}`,
+            body: { issueType: issueType ?? null, subIssueType: subIssueType ?? null },
+          },
+        ],
+      });
       toast.success("Gespeichert.");
       router.refresh();
     } catch (e) {
@@ -307,6 +333,17 @@ export function CategoryEdit({
     setError(null);
     try {
       await patchTicket(ticketId, { subIssueType: Number(next) });
+      recordHistory({
+        label: "Unterkategorie geändert",
+        reversible: true,
+        reverse: [
+          {
+            id: ticketId,
+            ticketNumber: `#${ticketId}`,
+            body: { subIssueType: prev ? Number(prev) : null },
+          },
+        ],
+      });
       toast.success("Gespeichert.");
       router.refresh();
     } catch (e) {

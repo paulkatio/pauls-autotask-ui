@@ -2,6 +2,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { CommandPalette } from "@/components/command-palette";
 import { HeaderSearch } from "@/components/header-search";
 import { HeaderTitle } from "@/components/header-title";
+import { HistorySheet } from "@/components/history-sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Toaster } from "@/components/ui/sonner";
 import { MockUserSwitcher } from "@/components/mock-user-switcher";
@@ -47,6 +48,7 @@ export default async function AppLayout({
                   currentUserName={session.id}
                 />
               )}
+              <HistorySheet />
               <ThemeToggle />
             </div>
           </div>
