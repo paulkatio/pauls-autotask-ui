@@ -821,7 +821,7 @@ export function BulkBar({
           }
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-xl!">
           {mergePhase === "pick" && (
             <>
               <AlertDialogHeader>
@@ -833,7 +833,7 @@ export function BulkBar({
                   Quellticket.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <div className="flex flex-col gap-2">
+              <div className="flex min-w-0 flex-col gap-2">
                 <span className="text-sm font-medium">Ziel-Ticket (dieser Firma)</span>
                 <Input
                   value={mergeSearch}
@@ -859,7 +859,7 @@ export function BulkBar({
                             type="button"
                             onClick={() => setMergeTargetId(t.id)}
                             className={cn(
-                              "hover:bg-accent flex items-center justify-between gap-2 px-3 py-2 text-left text-sm",
+                              "hover:bg-accent flex w-full min-w-0 items-center justify-between gap-2 px-3 py-2 text-left text-sm",
                               isSel && "bg-accent",
                             )}
                           >
