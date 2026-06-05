@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import {
   ChevronDownIcon,
   DownloadIcon,
@@ -18,14 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -163,11 +154,36 @@ function Rail({
   );
 }
 
+// Lange Texte (Notizen, Lösung, weitergeleitete Mail-Ketten) einklappen, bis der
+// Nutzer „Mehr anzeigen" klickt. Verhindert endlose Karten – v. a. auf dem Smartphone.
+function ExpandableText({ text }: { text: string }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const isLong = text.length > 800 || (text.match(/\n/g)?.length ?? 0) > 14;
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <p
+        className={cn(
+          "text-sm break-words whitespace-pre-wrap",
+          isLong && !expanded && "line-clamp-[14]",
+        )}
+      >
+        {text}
+      </p>
+      {isLong && (
+        <Button variant="ghost" size="sm" onClick={() => setExpanded((e) => !e)}>
+          {expanded ? "Weniger anzeigen" : "Mehr anzeigen"}
+        </Button>
+      )}
+    </div>
+  );
+}
+
 interface Props {
   detail: TicketDetail;
   picklists: TicketPicklists;
   notePicklists: NotePicklists;
   resourceOptions: ResourceOption[];
+  me: { name: string; avatar: string };
 }
 
 export function TicketDetailView({
@@ -175,9 +191,9 @@ export function TicketDetailView({
   picklists,
   notePicklists,
   resourceOptions,
+  me,
 }: Props) {
   const { ticket, company, contact, device, timeTotals } = detail;
-  const typeLabel = labelOf(picklists.ticketType, ticket.ticketType, "");
   const overdue = isOverdue(ticket.dueDateTime, ticket.completedDate);
 
   // ===== LINKS: Meta-Schiene (Inline-Edits aus B15b/c) =====
@@ -308,22 +324,15 @@ export function TicketDetailView({
   // Zeiten ist die Standardansicht; darunter die Aktivität (Notizen).
   const center = (
     <main className="flex w-full min-w-0 flex-1 flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Beschreibung</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DescriptionEdit ticketId={ticket.id} value={ticket.description} />
-        </CardContent>
-      </Card>
+      <DescriptionEdit ticketId={ticket.id} value={ticket.description} />
 
       {detail.resolution && (
         <Card>
-          <CardHeader>
+          <CardHeader className="border-b">
             <CardTitle>Lösung</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm whitespace-pre-wrap">{detail.resolution}</p>
+            <ExpandableText text={detail.resolution} />
           </CardContent>
         </Card>
       )}
@@ -371,10 +380,14 @@ export function TicketDetailView({
   // ===== RECHTS: kompakter Kontext + Chat-Sidebar (rein lesend, kein sticky
   // wegen Chat-Höhe) =====
   const rightRail = (
-    <Rail title="Kontext & Chat" className="xl:w-80 xl:shrink-0">
+    <div className="flex w-full flex-col gap-4 xl:w-80 xl:shrink-0">
+      {/* Chat zuerst + immer offen (auf dem Smartphone sofort griffbereit, nicht im
+          eingeklappten Akkordeon versteckt). Kontext darunter bleibt einklappbar. */}
+      <TicketChat ticketId={ticket.id} me={me} />
+      <Rail title="Kontext">
       {(company || contact) && (
         <Card>
-          <CardHeader>
+          <CardHeader className="border-b">
             <CardTitle className="text-base">
               {company?.name ?? "Kontakt"}
             </CardTitle>
@@ -410,7 +423,7 @@ export function TicketDetailView({
       )}
 
       <Card>
-        <CardHeader>
+        <CardHeader className="border-b">
           <CardTitle className="text-base">Arbeitszeit &amp; Abrechnung</CardTitle>
         </CardHeader>
         <CardContent>
@@ -443,7 +456,7 @@ export function TicketDetailView({
 
       {device && (
         <Card>
-          <CardHeader>
+          <CardHeader className="border-b">
             <CardTitle className="text-base">Gerät</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
@@ -482,40 +495,21 @@ export function TicketDetailView({
         </Card>
       )}
 
-      <TicketChat ticketId={ticket.id} />
-    </Rail>
+      </Rail>
+    </div>
   );
 
   return (
     <div className="flex flex-col gap-6">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink render={<Link href="/tickets/my" />}>
-              Tickets
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{ticket.ticketNumber ?? "Ticket"}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Kopf (volle Breite): Typ, Nummer, Titel, Erstellt */}
-      <div className="flex min-w-0 flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          {typeLabel && <Badge variant="secondary">{typeLabel}</Badge>}
-          <span className="text-muted-foreground tabular-nums">
-            {ticket.ticketNumber}
-          </span>
-        </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">
-          {ticket.title ?? ticket.ticketNumber}
+      {/* Kopf: „Nummer – Titel" fett, direkt daneben „Erstellt …". Nichts redundant. */}
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-balance break-words">
+          <span className="tabular-nums">{ticket.ticketNumber}</span>
+          {ticket.title ? ` – ${ticket.title}` : ""}
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <span className="text-muted-foreground text-sm whitespace-nowrap">
           Erstellt {fmtDate(ticket.createDate, true)}
-        </p>
+        </span>
       </div>
 
       {/* 3 Spalten ab xl; ab md zwei Spalten + Kontext darunter; mobil gestapelt. */}
@@ -564,9 +558,7 @@ function NotesFeed({
           {note.title && (
             <span className="text-sm font-medium">{note.title}</span>
           )}
-          {note.description && (
-            <p className="text-sm whitespace-pre-wrap">{note.description}</p>
-          )}
+          {note.description && <ExpandableText text={note.description} />}
         </div>
       ))}
     </div>
@@ -617,7 +609,7 @@ function TimeEntriesList({ entries }: { entries: EnrichedTimeEntry[] }) {
               </span>
             )}
             {e.summaryNotes && (
-              <p className="text-sm whitespace-pre-wrap">{e.summaryNotes}</p>
+              <p className="text-sm break-words whitespace-pre-wrap">{e.summaryNotes}</p>
             )}
           </div>
         );

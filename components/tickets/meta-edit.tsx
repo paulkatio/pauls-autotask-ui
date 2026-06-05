@@ -17,6 +17,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -47,6 +54,7 @@ import type {
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import type { RefOption } from "@/lib/autotask/entities/contacts";
 import { recordHistory } from "@/lib/history";
+import { cn } from "@/lib/utils";
 
 const UNASSIGNED = "none";
 
@@ -81,6 +89,7 @@ export function DescriptionEdit({
   const [text, setText] = React.useState(value ?? "");
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [expanded, setExpanded] = React.useState(false);
 
   React.useEffect(() => {
     setText(value ?? "");
@@ -114,51 +123,83 @@ export function DescriptionEdit({
     }
   }
 
-  if (!editing) {
-    return (
-      <div className="flex flex-col items-start gap-2">
-        {value ? (
-          <p className="text-sm whitespace-pre-wrap">{value}</p>
+  const body = value ?? "";
+  // Lange Beschreibungen (z. B. weitergeleitete Mail-Ketten) einklappen, bis der
+  // Nutzer „Mehr anzeigen" klickt. Heuristik: viele Zeichen ODER viele Zeilen.
+  const isLong = body.length > 800 || (body.match(/\n/g)?.length ?? 0) > 14;
+
+  return (
+    <Card>
+      <CardHeader className="border-b">
+        <CardTitle>Beschreibung</CardTitle>
+        {!editing && (
+          <CardAction>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditing(true)}
+            >
+              <PencilIcon />
+              Bearbeiten
+            </Button>
+          </CardAction>
+        )}
+      </CardHeader>
+      <CardContent>
+        {editing ? (
+          <div className="flex flex-col gap-2">
+            <Textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={10}
+              aria-label="Beschreibung"
+            />
+            <FieldError message={error} />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={save} disabled={saving}>
+                {saving ? "Speichern …" : "Speichern"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setText(value ?? "");
+                  setError(null);
+                  setEditing(false);
+                }}
+                disabled={saving}
+              >
+                Abbrechen
+              </Button>
+            </div>
+          </div>
+        ) : body ? (
+          <div className="flex flex-col items-start gap-2">
+            <p
+              className={cn(
+                "text-sm break-words whitespace-pre-wrap",
+                isLong && !expanded && "line-clamp-[14]",
+              )}
+            >
+              {body}
+            </p>
+            {isLong && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setExpanded((e) => !e)}
+              >
+                {expanded ? "Weniger anzeigen" : "Mehr anzeigen"}
+              </Button>
+            )}
+          </div>
         ) : (
           <p className="text-muted-foreground text-sm">
             Keine Beschreibung hinterlegt.
           </p>
         )}
-        <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-          <PencilIcon />
-          Bearbeiten
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      <Textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={8}
-        aria-label="Beschreibung"
-      />
-      <FieldError message={error} />
-      <div className="flex gap-2">
-        <Button size="sm" onClick={save} disabled={saving}>
-          {saving ? "Speichern …" : "Speichern"}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setText(value ?? "");
-            setError(null);
-            setEditing(false);
-          }}
-          disabled={saving}
-        >
-          Abbrechen
-        </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 

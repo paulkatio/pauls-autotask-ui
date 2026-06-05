@@ -5,7 +5,7 @@ import { MailIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -45,12 +45,19 @@ function initials(name: string): string {
   );
 }
 
-export function TicketChat({ ticketId }: { ticketId: number }) {
+export function TicketChat({
+  ticketId,
+  me,
+}: {
+  ticketId: number;
+  me?: { name: string; avatar: string };
+}) {
   const [messages, setMessages] = React.useState<ChatMessage[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [text, setText] = React.useState("");
   const [sending, setSending] = React.useState(false);
   const [sendError, setSendError] = React.useState<string | null>(null);
+  const [mailNotice, setMailNotice] = React.useState<string | null>(null);
   const tempId = React.useRef(-1);
 
   const load = React.useCallback(async () => {
@@ -97,6 +104,7 @@ export function TicketChat({ ticketId }: { ticketId: number }) {
     if (!body || sending) return;
     setSending(true);
     setSendError(null);
+    setMailNotice(null);
 
     // Optimistisch: temporäre Outbound-Bubble sofort anzeigen.
     const optimistic: ChatMessage = {
@@ -125,6 +133,21 @@ export function TicketChat({ ticketId }: { ticketId: number }) {
             : (j.error ?? "Senden fehlgeschlagen."),
         );
       }
+      // Notiz ist gespeichert (200). Mail-Status separat melden: Notiz darf nicht
+      // als Fehler erscheinen, nur weil die Mail nicht rausging (§6.3).
+      const j = (await res.json().catch(() => ({}))) as {
+        mail?: { attempted?: boolean; sent?: boolean; error?: string; skipped?: string };
+      };
+      const mail = j.mail;
+      if (mail) {
+        if (mail.attempted && !mail.sent) {
+          setMailNotice(
+            `Nachricht gespeichert, aber E-Mail nicht zugestellt: ${mail.error ?? "unbekannter Fehler"}`,
+          );
+        } else if (!mail.attempted && mail.skipped) {
+          setMailNotice(`Nachricht gespeichert. ${mail.skipped}`);
+        }
+      }
       await load(); // echte Notiz holen (ersetzt die optimistische).
     } catch (err) {
       setSendError(err instanceof Error ? err.message : "Senden fehlgeschlagen.");
@@ -137,17 +160,16 @@ export function TicketChat({ ticketId }: { ticketId: number }) {
 
   return (
     <Card className="h-full">
-      <CardHeader>
-        <CardTitle>Chat</CardTitle>
+      <CardHeader className="border-b">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle>Chat</CardTitle>
+          <span className="text-muted-foreground flex items-center gap-1 text-xs">
+            <MailIcon className="size-3.5" />
+            Per E-Mail zugestellt
+          </span>
+        </div>
       </CardHeader>
       <CardContent className="flex h-full flex-col gap-3">
-        <Alert>
-          <MailIcon />
-          <AlertDescription>
-            Nachrichten werden per E-Mail zugestellt.
-          </AlertDescription>
-        </Alert>
-
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -174,6 +196,11 @@ export function TicketChat({ ticketId }: { ticketId: number }) {
             <div className="flex flex-col gap-3">
               {messages.map((m) => {
                 const outbound = m.direction === "outbound";
+                // Eigenes Profilbild für Outbound-Bubbles (= unsere Seite). Notizen
+                // werden über den API-User angelegt, daher matcht der Sender-Name
+                // NICHT die angemeldete Resource – deshalb an der Richtung festmachen,
+                // nicht am Namen. Inbound (Kunde) bleibt bei Initialen.
+                const mine = outbound && !!me?.avatar;
                 return (
                   <div
                     key={m.id}
@@ -183,6 +210,7 @@ export function TicketChat({ ticketId }: { ticketId: number }) {
                     )}
                   >
                     <Avatar className="size-7">
+                      {mine && <AvatarImage src={me!.avatar} alt={m.sender} />}
                       <AvatarFallback>{initials(m.sender)}</AvatarFallback>
                     </Avatar>
                     <div
@@ -204,7 +232,9 @@ export function TicketChat({ ticketId }: { ticketId: number }) {
                         <span className="font-medium">{m.sender}</span>
                         <span>{fmt(m.createDateTime)}</span>
                       </div>
-                      <p className="text-sm whitespace-pre-wrap">{m.body}</p>
+                      <p className="text-sm break-words whitespace-pre-wrap">
+                        {m.body}
+                      </p>
                     </div>
                   </div>
                 );
@@ -216,6 +246,13 @@ export function TicketChat({ ticketId }: { ticketId: number }) {
         {sendError && (
           <Alert variant="destructive">
             <AlertDescription>{sendError}</AlertDescription>
+          </Alert>
+        )}
+
+        {mailNotice && (
+          <Alert>
+            <MailIcon />
+            <AlertDescription>{mailNotice}</AlertDescription>
           </Alert>
         )}
 

@@ -55,6 +55,7 @@ export async function TicketDetailContent({ id }: { id: number }) {
         picklists={picklists}
         notePicklists={notePicklists}
         resourceOptions={resourceOptions}
+        me={{ name: session.displayName, avatar: session.avatarUrl ?? "" }}
       />
     );
   } catch (e) {
