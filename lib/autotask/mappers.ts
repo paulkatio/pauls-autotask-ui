@@ -27,49 +27,41 @@ export type BadgeVariant =
   | "success"
   | "warning";
 
-// Ticket-Status (IDs verifiziert 2026-06-04). Ampel-Logik:
-//  rot   = Problem (eskaliert/überfällig/Reklamation)
-//  amber = wartet auf etwas
-//  primary (indigo) = aktiv in Arbeit
-//  grün  = abgeschlossen
-//  grau  = neutral/sonstiges
+// Ticket-Status (IDs verifiziert 2026-06-04). Farbsystem v2 — entschärft:
+//  destructive (rot) = Problem (eskaliert/überfällig/Reklamation) — EINZIGER lauter Status
+//  outline           = aktiv/informativ (Neu/In Bearbeitung/Servicetermin/Kundennotiz);
+//                      Schwarz (default) bleibt den Primär-Aktionen vorbehalten
+//  secondary (grau)  = erledigt/wartend/neutral (Abgeschlossen, Warte-Status, sonstiges)
 export function statusVariant(id: number | null | undefined): BadgeVariant {
   switch (id) {
     case 11: // Eskaliert
     case 18: // Fälligkeit überschritten
     case 21: // Reklamation
       return "destructive";
-    case 5: // Abgeschlossen
-      return "success";
     case 1: // Neu
     case 8: // In Bearbeitung
     case 10: // Servicetermin geplant
     case 15: // Kundennotiz hinzugefügt
-      return "default";
-    case 7: // Warten auf Kundenreaktion
-    case 9: // Warten auf Materialien
-    case 12: // Warten auf Lieferanten
-    case 13: // Warten auf Genehmigung
-    case 14: // Gelöst warten auf Kunden
-    case 17: // Warten Kundenunterschrift
-    case 20: // Warten auf ext. Support
-      return "warning";
+      return "outline";
     default:
-      return "secondary"; // RMM-Warnung geschlossen, Spätere Fälligkeit, unbekannt
+      // Abgeschlossen (5) + Warte-Status (7,9,12,13,14,17,20) + RMM-Warnung
+      // geschlossen / Spätere Fälligkeit / unbekannt: gedämpft gefüllt = "erledigt".
+      return "secondary";
   }
 }
 
-// Priorität als Ampel (Paul-Vorgabe): Niedrig=grün, Mittel=gelb/amber, Hoch=rot,
-// Kritisch=rot (stärkste Stufe).
+// Priorität (Farbsystem v2): Kritisch=rot, Hoch=schwarz (selten+bedeutsam),
+// Mittel=grau, Niedrig=outline. Quiet-Scale — nur Kritisch ist "laut".
 export function priorityVariant(id: number | null | undefined): BadgeVariant {
   switch (id) {
-    case 1: // Hoch
     case 4: // Kritisch
       return "destructive";
+    case 1: // Hoch
+      return "default";
     case 2: // Mittel
-      return "warning";
+      return "secondary";
     case 3: // Niedrig
-      return "success";
+      return "outline";
     default:
       return "secondary"; // unbekannt
   }

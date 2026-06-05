@@ -1585,4 +1585,28 @@ Chat, Kundenakte, Command-Palette) unter `docs/visual-refresh/v2/` (gitignored; 
 `scripts/shots.mjs` + `scripts/shots-kundenakte.mjs`). Hinweis: das schwebende „N" unten
 rechts in den Shots ist der Next-Dev-Tools-Indikator, keine App-UI.
 
+### [2026-06-05] Farbsystem v2 — Badge-Mapping entschärft (Status + Priorität)
+Feinschliff zu „Farbsystem v2": Status-/Prio-Badges leiser. Logik bleibt zentral in
+`lib/autotask/mappers.ts`; Komponenten + Badge-Varianten unverändert.
+- **statusVariant — nur noch EIN lauter Status:** `destructive` = Eskaliert (11) /
+  Fälligkeit überschritten (18) / Reklamation (21). `outline` = aktiv/informativ
+  (Neu 1 / In Bearbeitung 8 / Servicetermin geplant 10 / Kundennotiz 15) — Schwarz
+  (`default`) bleibt den Primär-Aktionen vorbehalten. `secondary` (gedämpft gefüllt =
+  „erledigt") = Abgeschlossen (5) + alle Warte-Status (7/9/12/13/14/17/20) + Rest.
+  **Grün/Amber raus aus dem Status.**
+- **priorityVariant:** Kritisch (4) → `destructive`; **Hoch (1) → `default` (schwarze
+  Pille — selten + bedeutsam)**; Mittel (2) → `secondary`; Niedrig (3) → `outline`.
+  **Ersetzt die frühere Ampel** (Niedrig=grün / Mittel=amber / Hoch=rot, Paul-Vorgabe
+  2026-06-04) — bewusst von Paul freigegeben (Rückfrage, da Text „unverändert" sagte,
+  der Code aber die Ampel war).
+- `--success`/`--warning`-Tokens **bleiben** (Sonner-Toasts nutzen sie); die Badge-
+  Varianten `success`/`warning` sind weiter definiert, werden von den Mappern aber
+  nicht mehr verwendet.
+- **Unterscheidbarkeit:** Status- und Prio-Spalte sind getrennt beschriftet → gleiche
+  Variante nebeneinander (z. B. `secondary` „Abgeschlossen"/„Mittel" oder `destructive`
+  „Fälligkeit überschritten"/„Kritisch") bleibt eindeutig über Spalte + Label.
+- Verifiziert: `npm run build` grün; Screenshots Hell/Dunkel/Mobile (Dashboard „Zuletzt
+  bearbeitet", Ticketliste, Kundenakte-Tabs) in `docs/visual-refresh/v2/` — nur rote
+  Badges (Alarm) stechen heraus, der Rest ist ruhig.
+
 <!-- Neue Entscheidungen hier anhängen -->
