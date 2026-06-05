@@ -1,0 +1,20 @@
+# Caddyfile-Beispiel für das Hetzner-Setup (vor den App-Container schalten).
+# Caddy übernimmt automatisches TLS (Let's Encrypt) für die Domain und proxyt
+# auf den App-Container, der auf :3000 lauscht.
+#
+# In einen bestehenden Caddy einfügen: diesen Site-Block übernehmen und die
+# Domain anpassen. Läuft der Container auf demselben Host: 127.0.0.1:3000.
+# Läuft Caddy selbst im selben Docker-Netz: den Container-Namen statt 127.0.0.1.
+
+autotask.example.com {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:3000
+    # Bei Caddy im selben Docker-Compose-Netz stattdessen:
+    # reverse_proxy autotask-ui:3000
+}
+
+# WICHTIG für den Entra-Login hinter Caddy (Non-Vercel):
+#   AUTH_URL=https://autotask.example.com   (öffentliche https-Domain)
+#   AUTH_TRUST_HOST=true
+# Redirect-URI in der Entra-App ergänzen:
+#   https://autotask.example.com/api/auth/callback/microsoft-entra-id

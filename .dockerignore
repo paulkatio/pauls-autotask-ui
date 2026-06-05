@@ -1,0 +1,30 @@
+# Build-Artefakte & Abhängigkeiten (werden im Image neu erzeugt)
+node_modules
+.next
+out
+
+# Secrets / Env – NIEMALS ins Image
+.env
+.env.*
+!.env.example
+
+# Git & CI
+.git
+.gitignore
+
+# Editor / OS / Tooling
+.vscode
+.idea
+.DS_Store
+*.log
+
+# Doku & Test-Artefakte (nicht für die Runtime nötig)
+docs
+DEPLOY.md
+README.md
+.playwright-mcp
+*.png
+
+# Docker selbst
+Dockerfile
+.dockerignore
