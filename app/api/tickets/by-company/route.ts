@@ -1,0 +1,61 @@
+import { NextResponse } from "next/server";
+
+import { getSession } from "@/lib/auth";
+import { tickets } from "@/lib/autotask/entities/tickets";
+import { AutotaskError, type AutotaskFilter } from "@/lib/autotask/client";
+
+export const dynamic = "force-dynamic";
+
+// GET /api/tickets/by-company?companyId=<n>&q=<term>
+// Tickets einer Firma für den Ziel-Picker der Zusammenführung (B26). Optional nach
+// Nummer/Titel gefiltert. Begrenzte Trefferzahl (50), keine Auto-Paginierung.
+export async function GET(req: Request) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
+  }
+  const url = new URL(req.url);
+  const companyId = Number(url.searchParams.get("companyId"));
+  const q = (url.searchParams.get("q") ?? "").trim();
+  if (!Number.isFinite(companyId)) {
+    return NextResponse.json({ error: "companyId nötig" }, { status: 400 });
+  }
+
+  const filter: AutotaskFilter[] = [
+    { op: "eq", field: "companyID", value: companyId },
+  ];
+  if (q) {
+    filter.push({
+      op: "or",
+      items: [
+        { op: "contains", field: "ticketNumber", value: q },
+        { op: "contains", field: "title", value: q },
+      ],
+    });
+  }
+
+  try {
+    const rows = await tickets.query(filter, {
+      fields: ["id", "ticketNumber", "title", "status"],
+      maxRecords: 50,
+      autoPage: false,
+    });
+    return NextResponse.json({
+      tickets: rows.map((t) => ({
+        id: t.id,
+        ticketNumber: t.ticketNumber ?? String(t.id),
+        title: t.title ?? "",
+        status: t.status,
+      })),
+    });
+  } catch (e) {
+    if (e instanceof AutotaskError) {
+      const rateLimited = e.status === 429;
+      return NextResponse.json(
+        { error: `Autotask-Fehler (${e.status})`, rateLimited },
+        { status: rateLimited ? 429 : 502 },
+      );
+    }
+    return NextResponse.json({ error: "Unerwarteter Fehler" }, { status: 500 });
+  }
+}

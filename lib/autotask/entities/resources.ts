@@ -43,6 +43,8 @@ export const resources = {
   },
 
   // Aktive interne Mitarbeiter (licenseType 1) für die Zuweisungs-Auswahl.
+  // Das System-Konto „Autotask Administrator" wird NICHT zur Auswahl angeboten
+  // (Paul: kein zuweisbarer Mitarbeiter).
   async listActive(): Promise<ResourceOption[]> {
     const rows = await autotask.query<Resource>(
       "Resources",
@@ -58,6 +60,7 @@ export const resources = {
     );
     return rows
       .map((r) => ({ id: r.id, name: fullName(r) || `#${r.id}` }))
+      .filter((o) => o.name !== "Autotask Administrator")
       .sort((a, b) => a.name.localeCompare(b.name, "de"));
   },
 

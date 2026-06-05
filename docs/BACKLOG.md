@@ -539,7 +539,14 @@ leisten flex-wrap, Suchfeld mobil volle Breite. Verifiziert Mobile. Siehe DECISI
 
 ---
 
-## B26 — Tickets zusammenführen (Link & Close) — geplant
+## B26 — Tickets zusammenführen (Link & Close) — ERLEDIGT (2026-06-05)
+**Umgesetzt:** Bulk-Aktion „Zusammenführen" (`bulk-bar.tsx`), aktiv nur bei gleicher
+Firma. Ziel aus **suchbarer Liste der Firmen-Tickets** (neuer `GET /api/tickets/
+by-company`), markierte = Quellen. Server: `entities/ticket-merge.ts` + `POST
+/api/tickets/merge` → interne Verlinkungsnotizen (noteType 2) beidseitig, Ziel-Notiz
+mit Titel+Beschreibung jeder Quelle, Quellen → Status 5. Firmen-Guard server+client.
+Verifiziert: Merge 43183→43182 (Notizen+Status), UI/Suche im Browser (Firma 0). Siehe
+DECISIONS „B26".
 **Abhängigkeit:** BULK (Mehrfachauswahl steht)
 **Befund (2026-06-05, verifiziert — DECISIONS):** Autotask REST kann nicht nativ mergen;
 Zeiteinträge NICHT umhängbar (PATCH 200, aber ignoriert), Anhänge/Checklisten RO. Daher

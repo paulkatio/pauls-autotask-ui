@@ -227,6 +227,8 @@ export function TicketsList({
       queueID: t.queueID,
       assignedResourceID: t.assignedResourceID,
       assignedResourceRoleID: t.assignedResourceRoleID,
+      companyID: t.companyID,
+      title: t.title ?? null,
     }));
   const hasSelection = selectableActive && selectedTickets.length > 0;
   const showToolbar = searchMode !== "off" || showFilters;
@@ -380,7 +382,7 @@ export function TicketsList({
                 <SelectTrigger size="sm" className="w-auto min-w-40">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="w-auto min-w-56">
                   <SelectGroup>
                     {statusItems.map((i) => (
                       <SelectItem key={i.value} value={i.value}>
@@ -399,7 +401,7 @@ export function TicketsList({
                 <SelectTrigger size="sm" className="w-auto min-w-44">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="w-auto min-w-44">
                   <SelectGroup>
                     {priorityItems.map((i) => (
                       <SelectItem key={i.value} value={i.value}>
@@ -418,7 +420,7 @@ export function TicketsList({
                 <SelectTrigger size="sm" className="w-auto min-w-48">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="w-auto min-w-52">
                   <SelectGroup>
                     {queueItems.map((i) => (
                       <SelectItem key={i.value} value={i.value}>
@@ -438,7 +440,7 @@ export function TicketsList({
                   <SelectTrigger size="sm" className="w-auto min-w-56">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="w-auto min-w-64">
                     <SelectGroup>
                       {assignmentItems.map((i) => (
                         <SelectItem key={i.value} value={i.value}>

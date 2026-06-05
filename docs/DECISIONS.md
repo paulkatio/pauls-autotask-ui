@@ -1486,4 +1486,20 @@ Schreib-Test an ZZZ-Tickets (TE 30548: 43180→43181, danach restauriert; alle c
   Nutzt nur bestehende, verifizierte Schreibpfade (`ticketNotes.createInternal` +
   Status-PATCH) — kein neuer Schreibpfad, kein Reparenting.
 
+### [2026-06-05] B26 Zusammenführen umgesetzt + Listen-Feinschliff (Paul-Feedback)
+- **B26 „Link & Close" gebaut.** Bulk-Aktion „Zusammenführen" (`bulk-bar.tsx`), erscheint
+  bei Auswahl, aktiv nur wenn alle Markierten dieselbe Firma haben. **Ziel aus einer
+  suchbaren Liste der Firmen-Tickets** (neuer Endpoint `GET /api/tickets/by-company?
+  companyId=&q=`), NICHT nur aus den Markierten (Paul-Korrektur). Markierte = Quellen.
+  Server: `lib/autotask/entities/ticket-merge.ts` + `POST /api/tickets/merge` → interne
+  Verlinkungsnotizen (noteType 2) beidseitig, Ziel-Notiz mit Titel + Beschreibung jeder
+  Quelle, Quellen → Status 5. Firmen-Guard server- UND clientseitig. Verifiziert: Merge
+  43183→43182 (Notizen + Status belegt via API); Dialog + Firmen-Trefferliste + Suche im
+  Browser an Firma 0 geprüft (read-only, ohne echte Tickets zu schließen).
+- **Zuweisen:** „Autotask Administrator" wird nicht mehr als zuweisbarer Mitarbeiter
+  angeboten (`resources.listActive` filtert den Namen raus) — gilt für Bulk/Detail/Neues Ticket.
+- **Filter-Dropdowns:** Status/Priorität/Queue/Zuweisung-Filter-`SelectContent` auf
+  `w-auto min-w-*` gesetzt → lange Status-Labels werden nicht mehr abgeschnitten
+  (`tickets-list.tsx`).
+
 <!-- Neue Entscheidungen hier anhängen -->

@@ -3,7 +3,9 @@
 import * as React from "react";
 import { toast } from "sonner";
 import {
+  CheckIcon,
   ChevronsUpDownIcon,
+  GitMergeIcon,
   Undo2Icon,
   UserPlusIcon,
   XIcon,
@@ -43,6 +45,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import type { TicketPicklists } from "@/lib/autotask/types";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 
@@ -68,6 +74,8 @@ interface SelectedTicket {
   queueID?: number | null;
   assignedResourceID?: number | null;
   assignedResourceRoleID?: number | null;
+  companyID?: number | null;
+  title?: string | null;
 }
 
 interface Pending {
@@ -89,6 +97,19 @@ interface ReverseOp {
   id: number;
   ticketNumber: string;
   body: Record<string, number | null>;
+}
+
+// Ergebnis der Zusammenführung (B26, „Link & Close").
+interface MergeSourceResult {
+  id: number;
+  ticketNumber: string;
+  ok: boolean;
+  error?: string;
+}
+interface MergeOutcome {
+  targetTicketNumber: string;
+  targetNoteCreated: boolean;
+  sources: MergeSourceResult[];
 }
 
 async function loadRoles(
@@ -214,6 +235,51 @@ export function BulkBar({
   const [done, setDone] = React.useState(0);
   const [results, setResults] = React.useState<RunResult[]>([]);
   const [undoOps, setUndoOps] = React.useState<ReverseOp[]>([]);
+
+  // Zusammenführen (B26): nur aktiv, wenn alle Ausgewählten dieselbe Firma haben.
+  const companyIds = new Set(selected.map((t) => t.companyID ?? null));
+  const sameCompany =
+    selected.length >= 1 && companyIds.size === 1 && !companyIds.has(null);
+  const [mergeOpen, setMergeOpen] = React.useState(false);
+  const [mergePhase, setMergePhase] = React.useState<"pick" | "running" | "result">(
+    "pick",
+  );
+  const [mergeTargetId, setMergeTargetId] = React.useState<number | null>(null);
+  const [mergeOutcome, setMergeOutcome] = React.useState<MergeOutcome | null>(null);
+  const [companyTickets, setCompanyTickets] = React.useState<
+    { id: number; ticketNumber: string; title: string; status?: number }[]
+  >([]);
+  const [mergeSearch, setMergeSearch] = React.useState("");
+  const [loadingTickets, setLoadingTickets] = React.useState(false);
+  const mergeCompanyId = selected[0]?.companyID ?? null;
+
+  // Ziel-Picker: Tickets der Firma laden (debounced; beim Öffnen + bei Suche).
+  React.useEffect(() => {
+    if (!mergeOpen || mergePhase !== "pick" || mergeCompanyId == null) return;
+    let cancelled = false;
+    setLoadingTickets(true);
+    const handle = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ companyId: String(mergeCompanyId) });
+        if (mergeSearch.trim()) params.set("q", mergeSearch.trim());
+        const r = await fetch(`/api/tickets/by-company?${params.toString()}`, {
+          cache: "no-store",
+        });
+        const j = (await r.json().catch(() => ({}))) as {
+          tickets?: { id: number; ticketNumber: string; title: string; status?: number }[];
+        };
+        if (!cancelled) setCompanyTickets(r.ok ? (j.tickets ?? []) : []);
+      } catch {
+        if (!cancelled) setCompanyTickets([]);
+      } finally {
+        if (!cancelled) setLoadingTickets(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [mergeOpen, mergePhase, mergeSearch, mergeCompanyId]);
 
   function startConfirm(p: Pending) {
     setPending(p);
@@ -371,6 +437,67 @@ export function BulkBar({
     undoBatch(ops, onApplied);
   }
 
+  // --- Zusammenführen (B26, „Link & Close") ---
+  function openMerge() {
+    if (!sameCompany) return;
+    setMergeTargetId(null);
+    setMergeSearch("");
+    setCompanyTickets([]);
+    setMergeOutcome(null);
+    setMergePhase("pick");
+    setMergeOpen(true);
+  }
+
+  async function runMerge() {
+    if (mergeTargetId == null) {
+      toast.error("Bitte ein Ziel-Ticket wählen.");
+      return;
+    }
+    const sourceIds = selected
+      .map((t) => t.id)
+      .filter((id) => id !== mergeTargetId);
+    if (sourceIds.length === 0) {
+      toast.error("Markiere weitere Tickets oder wähle ein anderes Ziel.");
+      return;
+    }
+    setMergePhase("running");
+    try {
+      const res = await fetch("/api/tickets/merge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId: mergeTargetId, sourceIds }),
+      });
+      const j = (await res.json().catch(() => ({}))) as MergeOutcome & {
+        error?: string;
+      };
+      if (!res.ok) throw new Error(j.error ?? "Zusammenführen fehlgeschlagen.");
+      setMergeOutcome(j);
+      setMergePhase("result");
+      const failed = (j.sources ?? []).filter((s) => !s.ok).length;
+      if (failed === 0) toast.success(`In ${j.targetTicketNumber} zusammengeführt.`);
+      else
+        toast.warning(
+          `Zusammengeführt – ${failed} Quellticket(s) fehlgeschlagen.`,
+        );
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Zusammenführen fehlgeschlagen.",
+      );
+      setMergeOpen(false);
+      setMergePhase("pick");
+    }
+  }
+
+  function closeMerge() {
+    const anyOk =
+      mergeOutcome != null &&
+      (mergeOutcome.targetNoteCreated || mergeOutcome.sources.some((s) => s.ok));
+    setMergeOpen(false);
+    setMergePhase("pick");
+    setMergeOutcome(null);
+    if (anyOk) onApplied();
+  }
+
   const statusItems = picklists.status.map((s) => ({
     label: s.label,
     value: String(s.value),
@@ -504,6 +631,21 @@ export function BulkBar({
             Mir zuweisen
           </Button>
 
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!sameCompany}
+            title={
+              sameCompany
+                ? undefined
+                : "Zusammenführen nur bei mehreren Tickets derselben Firma"
+            }
+            onClick={openMerge}
+          >
+            <GitMergeIcon />
+            Zusammenführen
+          </Button>
+
           <Button variant="ghost" size="sm" onClick={onClearSelection}>
             <XIcon />
             Auswahl aufheben
@@ -592,6 +734,140 @@ export function BulkBar({
                 <AlertDialogAction onClick={closeResult}>
                   Schließen
                 </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Zusammenführen (B26, „Link & Close") – eigener Dialog: Ziel wählen → bestätigen. */}
+      <AlertDialog
+        open={mergeOpen}
+        onOpenChange={(o) => {
+          if (mergePhase === "running") return;
+          if (!o) {
+            if (mergePhase === "result") closeMerge();
+            else setMergeOpen(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          {mergePhase === "pick" && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Tickets zusammenführen</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Die {count} markierten Tickets werden in das gewählte Ziel-Ticket
+                  zusammengeführt (geschlossen + dort verlinkt). Ziel aus den Tickets
+                  dieser Firma wählen. Zeiteinträge und Anhänge bleiben am jeweiligen
+                  Quellticket.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium">Ziel-Ticket (dieser Firma)</span>
+                <Input
+                  value={mergeSearch}
+                  onChange={(e) => setMergeSearch(e.target.value)}
+                  placeholder="Ticket der Firma suchen (Nummer/Titel) …"
+                  aria-label="Ziel-Ticket suchen"
+                />
+                <ScrollArea className="h-56 rounded-md border">
+                  <div className="flex flex-col">
+                    {loadingTickets ? (
+                      <span className="text-muted-foreground p-3 text-sm">Lädt …</span>
+                    ) : companyTickets.length === 0 ? (
+                      <span className="text-muted-foreground p-3 text-sm">
+                        Keine Tickets gefunden.
+                      </span>
+                    ) : (
+                      companyTickets.map((t) => {
+                        const isSel = t.id === mergeTargetId;
+                        const isSource = selected.some((s) => s.id === t.id);
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setMergeTargetId(t.id)}
+                            aria-pressed={isSel ? "true" : "false"}
+                            className={cn(
+                              "hover:bg-accent flex items-center justify-between gap-2 px-3 py-2 text-left text-sm",
+                              isSel && "bg-accent",
+                            )}
+                          >
+                            <span className="flex min-w-0 flex-col">
+                              <span className="font-medium tabular-nums">
+                                {t.ticketNumber}
+                              </span>
+                              <span className="text-muted-foreground truncate">
+                                {t.title || "—"}
+                              </span>
+                            </span>
+                            <span className="flex shrink-0 items-center gap-2">
+                              {isSource && <Badge variant="outline">markiert</Badge>}
+                              {isSel && <CheckIcon className="size-4" />}
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
+                <span className="text-muted-foreground text-xs">
+                  {mergeTargetId == null
+                    ? "Bitte Ziel-Ticket wählen."
+                    : `${selected.filter((s) => s.id !== mergeTargetId).length} markierte(s) Ticket(s) werden zusammengeführt.`}
+                </span>
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                <AlertDialogAction onClick={runMerge}>
+                  Zusammenführen
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+
+          {mergePhase === "running" && (
+            <AlertDialogHeader>
+              <AlertDialogTitle>Wird zusammengeführt …</AlertDialogTitle>
+              <AlertDialogDescription>
+                Quelltickets werden verlinkt und geschlossen.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+          )}
+
+          {mergePhase === "result" && mergeOutcome && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Zusammengeführt</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Ziel: {mergeOutcome.targetTicketNumber}.{" "}
+                  {mergeOutcome.sources.filter((s) => s.ok).length} von{" "}
+                  {mergeOutcome.sources.length} Quelltickets geschlossen.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              {mergeOutcome.sources.some((s) => !s.ok) && (
+                <Alert variant="destructive">
+                  <AlertTitle>Fehlgeschlagene Quelltickets</AlertTitle>
+                  <AlertDescription>
+                    <ul className="flex flex-col gap-1">
+                      {mergeOutcome.sources
+                        .filter((s) => !s.ok)
+                        .map((s) => (
+                          <li key={s.id}>
+                            <span className="font-medium tabular-nums">
+                              {s.ticketNumber}
+                            </span>
+                            {": "}
+                            {s.error}
+                          </li>
+                        ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+              <AlertDialogFooter>
+                <AlertDialogAction onClick={closeMerge}>Schließen</AlertDialogAction>
               </AlertDialogFooter>
             </>
           )}
