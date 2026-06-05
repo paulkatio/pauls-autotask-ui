@@ -571,6 +571,35 @@ beidseitig verlinkt, Ziel zeigt die Quell-Inhalte; cross-Firma blockiert; an ZZZ
 
 ---
 
+## B27 — PWA-Basis: installierbar als Web-App (kein Service Worker) — ERLEDIGT (2026-06-05)
+**Abhängigkeit:** —
+**Umgesetzt:** `app/manifest.ts` (`MetadataRoute.Manifest`: „SSIG-IT Tickets", `start_url`/
+`scope` „/", `display` standalone, `background_color`/`theme_color` Eggshell aus v2-Token);
+adaptive `theme_color` Hell/Dunkel über `viewport`-Export (media-Queries, Hell `#fdfcfb` /
+Dunkel `#13100e`). Icons aus dem App-Logo generiert (`scripts/generate-pwa-icons.mjs`, sharp):
+`/public/icon-192`, `icon-512`, `icon-maskable-512` (purpose maskable, 72 % Sicherheitsrand),
+`apple-touch-icon` 180×180; im Layout `apple-touch-icon` + `appleWebApp` verdrahtet, Manifest-
+Link fügt Next automatisch ein. **Bewusst OHNE Service Worker / Offline** (Live-Daten-Tool).
+Verifiziert: `npm run build` grün; `/manifest.webmanifest` 200 (`application/manifest+json`);
+`start_url "/"` für nicht eingeloggte Nutzer → **307 → /login** (kein Fehlerstatus); in Chrome
+feuert `beforeinstallprompt` (= installierbar, 0 Service Worker). Siehe DECISIONS „PWA-Basis
+ohne Service Worker".
+**Fertig wenn:** Build grün, Manifest ohne Warnungen + installierbar, Icons/Theme Hell+Dunkel,
+start_url redirectet sauber. ✓ — **Offen (Cutover):** echter iPhone-/Android-Installtest
+(braucht HTTPS-Hosting).
+
+## B28 — Push-Benachrichtigungen (optional, später)
+**Abhängigkeit:** B27 (PWA-Basis), HTTPS-Hosting (Cutover).
+**Ziel:** Benachrichtigung bei relevanten Ticket-Ereignissen (z. B. neue Kundenantwort,
+Zuweisung) auch bei geschlossener App.
+**Hinweis:** Web-Push **erfordert einen Service Worker** — der ist in B27 bewusst nicht
+vorhanden. Dieser Punkt würde diese Entscheidung gezielt für den Push-Pfad aufweichen
+(SW nur für Push/Notifications, weiterhin kein Offline-Datencache). Erst nach Rücksprache.
+**Offen:** VAPID-Keys/Versanddienst, iOS-Eignung (Safari-Web-Push nur für installierte PWAs),
+Opt-in-UX. Kein MVP-Ziel.
+
+---
+
 ### Wenn du unsicher bist
 Bei einem Befund, der den Plan umwirft, oder bei fehlenden Zugangsdaten/Werten:
 **stoppen, in DECISIONS.md notieren, Paul fragen.** Nicht eigenmächtig eine andere

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -17,6 +17,28 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Autotask UI",
   description: "Fokussierte Oberfläche für Autotask-Tickets",
+  // Next fügt das <link rel="manifest"> aus app/manifest.ts automatisch ein.
+  // favicon.ico kommt aus app/favicon.ico (Datei-Konvention). Hier nur das
+  // iOS-Homescreen-Icon ergänzen (liest Apple nicht aus dem Manifest).
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
+  // Standalone-Verhalten auf iOS (Homescreen-Start ohne Safari-Chrome).
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Tickets",
+  },
+};
+
+// theme_color adaptiv für Hell/Dunkel (v2-Token). Das Manifest erlaubt nur
+// einen statischen Wert; die media-Queries hier passen die Browser-/Statusleiste
+// an das aktive Schema an. Hell = Eggshell, Dunkel = warmes Fast-Schwarz.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fdfcfb" },
+    { media: "(prefers-color-scheme: dark)", color: "#13100e" },
+  ],
 };
 
 export default function RootLayout({

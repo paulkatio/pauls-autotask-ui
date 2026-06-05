@@ -1622,4 +1622,39 @@ Feinschliff zu „Farbsystem v2": Status-/Prio-Badges leiser. Logik bleibt zentr
   bearbeitet", Ticketliste, Kundenakte-Tabs) in `docs/visual-refresh/v2/` — nur rote
   Badges (Alarm) stechen heraus, der Rest ist ruhig.
 
+### [2026-06-05] PWA-Basis ohne Service Worker (bewusst) — installierbar
+Die App ist als Web-App installierbar (Homescreen, Standalone), **bewusst ohne
+Service Worker und ohne Offline-Modus**. Begründung: Es ist ein **Live-Daten-
+Werkzeug** gegen die Autotask-API; ein Offline-/Cache-Layer würde veraltete
+Ticketstände anzeigen — schädlicher als nützlich. (Backlog **B28** hält die spätere
+optionale Push-Erweiterung fest; Web-Push würde einen SW erfordern und diese
+Entscheidung gezielt nur für den Push-Pfad aufweichen.)
+- **Manifest:** `app/manifest.ts` (`MetadataRoute.Manifest`). `id`/`start_url`/
+  `scope` = „/", `display` = `standalone`, `name` „SSIG-IT Tickets" /
+  `short_name` „Tickets". Next serviert es als `/manifest.webmanifest` und fügt
+  den `<link rel="manifest">` automatisch ein.
+- **Farben aus v2-Token:** `background_color`/`theme_color` statisch = Eggshell
+  `#fdfcfb` (Manifest erlaubt nur einen Wert). Adaptive Hell/Dunkel-Umschaltung
+  der Browser-/Statusleiste über den **`viewport`-Export** in `app/layout.tsx`
+  (media-Queries: Hell `#fdfcfb`, Dunkel `#13100e` = `--background` der Themes).
+- **Icons:** reproduzierbar aus dem App-Logo (`public/autotask-logo.png`, Marken-
+  orange `#fc573b`) via `scripts/generate-pwa-icons.mjs` (sharp) → `/public`:
+  `icon-192`, `icon-512` (purpose `any`, Full-Bleed), `icon-maskable-512`
+  (purpose `maskable`, Zeichen auf 72 % skaliert für die zentrale Sicherheitszone),
+  `apple-touch-icon` 180×180. Im Layout zusätzlich `icons.apple` + `appleWebApp`
+  (capable, Titel „Tickets") für iOS-Standalone. `favicon.ico` bleibt
+  Datei-Konvention (`app/favicon.ico`).
+- **start_url-Verhalten:** `"/"` liegt in der `(app)`-Gruppe → `requireSession()`
+  → für nicht eingeloggte Nutzer **HTTP 307 → `/login`** (kein Fehlerstatus,
+  Anforderung erfüllt). `/login` = 200.
+- **Verifiziert (2026-06-05, lokal `next start`):** `npm run build` grün;
+  `/manifest.webmanifest` → 200, `content-type: application/manifest+json`, alle
+  Pflichtfelder + Icons (192/512/maskable) laden 200; Head enthält Manifest-Link,
+  zwei `theme-color`-Metas (light/dark) und `apple-touch-icon`. In Chrome (DevTools-
+  MCP) feuert **`beforeinstallprompt`** bei `serviceWorkers === 0` ⇒ Engine stuft
+  die App als **installierbar** ein, ganz ohne Service Worker.
+- **Offen (Cutover):** echter Installtest auf iPhone/Android wird nachgeholt — der
+  braucht HTTPS-Hosting (Vercel), lokal `next start` ist `http://localhost` (zwar
+  „secure context", aber kein Mobilgerät im Test).
+
 <!-- Neue Entscheidungen hier anhängen -->
