@@ -1520,16 +1520,18 @@ Schreib-Test an ZZZ-Tickets (TE 30548: 43180→43181, danach restauriert; alle c
   bereits nach einer Person gefiltert sind (Chart-Klick `?resource=`).
 - **Stoppuhr:** Stop-Button entfernt (nur Play/Pause; „Zeit erfassen" hält an).
 
-### [2026-06-05] B26 Korrektur: Zusammenführen = verlinken, NICHT schließen (Paul)
-„Zusammenführen heißt nicht schließen." **Überschreibt die frühere „Link & Close"-
-Entscheidung:** Quelltickets werden beim Merge **nicht mehr auf Status 5 gesetzt** — es
-ändert sich **KEIN Status** (weder Quelle noch Ziel). Der Merge legt nur die beidseitigen
-internen Verlinkungsnotizen an (Ziel-Notiz mit Titel + Beschreibung der Quellen). Der
-`autotask.update`-Status-Schritt wurde aus `ticket-merge.ts` entfernt; Dialog-/Ergebnis-
-Text „verknüpft" statt „geschlossen". Verifiziert (ZZZ 43180, offen): vor Merge Status 8 →
-nach Merge weiter 8. Dialog zudem breiter (`max-w-xl` 576px) + Listen-Überlauf behoben
-(Picker-Buttons `w-full min-w-0`, Titel trunkieren); AlertDialog sichtbarer
-(`shadow-lg` + `ring/20` + Overlay `bg-black/30`); Icon `GitMerge`→`Merge`.
+### [2026-06-05] B26 final: Merge schließt die Quelltickets — wie natives Autotask (recherchiert)
+**Korrigiert eine kurzzeitige Fehlannahme** („nicht schließen"). Web-Recherche (Datto-PSA
+„Merging tickets" + GitHub `ecitsolutions/Autotask#56`): Das native Autotask-Merge setzt
+die **Quell-/„merged"-Tickets auf ABGESCHLOSSEN (Status 5)** und lässt das **Ziel-/
+„absorber"-Ticket UNVERÄNDERT**; beidseitige System-Notizen, die Quell-Beschreibung landet
+im Ziel. **Keine REST-Merge-Funktion** → wir emulieren genau dieses Verhalten
+(`ticket-merge.ts`: `createInternal`-Notizen + `autotask.update status:5` für die Quellen).
+Zeit-/Anhang-Reparenting per API unmöglich → bleiben am abgeschlossenen Quellticket.
+Verifiziert (ZZZ 43180): offen 8 → Merge → 5 (danach zurückgesetzt). Dialog breiter
+(`max-w-xl` 576) + Listen-Überlauf behoben (Buttons `w-full min-w-0`); AlertDialog sichtbarer
+(`shadow-lg`/`ring/20`/Overlay `bg-black/30`); Icon `Merge`. Nativ **irreversibel**; nicht
+mergebar bei gebuchten Zeiteinträgen / Problem / Change / >1000 Anhängen (wir erzwingen das nicht).
 
 ### [2026-06-05] Farbsystem v2 — warm-achromatisch nach ElevenLabs-Vorbild
 **Ersetzt die bisherige Indigo-Entscheidung** (Memory `design-system-indigo`,

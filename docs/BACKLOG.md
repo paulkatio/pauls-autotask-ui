@@ -545,8 +545,8 @@ leisten flex-wrap, Suchfeld mobil volle Breite. Verifiziert Mobile. Siehe DECISI
 Firma. Ziel aus **suchbarer Liste der Firmen-Tickets** (neuer `GET /api/tickets/
 by-company`), markierte = Quellen. Server: `entities/ticket-merge.ts` + `POST
 /api/tickets/merge` → interne Verlinkungsnotizen (noteType 2) beidseitig, Ziel-Notiz
-mit Titel+Beschreibung jeder Quelle. KEIN Statuswechsel — verlinken ≠ schließen (Paul,
-2026-06-05). Firmen-Guard server+client.
+mit Titel+Beschreibung jeder Quelle; **Quellen → Abgeschlossen (5), Ziel unverändert —
+wie natives Autotask-Merge** (recherchiert: Datto-PSA + GitHub#56). Firmen-Guard server+client.
 Verifiziert: Merge 43183→43182 (Notizen+Status), UI/Suche im Browser (Firma 0). Siehe
 DECISIONS „B26".
 **Abhängigkeit:** BULK (Mehrfachauswahl steht)
