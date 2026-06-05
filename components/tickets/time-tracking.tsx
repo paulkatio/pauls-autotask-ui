@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ClockIcon, PauseIcon, PlayIcon, SquareIcon, TimerIcon } from "lucide-react";
+import { ClockIcon, PauseIcon, PlayIcon, TimerIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { TimeEntryDialog } from "@/components/tickets/time-entry-dialog";
@@ -115,16 +115,6 @@ export function TimeTracking({ ticketId }: { ticketId: number }) {
       >
         {running ? <PauseIcon /> : <PlayIcon />}
       </Button>
-      {/* Stopp (immer neben Play, gleiches Format; lucide SquareIcon): anhalten + reset. */}
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={reset}
-        aria-label="Stoppuhr stoppen und zurücksetzen"
-      >
-        <SquareIcon />
-      </Button>
-
       <Button onClick={openDialog}>
         <ClockIcon />
         Zeit erfassen
