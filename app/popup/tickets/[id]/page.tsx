@@ -14,7 +14,8 @@ export async function generateMetadata({
   return ticketMetadata(Number(id));
 }
 
-export default async function TicketDetailPage({
+// Ticketdetail im eigenen Browser-Fenster (Pop-out), OHNE Sidebar.
+export default async function PopupTicketPage({
   params,
 }: {
   params: Promise<{ id: string }>;

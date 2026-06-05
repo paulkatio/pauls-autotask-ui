@@ -20,7 +20,7 @@ function openRecordPopup(path: string, name: string): void {
 }
 
 export function openTicketPopup(id: number): void {
-  openRecordPopup(`/tickets/${id}`, `ticket-${id}`);
+  openRecordPopup(`/popup/tickets/${id}`, `ticket-${id}`);
 }
 
 export function openCompanyPopup(id: number): void {
