@@ -59,7 +59,23 @@ export function TableSkeleton({
   minWidthClass?: string;
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <>
+    {/* Mobile: Karten-Skeletons (spiegeln das Karten-Layout der Listen unter md). */}
+    <div className="flex flex-col gap-2 md:hidden">
+      {Array.from({ length: Math.min(rows, 6) }).map((_, r) => (
+        <div key={r} className="flex flex-col gap-2 rounded-lg border p-3">
+          <div className="flex items-center justify-between gap-2">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-4 w-10" />
+          </div>
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-1/3" />
+        </div>
+      ))}
+    </div>
+
+    {/* Desktop: echte Tabellen-Struktur. */}
+    <div className="hidden overflow-x-auto rounded-lg border md:block">
       <Table className={minWidthClass}>
         <TableHeader>
           <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -93,13 +109,14 @@ export function TableSkeleton({
         </TableBody>
       </Table>
     </div>
+    </>
   );
 }
 
 // KPI-Kacheln im exakt gleichen Karten-Raster wie Dashboard/Kundenakte.
 export function KpiTilesSkeleton({
   count = 4,
-  gridClassName = "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4",
+  gridClassName = "grid grid-cols-2 gap-4 lg:grid-cols-4",
 }: {
   count?: number;
   gridClassName?: string;

@@ -48,6 +48,7 @@ export function SearchableTable<T extends { id: number | string }>({
   emptyDescription,
   minWidthClass = "min-w-2xl",
   storageKey,
+  mobileCard,
 }: {
   rows: T[];
   columns: Column<T>[];
@@ -62,6 +63,9 @@ export function SearchableTable<T extends { id: number | string }>({
   minWidthClass?: string;
   // Eindeutiger Schlüssel für die persistierte Spaltenreihenfolge (Drag & Drop).
   storageKey: string;
+  // Optionaler, massgeschneiderter Karteninhalt für Mobile. Ohne Angabe wird aus
+  // den Spalten eine generische Karte gebaut (erste Spalte = Titel, Rest Label/Wert).
+  mobileCard?: (row: T) => React.ReactNode;
 }) {
   const router = useRouter();
   const [q, setQ] = React.useState("");
@@ -123,7 +127,45 @@ export function SearchableTable<T extends { id: number | string }>({
           </EmptyHeader>
         </Empty>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <>
+        {/* Mobile-First: unter md je Zeile eine Karte (kein Querscrollen). */}
+        <div className="flex flex-col gap-2 md:hidden">
+          {filtered.map((row) => (
+            <div
+              key={String(row.id)}
+              {...(handleRow
+                ? { role: "button" as const, tabIndex: 0, onClick: () => handleRow(row) }
+                : {})}
+              className={cn(
+                "flex flex-col gap-1.5 rounded-lg border p-3",
+                handleRow &&
+                  "hover:bg-muted/50 active:bg-muted cursor-pointer transition-colors",
+              )}
+            >
+              {mobileCard
+                ? mobileCard(row)
+                : orderedColumns.map((c, i) =>
+                    i === 0 ? (
+                      <div key={c.key} className="text-sm font-medium break-words">
+                        {c.cell(row)}
+                      </div>
+                    ) : (
+                      <div
+                        key={c.key}
+                        className="flex items-center justify-between gap-3 text-sm"
+                      >
+                        <span className="text-muted-foreground text-xs">
+                          {c.header}
+                        </span>
+                        <span className="min-w-0 text-right">{c.cell(row)}</span>
+                      </div>
+                    ),
+                  )}
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto rounded-lg border md:block">
           <Table className={cn(minWidthClass)}>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -159,6 +201,7 @@ export function SearchableTable<T extends { id: number | string }>({
             </TableBody>
           </Table>
         </div>
+        </>
       )}
     </div>
   );

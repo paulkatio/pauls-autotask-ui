@@ -243,7 +243,36 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
           </EmptyHeader>
         </Empty>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <>
+        {/* Mobile-First: unter md je Kontakt eine Karte (kein Querscrollen). */}
+        <div className="flex flex-col gap-2 md:hidden">
+          {sorted.map((c) => (
+            <div
+              key={c.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => openContactModal(c.id)}
+              className="hover:bg-muted/50 active:bg-muted flex flex-col gap-1 rounded-lg border p-3 transition-colors"
+            >
+              <span className="text-sm font-medium break-words">{c.name}</span>
+              {c.companyName && (
+                <span className="text-muted-foreground text-xs">{c.companyName}</span>
+              )}
+              {c.email && (
+                <span className="text-muted-foreground text-xs break-all">
+                  {c.email}
+                </span>
+              )}
+              {c.phone && (
+                <span className="text-muted-foreground text-xs tabular-nums">
+                  {c.phone}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto rounded-lg border md:block">
           <Table className="min-w-2xl">
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -274,6 +303,7 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
             </TableBody>
           </Table>
         </div>
+        </>
       )}
     </div>
   );

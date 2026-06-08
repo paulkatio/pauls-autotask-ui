@@ -292,7 +292,39 @@ export function CompaniesTable({
           </EmptyHeader>
         </Empty>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <>
+        {/* Mobile-First: unter md je Firma eine Karte (kein Querscrollen). */}
+        <div className="flex flex-col gap-2 md:hidden">
+          {filtered.map((c) => (
+            <div
+              key={c.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => openCompanyPopup(c.id)}
+              className="hover:bg-muted/50 active:bg-muted flex flex-col gap-1.5 rounded-lg border p-3 transition-colors"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-sm font-medium break-words">{c.name}</span>
+                {c.openTickets > 0 && (
+                  <Badge variant="secondary" className="shrink-0 tabular-nums">
+                    {openCapped ? "~" : ""}
+                    {c.openTickets}
+                  </Badge>
+                )}
+              </div>
+              <span className="text-muted-foreground text-xs">
+                {[c.city, companyTypeLabel(c.companyType)].filter(Boolean).join(" · ")}
+              </span>
+              {c.phone && (
+                <span className="text-muted-foreground text-xs tabular-nums">
+                  {c.phone}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto rounded-lg border md:block">
           <Table className="min-w-2xl">
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -324,6 +356,7 @@ export function CompaniesTable({
             </TableBody>
           </Table>
         </div>
+        </>
       )}
     </div>
   );
