@@ -26,7 +26,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { TicketsList } from "@/components/tickets/tickets-list";
+import { RecentlyEdited } from "@/components/dashboard/recently-edited";
 import { PageHeader } from "@/components/page-header";
 
 export const dynamic = "force-dynamic";
@@ -85,11 +85,9 @@ export default async function DashboardPage() {
   try {
     const [kpis, recent, perResource] = await Promise.all([
       getDashboardKpis(rid),
-      getRecentlyEdited(10),
+      getRecentlyEdited(),
       getTicketsPerResource(),
     ]);
-
-    const listFilters = { status: "open", priority: "", queue: "" };
 
     return (
       <div className="flex flex-col gap-6">
@@ -132,19 +130,7 @@ export default async function DashboardPage() {
 
         <CountBarChart title="Tickets pro Mitarbeiter" data={perResource} />
 
-        <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold tracking-tight">Zuletzt bearbeitet</h2>
-          <TicketsList
-            data={{ items: recent, nextCursor: null, prevCursor: null }}
-            picklists={picklists}
-            filters={listFilters}
-            columns={{ assigned: true }}
-            showFilters={false}
-            showPager={false}
-            searchMode="off"
-            emptyDescription="Keine kürzlich bearbeiteten Tickets."
-          />
-        </section>
+        <RecentlyEdited rows={recent} picklists={picklists} />
       </div>
     );
   } catch (e) {

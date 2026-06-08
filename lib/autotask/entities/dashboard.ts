@@ -221,14 +221,18 @@ const RECENT_FIELDS = [
   "lastActivityDate",
 ];
 
-const RECENT_WINDOW_DAYS = 14;
+// 7 Tage = größtes Filterfenster der Dashboard-Liste („Heute / 3 / 7 Tage").
+// Wir holen das volle 7-Tage-Fenster und lassen den Client je Auswahl eingrenzen.
+const RECENT_WINDOW_DAYS = 7;
 
 // "Zuletzt aktiv" über ALLE Tickets (auch fremde / nicht zugewiesene), nicht nur
 // die eigenen. Serverseitiges Sortieren unterstützt Autotask NICHT (sort wird
 // ignoriert). Daher per lastActivityDate-Fenster (letzte RECENT_WINDOW_DAYS Tage)
 // eingrenzen, EINE Seite (≤500) holen, client-seitig nach lastActivityDate
 // absteigend sortieren, Top N. Firmen- UND Zugewiesen-Namen gebündelt auflösen.
-export async function getRecentlyEdited(limit = 10): Promise<TicketListRow[]> {
+// limit = Obergrenze der zurückgegebenen Zeilen (der Client filtert daraus nach
+// Heute/3/7 Tagen). Großzügig (50), damit „Heute" auch bei viel Aktivität reicht.
+export async function getRecentlyEdited(limit = 50): Promise<TicketListRow[]> {
   const since = new Date(
     Date.now() - RECENT_WINDOW_DAYS * 24 * 3600 * 1000,
   ).toISOString();
