@@ -34,7 +34,7 @@ export function HeaderSearch() {
           Suche …
         </span>
         <kbd className="bg-muted text-muted-foreground pointer-events-none flex h-5 items-center gap-0.5 rounded border px-1.5 text-xs font-medium tabular-nums">
-          {isMac ? "⌘" : "Strg"} K
+          {isMac ? "⌘" : "Strg"} + K
         </kbd>
       </Button>
 
