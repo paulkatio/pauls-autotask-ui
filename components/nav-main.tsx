@@ -38,7 +38,9 @@ export function NavMain({ items }: { items: NavItem[] }) {
               // erkennbar wo man ist, AA-konform in Hell UND Dunkel); Hover bleibt
               // neutral (sidebar-accent). Nur semantische Tokens + Opacity-
               // Utilities, kein erfundenes CSS. Farbsystem v2 (warm-achromatisch).
-              className="transition-colors data-active:bg-primary/10 data-active:hover:bg-primary/15 data-active:[&>svg]:text-primary"
+              // Komfortable Touch-Ziele: etwas höher (h-10) + größeres Icon + mehr
+              // Abstand. Im eingeklappten Icon-Modus erzwingt sidebar.tsx weiter 8er-Quadrate.
+              className="h-10 gap-3 transition-colors data-active:bg-primary/10 data-active:hover:bg-primary/15 [&>svg]:size-5 data-active:[&>svg]:text-primary"
               render={<Link href={item.url} />}
             >
               <item.icon />
