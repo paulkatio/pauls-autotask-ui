@@ -243,7 +243,9 @@ export function CommandPalette() {
         </div>
 
         {!hasQuery ? (
-          <div className="p-2">
+          // „Springen zu"-Vorschläge nur ab sm; auf Mobile bleibt bei leerer
+          // Suche nur die Suchleiste (Paul-Feedback).
+          <div className="hidden p-2 sm:block">
             <p className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
               Springen zu
             </p>
