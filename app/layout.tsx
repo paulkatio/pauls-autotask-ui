@@ -46,11 +46,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // scrollbar-gutter:stable reserviert die Scrollbar-Spalte dauerhaft → kein
+  // Breiten-Sprung, wenn sich die Inhaltshöhe ändert (z. B. Dashboard-Zeitraum)
+  // oder ein Overlay den Scroll kurz sperrt.
   return (
     <html
       lang="de"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased [scrollbar-gutter:stable]`}
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider
