@@ -18,6 +18,8 @@ Die App ist ein **Backend-for-Frontend (BFF)** vor der Autotask REST API: Der Br
 spricht ausschließlich mit internen `/api`-Routen dieser App; die Autotask-Zugangsdaten
 bleiben **immer** serverseitig.
 
+![Autotask UI – Dashboard](docs/screenshot.png)
+
 > 📖 **Einstieg für Mensch & KI:** [`docs/STATE.md`](docs/STATE.md) – Stand, Architektur,
 > Features, Weichen, Cutover-Lücken, alles selbsterklärend.
 
@@ -57,18 +59,20 @@ Tests: Playwright.
 
 ## Architektur
 
-```
-Browser (Client Components)
-   │  fetch('/api/...')                    Server Components
-   ▼                                           │  direkter Aufruf
-app/api/**/route.ts  ─────────►  lib/autotask/entities/<entity>.ts
-(getSession + Feld-Whitelist)                  │  (dünne Wrapper)
-                                               ▼
-                                  lib/autotask/client.ts  (server-only)
-                                  Limiter (2/Entität) · 429-Backoff · Paging
-                                               │  Creds nur aus process.env
-                                               ▼
-                                  Autotask REST API
+```mermaid
+flowchart TD
+    B["Browser · Client Components"]
+    SC["Server Components"]
+    R["app/api/**/route.ts<br/>getSession + Feld-Whitelist"]
+    E["lib/autotask/entities/entity.ts<br/>dünne Wrapper"]
+    C["lib/autotask/client.ts · server-only<br/>Limiter 2/Entität · 429-Backoff · Paging"]
+    AT["Autotask REST API"]
+
+    B -->|"fetch('/api/...')"| R
+    SC -->|"direkter Aufruf"| E
+    R --> E
+    E --> C
+    C -->|"Creds nur aus process.env"| AT
 ```
 
 Details: [`docs/STATE.md`](docs/STATE.md) (§3 Datenfluss) und
@@ -201,7 +205,6 @@ docs/             STATE, DECISIONS, BACKLOG, BLUEPRINT, ARCHITECTURE, PHASE-0
 ## Dokumentation
 
 - **[`docs/STATE.md`](docs/STATE.md)** — Stand, Architektur, Features, Weichen, Cutover (Start hier).
-- [`CLAUDE.md`](CLAUDE.md) — verbindliche Projektregeln (Stack, Verbote, Auth, Disziplin).
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — verifizierte API-Fakten + Entscheidungs-Historie.
 - [`docs/BACKLOG.md`](docs/BACKLOG.md) · [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) ·
   [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`DEPLOY.md`](DEPLOY.md) ·

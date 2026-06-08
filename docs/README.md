@@ -9,7 +9,7 @@ Architektur, Features, Weichen, Env, Cutover-Lücken, alles selbsterklärend.
 ## Was wo steht
 
 - **[`STATE.md`](STATE.md)** — autoritativer Projekt-Stand & Handoff (Start hier).
-- [`../CLAUDE.md`](../CLAUDE.md) — verbindliche Regeln (Stack, Verbote, Auth-Architektur,
+- `../CLAUDE.md` — verbindliche Regeln (Stack, Verbote, Auth-Architektur,
   Arbeitsdisziplin). Wird bei jedem Claude-Code-Start gelesen.
 - [`DECISIONS.md`](DECISIONS.md) — verifizierte API-Fakten + Entscheidungs-Historie
   (chronologisch, groß). Das Detailgedächtnis; `STATE.md` ist die Zusammenfassung.

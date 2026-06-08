@@ -5,7 +5,7 @@ wie sie gebaut ist, was funktioniert, wo die Weichen stehen und was vor dem
 Produktiv-Cutover noch fehlt. Tiefere Details und die Begründungen stehen in den
 verlinkten Dateien.
 
-- **Regeln (verbindlich):** [`../CLAUDE.md`](../CLAUDE.md) – Verfassung des Projekts.
+- **Regeln (verbindlich):** `../CLAUDE.md` – Verfassung des Projekts.
 - **Verifizierte API-Fakten + Entscheidungs-Historie:** [`DECISIONS.md`](DECISIONS.md) (groß, chronologisch).
 - **Aufgabenliste / Status je Item:** [`BACKLOG.md`](BACKLOG.md).
 - **Fachlicher Bauplan:** [`BLUEPRINT.md`](BLUEPRINT.md). **Repo-Karte:** [`ARCHITECTURE.md`](ARCHITECTURE.md).

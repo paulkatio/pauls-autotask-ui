@@ -5,7 +5,7 @@ müssen aber zu den festgelegten Regeln passen.
 
 ## Verbindliche Regeln
 
-Die **Verfassung** des Projekts ist [`CLAUDE.md`](CLAUDE.md) – bitte zuerst lesen. Kurz:
+Die **Verfassung** des Projekts ist `CLAUDE.md` – bitte zuerst lesen. Kurz:
 
 - **UI ausschließlich aus shadcn/ui + semantischen Tailwind-Tokens.** Keine weitere
   UI-Library, kein frei gemaltes Design, keine arbitrary Tailwind-Values (`[..]`) außer in
