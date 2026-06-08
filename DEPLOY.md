@@ -54,8 +54,9 @@ AUTH_TRUST_HOST=true                     # nötig hinter Caddy/Non-Vercel
 ## (a) Docker + Hetzner hinter Caddy
 
 ```bash
-# Image bauen
-docker build -t autotask-ui .
+# Image bauen (eigene Marke optional als BUILD-ARG einbacken; NEXT_PUBLIC_* wird
+# zur Build-Zeit eingebettet – ohne ARG bleibt der Default "Acme GmbH"):
+docker build -t autotask-ui --build-arg NEXT_PUBLIC_ORG_NAME=SSIG-IT .
 
 # Container starten – Env aus einer Datei (NICHT committen) injizieren
 docker run -d --name autotask-ui \
@@ -65,8 +66,13 @@ docker run -d --name autotask-ui \
   autotask-ui
 ```
 
+> **Lokal getestet (2026-06-08):** `docker build` + `docker run` laufen sauber;
+> `GET /login` → `HTTP 200`, `GET /` → `307` (Redirect zum Login). Branding über
+> `--build-arg` greift; ohne Arg erscheint „Acme GmbH".
+
 - Das Image enthält **keine** Secrets; `prod.env` (mit obigen Variablen) bleibt auf
-  dem Server und wird zur Laufzeit gelesen.
+  dem Server und wird zur Laufzeit gelesen. `NEXT_PUBLIC_ORG_NAME` wirkt nur zur
+  **Build-Zeit** (Branding) — zur Laufzeit nicht mehr änderbar.
 - Container nur an `127.0.0.1:3000` binden – öffentlich erreichbar macht ihn erst
   Caddy.
 - **Caddy** (TLS + Reverse-Proxy): siehe `Caddyfile.example`. Im Entra-Modus

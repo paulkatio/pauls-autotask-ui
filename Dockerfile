@@ -16,7 +16,15 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+# Branding wird zur BUILD-Zeit eingebettet (NEXT_PUBLIC_*). Ohne --build-arg bleibt
+# der Default aus lib/branding.ts ("Acme GmbH"). Eigene Marke:
+#   docker build --build-arg NEXT_PUBLIC_ORG_NAME=SSIG-IT ...
+ARG NEXT_PUBLIC_ORG_NAME
+ENV NEXT_PUBLIC_ORG_NAME=$NEXT_PUBLIC_ORG_NAME
+# AUTH_SECRET nur für DIESEN Build-Schritt setzen (Auth.js erwartet es beim Build).
+# Inline statt ENV-Layer → kein Persistieren im Image, keine Secret-Lint-Warnung;
+# das echte Secret wird zur Laufzeit injiziert.
+RUN AUTH_SECRET=build-only-dummy-not-used-at-runtime npm run build
 
 # 3) Runtime (schlank, non-root)
 FROM node:22-alpine AS runner
