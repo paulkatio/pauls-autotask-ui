@@ -19,6 +19,10 @@ Wir bestätigen den Eingang zeitnah und halten dich über die Behebung auf dem L
   API-Antworten an den Browser geschrieben. Der Browser spricht nur mit internen
   `/api`-Routen.
 - **Schreibpfade** sind pro Route auf eine Feld-Whitelist begrenzt.
+- **Auth fail-closed:** in Produktion muss `AUTH_MODE` explizit gesetzt sein – kein stiller
+  Rückfall aufs passwortlose Mock-Login.
+- **Kundenmail nur auf Bestätigung:** der Chat mailt nur bei aktivem Schalter (Default aus)
+  und Bestätigungsdialog; Massen-Merge ist auf 10 Tickets gedeckelt.
 - **Paging-Cursor** an den Browser sind opak (die Autotask-Basis-URL bleibt server-seitig).
 - **Container:** Das Docker-Image enthält keine Secrets; Env wird erst zur Laufzeit injiziert
   (siehe `DEPLOY.md`). Der Server läuft als non-root.

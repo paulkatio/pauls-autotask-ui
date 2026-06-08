@@ -16,10 +16,16 @@ Feinschliff), sowie Folge-Slices: Bulk-Undo, Spalten-Truncate+Hover, Spalten-Dra
 Ampel-Badges, Spotlight-Suche + `/search`-Paginierung, layout-treue Skeletons, Logo,
 Farbsystem v2 (warm-achromatisch nach ElevenLabs-Vorbild; ersetzt Indigo — s. DECISIONS).
 
-**Offen / Blocker vor Produktiv-Cutover** (Details unten + in DECISIONS):
-- **B16a Entra-ID live** – Code fertig, fehlt: echter OIDC-Round-Trip + E-Mail→Resource-
-  Mapping in Prod; dann `AUTH_MODE=entra`.
-- **Prod-Autotask-Creds** – `AUTOTASK_*` von Sandbox auf Prod (manuell, eigener Schritt).
+**Produktiv-Cutover ERFOLGT (2026-06-08).** `AUTOTASK_*` → Prod-Mandant (Zone DE1,
+`webservices18`, eigener API-User), `AUTH_MODE=entra` live, `ENTRA_EMAIL_LOOSE_MATCH`
+entfernt. Sicherheits-Härtung umgesetzt: Auth fail-closed, Chat-Mail opt-in + Bestätigung,
+Merge-Cap (10), Branding aus `companyID 0`. `tsc`+`build`+Docker-Build grün. (DECISIONS
+„Produktiv-Cutover + Sicherheits-Härtung".)
+
+**Noch offen vor vollem Kundeneinsatz** (Details unten + in DECISIONS):
+- **B16a Entra-ID** – live (`AUTH_MODE=entra`); E-Mail→Resource-Mapping exakt (loose match aus).
+- **Doppel-Mail-Check** – falls Autotask-Workflow „Kunde benachrichtigen" noch aktiv ist:
+  deaktivieren (sonst Resend + Workflow doppelt); Inbound-Mailbox als Prod-Adresse gegenprüfen.
 - **B17 Kundenmail via Resend** – ERLEDIGT (Sandbox, 2026-06-05): Chat sendet Notiz +
   Resend-Mail (`Reply-To` = Inbound), Zustellung verifiziert; Mail-Status in der UI;
   Fallback auf alten UDF-Pfad ohne Resend-Konfig. Prod-Cutover offen (Workflow-Regel

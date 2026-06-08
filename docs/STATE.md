@@ -11,11 +11,17 @@ verlinkten Dateien.
 - **Fachlicher Bauplan:** [`BLUEPRINT.md`](BLUEPRINT.md). **Repo-Karte:** [`ARCHITECTURE.md`](ARCHITECTURE.md).
 - **Deployment + Env:** [`../DEPLOY.md`](../DEPLOY.md).
 
-Stand: 2026-06-05. Läuft gegen die **Autotask-Sandbox**, **Entra-ID-Login live**
-(`AUTH_MODE=entra`, B16a). **Chat→Kundenmail via Resend** ist verkabelt + zugestellt
-verifiziert, **Inbound-Threading in der Sandbox bestätigt** (B17 – noteType 3 +
-`createdByContactID`, Ticketnummer im Betreff genügt; Details in DECISIONS „B17").
-Profilbild aus Microsoft Graph (B16b). Produktiv-Cutover steht aus (siehe §9).
+Stand: 2026-06-08. **Produktiv-Cutover erfolgt:** läuft gegen den **Autotask-Produktiv-
+Mandanten** (Zone DE1, `webservices18`, eigener API-User „AutoTask UI" → Thread-Budget von
+n8n entkoppelt). **Entra-ID-Login live** (`AUTH_MODE=entra`, B16a). **Chat→Kundenmail via
+Resend** verkabelt; Versand jetzt **opt-in** (Schalter Default aus + Bestätigung). Inbound-
+Threading bestätigt (B17 – noteType 3 + `createdByContactID`). Profilbild aus Microsoft
+Graph (B16b).
+
+**Sicherheits-Härtung 2026-06-08:** Auth fail-closed (`AUTH_MODE` in Prod zwingend explizit),
+Chat-Mail opt-in statt default-an, Merge-Cap (max 10), `ENTRA_EMAIL_LOOSE_MATCH` in Prod
+entfernt, Branding dynamisch aus Autotask (`companyID 0`). Kein globaler READ_ONLY-Riegel
+(bewusst) → Schreibpfade scharf gegen Prod. Details: DECISIONS „Produktiv-Cutover + Sicherheits-Härtung".
 
 ---
 
@@ -213,11 +219,14 @@ URL, Cache-bust bei Tausch).
 
 | Weiche | Wo | Default / Wert |
 |---|---|---|
-| **AUTH_MODE** | `process.env`, gelesen in `lib/auth/index.ts` | `mock` (Cutover: `entra`) |
-| **Sandbox-Schreibregel** | `CLAUDE.md` §5 + Memory; **keine Runtime-Sperre, Disziplin** | Schreibtests NUR Firma „Acme GmbH Sandbox" `companyID 0`, Kontakt Paul-Harald Katio `contactID 30684646`, Titel-Präfix `ZZZ TEST` |
+| **AUTH_MODE** | `process.env`, gelesen in `lib/auth/index.ts` | Prod: `entra`. **Fail-closed:** in `NODE_ENV=production` muss explizit `entra`/`mock` gesetzt sein, sonst Abbruch (kein stiller Mock). Ausnahme `next build`. |
+| **PROD-Backend (kein Sandbox-Schutz)** | `AUTOTASK_*` zeigt auf Produktion | **Keine Runtime-Sperre.** Schreibpfade wirken sofort+unumkehrbar gegen echte Kunden. Sandbox-Regel (companyID 0 / contactID 30684646 / `ZZZ TEST`) greift NICHT mehr. |
+| **Branding-Name** | `lib/branding-server.ts` `getOrgName()` | Env `NEXT_PUBLIC_ORG_NAME` (Override) → sonst Autotask `companyID 0` (24 h gecacht) → Fallback „Acme GmbH" |
 | **Schreib-Whitelist Ticket** | `app/api/tickets/[id]/route.ts` `EDITABLE_FIELDS` + `STRING_FIELDS` | nur gelistete Felder; Zuweisung Resource+Rolle nur zusammen |
 | **Default-Queue neues Ticket** | `lib/autotask/new-ticket.ts` `NEW_TICKET_DEFAULT_QUEUE` | `29682833` (Level I-Support) |
 | **Chat-noteTypes** | `lib/autotask/conversation.ts` | outbound 18 (Kundenportal), inbound 101 (E-Mail) – inbound **in Prod unverifiziert** |
+| **Chat-Mailversand** | `ticket-chat.tsx` Switch + `chat/route.ts` | **opt-in, Default AUS** + Bestätigungsdialog; Server mailt nur bei explizitem `notify:true` |
+| **Merge-Cap** | `app/api/tickets/merge/route.ts` | max **10** Quelltickets pro Request |
 | **E2E-Schreibtest** | Env `E2E_SKIP_WRITE_TESTS`, `e2e/smoke.spec.ts` | lokal an; in CI setzen → Schreibtest übersprungen |
 | **Caps** | div. Entities | `COMPANIES_CAP 1000`, `OPEN_BY_COMPANY_CAP 5000`, `BALL_FETCH_CAP 500`, `SEARCH_PAGE 25`, Palette-Limit 8 |
 | **Cache (`unstable_cache`)** | picklists/KPIs/Counts 60 s; `assignable-resources` 300 s | selten ändernde Daten, rate-limit-schonend |
@@ -226,44 +235,45 @@ URL, Cache-bust bei Tausch).
 
 ## 8. Environment-Variablen (vollständig)
 
-**Immer (Autotask-Backend, derzeit Sandbox):**
-`AUTOTASK_BASE_URL` (Zone, z. B. `https://webservices18.autotask.net/ATServicesRest/V1.0`) ·
-`AUTOTASK_API_USERNAME` · `AUTOTASK_API_SECRET` (Sonderzeichen → einfache Quotes) ·
-`AUTOTASK_INTEGRATION_CODE`.
+**Immer (Autotask-Backend, Produktion):**
+`AUTOTASK_BASE_URL` (Zone, **MUSS auf `/V1.0` enden**, z. B. `https://webservices18.autotask.net/ATServicesRest/V1.0`) ·
+`AUTOTASK_API_USERNAME` · `AUTOTASK_API_SECRET` (`$`/`#` → in `.env.local` einfache Quotes; bei
+`docker --env-file` KEINE Quotes) · `AUTOTASK_INTEGRATION_CODE`.
 
-**Auth-Weiche:** `AUTH_MODE=mock | entra`.
+**Auth-Weiche:** `AUTH_MODE=mock | entra` (in Prod zwingend explizit, fail-closed).
 
-**Nur bei `entra`:** `AUTH_SECRET` (`openssl rand -base64 32`) ·
-`AUTH_MICROSOFT_ENTRA_ID_ID` · `AUTH_MICROSOFT_ENTRA_ID_SECRET` ·
-`AUTH_MICROSOFT_ENTRA_ID_ISSUER` (`…/<TENANT_ID>/v2.0`) · `AUTH_URL` (öffentliche https-Domain) ·
-`AUTH_TRUST_HOST=true` (hinter Caddy/Non-Vercel).
+**Optional:** `NEXT_PUBLIC_ORG_NAME` (Branding-Override; sonst Auto aus `companyID 0`).
 
-Details + Redirect-URI + Docker/Vercel: [`../DEPLOY.md`](../DEPLOY.md).
+**Nur bei `entra`:** `AUTH_SECRET` (`openssl rand -base64 32`) · `ENTRA_CLIENT_ID` ·
+`ENTRA_CLIENT_SECRET` · `ENTRA_TENANT_ID` (tenant-spezifischer Issuer `…/<tenant>/v2.0`,
+explizit in `lib/auth/authjs.ts` verdrahtet — NICHT die Auth.js-Default-Namen) ·
+`AUTH_URL` (öffentliche https-Domain) · `AUTH_TRUST_HOST=true` (hinter Caddy/Non-Vercel).
+`ENTRA_EMAIL_LOOSE_MATCH` war ein Sandbox-Workaround → **in Prod weggelassen** (exakte Mails).
+
+**Für Chat-Kundenmail:** `RESEND_API_KEY` · `RESEND_FROM` · `AUTOTASK_INBOUND_MAILBOX`.
+
+Details + Redirect-URI + Docker/Vercel + Secret-Quoting: [`../DEPLOY.md`](../DEPLOY.md).
 
 ---
 
-## 9. Was fehlt für den Cutover (Go-Live)
+## 9. Cutover-Stand (Go-Live)
 
-Funktional ist die App **fertig für den Sandbox-MVP**. Vor echtem Kundeneinsatz offen:
+**Prod-Cutover erfolgt 2026-06-08:** `AUTOTASK_*` → Produktiv-Mandant (Zone DE1,
+`webservices18`, eigener API-User), `AUTH_MODE=entra` live, `ENTRA_EMAIL_LOOSE_MATCH`
+entfernt, Sicherheits-Härtung umgesetzt (Auth fail-closed, Chat-Mail opt-in, Merge-Cap,
+Branding aus `companyID 0`). `tsc` + `next build` + Docker-Build grün.
 
-1. **Entra-ID live (B16a).** Code fertig; offen: echter OIDC-Round-Trip gegen den Tenant
-   (App-Registrierung + Prod-Redirect-URI) und die **E-Mail→Resource-Zuordnung** in Prod
-   (Sandbox mappt über `userName`, weil mehrere Resources die Sammel-Mail teilen). Dann
-   `AUTH_MODE=entra` + Entra-Env setzen.
-2. **Prod-Autotask-Creds.** `AUTOTASK_*` von Sandbox auf den Produktiv-Mandanten umstellen
-   (eigener, freigegebener Schritt; **keine Runtime-Sperre** – manuelle Config). Bis dahin
-   gilt die Sandbox-Schreibregel weiter.
-3. **Kundenmail app-eigen via Resend (B17).** ERLEDIGT in der Sandbox: Chat sendet die
-   Notiz (noteType 18) + Resend-Mail (`Reply-To` = Inbound-Mailbox), Zustellung verifiziert.
-   Mail-Status geht an die UI; ohne Resend-Konfig greift der alte UDF/Workflow-Pfad.
-   **Prod-Cutover offen:** alte Autotask-Workflow-Regel „Kunde benachrichtigen"
-   deaktivieren (sonst Doppel-Mail), Inbound-Mailbox als Prod-Adresse gegenprüfen,
-   `ENTRA_EMAIL_LOOSE_MATCH` weglassen. Rest: Anhänge (B17b). Details DECISIONS „B17".
-4. **Inbound-Anzeige (B17a).** Kundenantworten kommen als **noteType 3 + `createdByContactID`**
-   (NICHT 101); Chat holt + zeigt sie jetzt. **Threading in der Sandbox bestätigt** (Antwort
-   landet via Ticketnummer im Betreff wieder am Ticket). Offen: einmaliger Prod-Gegencheck.
-5. **Bewusst aufgeschoben:** Rollen-Gating (alle sehen alles, B12) · Anhang-Löschen (Autotask-
-   API erlaubt es nicht) · optional Webhook statt Polling für den Chat.
+**Noch offen / im Auge behalten:**
+1. **Doppel-Mail-Check.** Falls in Autotask noch die Workflow-Regel „Kunde benachrichtigen"
+   aktiv ist: deaktivieren, sonst mailt Resend **und** der Autotask-Workflow. Inbound-Mailbox
+   als Prod-Adresse gegenprüfen.
+2. **Inbound-Anzeige in Prod (B17a).** Kundenantworten = **noteType 3 + `createdByContactID`**;
+   Threading in der Sandbox bestätigt. Offen: einmaliger Prod-Gegencheck.
+3. **Anhänge (B17b)** · **Doppel-Mail-Workflow** wie oben.
+4. **Bewusst aufgeschoben:** kein globaler READ_ONLY-Riegel (abgelehnt) · Rollen-Gating
+   (alle sehen alles, B12) · Anhang-Löschen (API erlaubt es nicht) · Webhook statt Chat-Polling ·
+   geteilter (Redis-)Limiter statt In-Memory (bei Mehr-Instanz-Last; aktuell unkritisch) ·
+   10k/h-Frühwarnung + Backoff-Jitter.
 
 Deployment selbst ist **vorbereitet** (deployment-agnostisch: Docker+Caddy **oder** Vercel,
 JWT-Session ohne DB, Route-Schutz server-seitig) – siehe `DEPLOY.md`.
@@ -276,5 +286,7 @@ JWT-Session ohne DB, Route-Schutz server-seitig) – siehe `DEPLOY.md`.
   `bg-blue-*`, kein arbitrary `[..]` außer in `components/ui/`), Deutsch + echte Umlaute,
   keine Emojis. Pro Slice: verifizieren → `npm run build` grün → Browser Hell/Dunkel/Mobile →
   EIN kleiner Commit → `DECISIONS.md`/`BACKLOG.md` nachziehen.
-- **Nichts „fertig" behaupten ohne echten Test.** Schreibtests nur an der Sandbox-Testfirma.
+- **Nichts „fertig" behaupten ohne echten Test.** ⚠️ Backend ist **PRODUKTION** – Schreibtests
+  treffen echte Kunden (kein Sandbox-Schutz mehr). Read-only-Smoke: `verify-api.mjs ping`.
+  Schreiben nur bewusst, an einem dir gehörenden Ticket; Chat-Mail nur mit aktivem Schalter.
 - **Befunde/Entscheidungen** wandern nach `DECISIONS.md` (Gedächtnis über Sessions).

@@ -71,8 +71,8 @@ app/api/**/route.ts  ──────────►  lib/autotask/entities/<e
     config-items, contracts, picklists, dashboard, search, attachments).
   - `format.ts`, `utils.ts`.
 - **`e2e/`** – Playwright-Smoke-Suite (`auth.setup.ts`, `smoke.spec.ts`).
-- **`scripts/`** – `verify-api.mjs` (Wegwerf-Verifikation gegen die Sandbox,
-  `node --env-file=.env.local …`).
+- **`scripts/`** – `verify-api.mjs` (read-only Verifikation gegen die konfigurierte
+  Autotask-Zone, druckt kein Secret: `node --env-file=.env.local …`).
 - **`docs/`** – **STATE** (Stand/Handoff), BLUEPRINT, DECISIONS, BACKLOG, PHASE-0,
   ARCHITECTURE, README.
 
@@ -93,5 +93,6 @@ app/api/**/route.ts  ──────────►  lib/autotask/entities/<e
 - UI ausschließlich aus shadcn-Komponenten + semantische Tokens; Light + Dark über
   Tokens (keine manuellen `dark:`-Farb-Overrides). Deutsch, echte Umlaute, keine
   Emojis (nur lucide-Icons).
-- Schreib-Disziplin: Lade-/Fehler-/Erfolgs-Zustand, `router.refresh()` nach Erfolg,
-  Test-Writes nur an der Sandbox-Testfirma (siehe `CLAUDE.md` §5).
+- Schreib-Disziplin: Lade-/Fehler-/Erfolgs-Zustand, `router.refresh()` nach Erfolg.
+  ⚠️ Backend ist seit 2026-06-08 **Produktion** – die Sandbox-Test-Regel (`CLAUDE.md` §5)
+  schützt nicht mehr; Schreibpfade wirken sofort+unumkehrbar gegen echte Kunden.

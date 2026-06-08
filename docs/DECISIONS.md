@@ -1736,4 +1736,43 @@ Entscheidung gezielt nur für den Push-Pfad aufweichen.)
   der rechten Spalte (auf dem Smartphone direkt nach der Mitte). Kontext (Firma/Zeit/
   Gerät) bleibt einklappbar. `npm run build` grün.
 
+### [2026-06-08] Produktiv-Cutover + Sicherheits-Härtung
+Umstellung von Sandbox auf **PRODUKTION** (Zone DE1, `webservices18`, eigener API-User
+„AutoTask UI"). `.env.local`-Stolperfallen verifiziert: `AUTOTASK_BASE_URL` MUSS auf
+`/V1.0` enden (sonst 404); `AUTOTASK_API_SECRET` in **einfachen** Quotes (Secret mit `#`
+= Kommentar, `$` = dotenv-expand-Variable in Next.js → Secret verstümmelt → 401). Smoke:
+`node --env-file=.env.local scripts/verify-api.mjs ping`.
+
+Repo-Sicherheitsscan (4 parallele Audits) + umgesetzte Fixes (`tsc`+`build` grün):
+- **Auth fail-closed** (`lib/auth/index.ts`): `getAuthProvider()` akzeptiert nur
+  **explizit** `entra` oder `mock`. Ist `AUTH_MODE` zur LAUFZEIT in `NODE_ENV=production`
+  unbestimmt/vertippt → harter Fehler statt stillem Mock-Fallback (passwortloses Login gegen
+  echte Daten). Explizites `mock` bleibt erlaubt (bewusste Wahl, auch im Container, der
+  `NODE_ENV=production` setzt). **Ausnahme `next build`/Prerender**
+  (`NEXT_PHASE==="phase-production-build"`): Riegel aus, sonst bricht der Docker-Build
+  (kein `.env`, AUTH_MODE unbestimmt → Prerender von `/admin` warf).
+  `loginAs`/`switchMockUser` (`lib/auth/actions.ts`) no-op außerhalb Mock-Modus.
+- **Chat-Mail opt-in statt default-an** (`chat/route.ts`: `notify === true`;
+  `ticket-chat.tsx`: Switch Default AUS + `AlertDialog`-Bestätigung vor Versand). Ohne
+  Switch nur Notiz (noteType 18), KEINE Kunden-Mail. Einziger Mail-Auslöser bleibt der Chat.
+- **Merge-Cap** (`tickets/merge/route.ts`): max **10** Quelltickets/Request (Schutz vor
+  Massen-Abschluss; Quell-Notizen sind nicht löschbar).
+- **`ENTRA_EMAIL_LOOSE_MATCH` in Prod entfernt** — Prod-Logins nutzen exakte Mails ohne
+  `+tag`; loser Abgleich (Erst-Treffer) wäre ein Mapping-Risiko.
+- **Branding dynamisch** (`lib/branding-server.ts` `getOrgName()`/`getMailSenderName()`):
+  Firmenname aus **Companies/0** (eigene Firma, Autotask-Konvention; 24 h gecacht),
+  `NEXT_PUBLIC_ORG_NAME` als Override, Fallback „Acme GmbH". Server-seitig in
+  Layout→Sidebar/Login/Manifest/Chat-Mail durchgereicht (vorher Build-Zeit-Konstante).
+- **Bestätigt unkritisch:** keine Secret-Leaks (alle Creds `server-only`, nie geloggt/im
+  Bundle/in Browser-Antworten), `.env.local` in `.gitignore` + nie committet, alle 19
+  API-Routen + beide Layouts erzwingen Session. Kein DELETE gegen Autotask.
+- **Offen (kein globaler READ_ONLY-Riegel):** bewusst nicht eingebaut (Paul); Schreibpfade
+  sind scharf+unumkehrbar gegen Prod.
+
+### Dashboard „Tickets pro Mitarbeiter" — dynamische Label-Höhe (2026-06-08)
+- Schräge X-Achsen-Labels wurden bei längeren Namen unten abgeschnitten. `count-bar-chart.tsx`
+  berechnet die Achsenhöhe jetzt geometrisch aus dem **längsten (gekürzten) Namen**
+  (`sin(35°)·Textbreite`, Clamp 48–140 px); Plot-Höhe bleibt konstant → Balken springen
+  nicht. ChartContainer-Höhe = Plot + Achse statt fixem `h-56`.
+
 <!-- Neue Entscheidungen hier anhängen -->

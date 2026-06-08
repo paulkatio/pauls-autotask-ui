@@ -5,26 +5,39 @@ Die App ist **deployment-agnostisch**: dasselbe Repo läuft als Docker-Container
 JWT-Session (keine DB); Route-Schutz server-seitig (kein `middleware.ts`);
 Auth-Route auf Node-Runtime.
 
-> **Backend bleibt vorerst Sandbox.** Der Wechsel der `AUTOTASK_*`-Creds auf den
-> Produktiv-Mandanten ist ein **späterer, separater Schritt** (siehe unten) – jetzt
-> nicht ändern.
+> **Backend ist auf PRODUKTION (seit 2026-06-08).** `AUTOTASK_*` zeigt auf den
+> Produktiv-Mandanten (Zone DE1, `webservices18`, eigener API-User). Die Sandbox-Test-Regel
+> (Schreibtests nur an Acme/Sandbox) greift in Prod **nicht** mehr – Schreibpfade sind scharf
+> und unumkehrbar. Siehe „Prod-Cutover" unten.
 
 ---
 
 ## Env-Variablen (zur Laufzeit injizieren, NICHT ins Image backen)
 
-**Immer nötig (Autotask-Backend, vorerst Sandbox):**
+**Immer nötig (Autotask-Backend, Produktion):**
 ```
-AUTOTASK_BASE_URL=https://webservices18.autotask.net/ATServicesRest/V1.0
+AUTOTASK_BASE_URL=https://webservices18.autotask.net/ATServicesRest/V1.0   # MUSS auf /V1.0 enden, sonst 404
 AUTOTASK_API_USERNAME=...
-AUTOTASK_API_SECRET=...        # Sonderzeichen -> in der Shell/Compose sauber quoten
-AUTOTASK_INTEGRATION_CODE=...
+AUTOTASK_API_SECRET=...        # siehe Quoting-Hinweis unten
+AUTOTASK_INTEGRATION_CODE=...  # = „Tracking-Identifikator" des API-Users
 ```
+
+> **Secret-Quoting (häufigste 401-Ursache):** Enthält das Secret `$` oder `#`, ist das
+> Verhalten je nach Loader unterschiedlich:
+> - **`.env.local` (Next.js/dotenv):** in **einfache** Quotes setzen — `#` wäre sonst
+>   Kommentar, `$` würde als Variable expandiert (Secret verstümmelt → 401).
+> - **`docker --env-file` / Compose `environment:`:** **KEINE** Quotes — der Wert wird
+>   wörtlich genommen, Quotes landen sonst im Secret (→ 401).
+> Am einfachsten: in Autotask ein Secret **ohne `$`** generieren.
 
 **Auth-Modus:**
 ```
 AUTH_MODE=mock     # oder: entra
 ```
+> **Fail-closed:** In Produktion (`NODE_ENV=production`, u. a. im Docker-Image) MUSS
+> `AUTH_MODE` **explizit** `entra` oder `mock` sein. Ein fehlender/vertippter Wert lässt
+> die App bewusst abbrechen, statt still aufs passwortlose Mock-Login zurückzufallen.
+> Für echten Kundeneinsatz: `entra`.
 
 **Kundenmail-Versand (B17, app-eigene Resend-Mail — einziger Weg):**
 ```
@@ -54,9 +67,11 @@ AUTH_TRUST_HOST=true                     # nötig hinter Caddy/Non-Vercel
 ## (a) Docker + Hetzner hinter Caddy
 
 ```bash
-# Image bauen (eigene Marke optional als BUILD-ARG einbacken; NEXT_PUBLIC_* wird
-# zur Build-Zeit eingebettet – ohne ARG bleibt der Default "Acme GmbH"):
-docker build -t autotask-ui --build-arg NEXT_PUBLIC_ORG_NAME=SSIG-IT .
+# Image bauen. Der Markenname wird zur Laufzeit automatisch aus Autotask gezogen
+# (eigene Firma = companyID 0). Ein BUILD-ARG ist nur nötig, wenn du einen abweichenden
+# Namen ODER den korrekten PWA-Manifest-Namen einbacken willst (NEXT_PUBLIC_* = Build-Zeit):
+docker build -t autotask-ui .
+# docker build -t autotask-ui --build-arg NEXT_PUBLIC_ORG_NAME="SSIG-IT GmbH" .
 
 # Container starten – Env aus einer Datei (NICHT committen) injizieren
 docker run -d --name autotask-ui \
@@ -66,9 +81,15 @@ docker run -d --name autotask-ui \
   autotask-ui
 ```
 
-> **Lokal getestet (2026-06-08):** `docker build` + `docker run` laufen sauber;
-> `GET /login` → `HTTP 200`, `GET /` → `307` (Redirect zum Login). Branding über
-> `--build-arg` greift; ohne Arg erscheint „Acme GmbH".
+> **Mehr-Plattform (amd64 + arm64):** `docker build` baut nur für die Arch des Hosts. Ein
+> Image für Intel/AMD **und** ARM (Apple Silicon, ARM-Server) braucht buildx:
+> ```bash
+> docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/autotask-ui:tag --push .
+> ```
+
+> **Verifiziert (2026-06-08):** `docker build` (Multi-Stage, node:22-alpine, standalone,
+> non-root) + `docker run` laufen sauber; `GET /login` → `HTTP 200`. Branding über
+> `--build-arg` greift; ohne Arg/ohne Autotask-Creds erscheint der Fallback „Acme GmbH".
 
 - Das Image enthält **keine** Secrets; `prod.env` (mit obigen Variablen) bleibt auf
   dem Server und wird zur Laufzeit gelesen. `NEXT_PUBLIC_ORG_NAME` wirkt nur zur
@@ -97,10 +118,22 @@ curl -I http://127.0.0.1:3000/login    # erwartet HTTP 200
 
 ---
 
-## Später (separater Schritt): Prod-Autotask-Creds
+## Prod-Cutover (erfolgt 2026-06-08)
 
-Aktuell zeigt `AUTOTASK_*` auf die **Sandbox**. Für den echten Kundeneinsatz erst
-nach Freigabe auf den Produktiv-Mandanten umstellen (eigener Schritt, eigene
-Verifikation). ⚠️ Vorher gilt weiter die Sandbox-Test-Regel (Schreibtests nur an
-Acme Sandbox / Paul-Harald Katio). Außerdem offen vor Kundeneinsatz: **B17**
-(Kundenmail app-eigen via Resend) und **B17a** (Inbound-noteType in Prod bestätigen).
+`AUTOTASK_*` zeigt auf den **Produktiv-Mandanten** (Zone DE1, `webservices18`, eigener
+API-User „AutoTask UI" — entkoppelt das Thread-Budget von n8n). Verifiziert read-only via
+`node --env-file=.env.local scripts/verify-api.mjs ping`.
+
+Beim Umstellen aufgetretene Stolperfallen (siehe Secret-Quoting + Base-URL oben):
+- `AUTOTASK_BASE_URL` **muss** auf `/V1.0` enden (sonst 404).
+- Zone des API-Users notfalls per `zoneInformation` ermitteln:
+  `https://webservices.autotask.net/atservicesrest/v1.0/zoneInformation?user=<API-User>`.
+
+**Sicherheits-Härtung beim Cutover (Code):** Auth fail-closed (`AUTH_MODE` muss in Prod
+explizit gesetzt sein), Kundenmail im Chat opt-in + Bestätigung statt Default-an,
+Merge-Cap (max 10 Quelltickets), `ENTRA_EMAIL_LOOSE_MATCH` in Prod entfernt. Details:
+[`docs/DECISIONS.md`](docs/DECISIONS.md) → „Produktiv-Cutover + Sicherheits-Härtung".
+
+> ⚠️ **Kein globaler READ_ONLY-Schalter** im Code. Jeder Schreibpfad wirkt sofort gegen
+> Produktion. Einziger Mail-Auslöser an echte Kunden: die Chat-Sidebar mit aktivem
+> „Per E-Mail senden"-Schalter.

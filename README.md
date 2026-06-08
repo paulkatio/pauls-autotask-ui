@@ -54,15 +54,18 @@ Smartphone bis zum Breitbild dieselbe App.
   **Bulk-Aktionen mit Undo** (Status/Priorität/Queue/Zuweisung) und **per Drag & Drop
   umsortierbare Spalten** (gemerkt pro Gerät).
 - **💬 Ticketdetail mit echtem Kunden-Chat.** Inline-Edit aller Kernfelder, **Chat-Sidebar
-  mit Kundenmail via Resend** (Senden legt die Notiz an *und* mailt; Antworten threaden
-  über die Ticketnummer automatisch zurück ans Ticket), **Zeiterfassung + Stoppuhr**,
-  interne Notizen, Anhänge.
+  mit Kundenmail via Resend**. Der Mailversand ist **opt-in** (Schalter „Per E-Mail an
+  Kunden senden", Default aus) mit Bestätigungsdialog – ohne Schalter wird nur die Notiz
+  gespeichert. Antworten threaden über die Ticketnummer automatisch zurück ans Ticket.
+  Dazu **Zeiterfassung + Stoppuhr**, interne Notizen, Anhänge.
 - **🔎 Globale Blitz-Suche.** Spotlight-Palette (`Cmd/Ctrl+K`) sucht Tickets, Firmen und
   Kontakte gleichzeitig; dazu eine `/search`-Seite mit „Mehr laden" und Gesamtzahl.
 - **🏢 Firmen & Kontakte** mit Suche/Filter und kompakter Kundenakte.
 - **🌗 Hell & Dunkel** automatisch über semantische Tokens – kein hartes Theming, AA-Kontrast.
 - **🔒 Sicher per Design (BFF).** Autotask-Zugangsdaten bleiben **immer** serverseitig;
   der Browser sieht nur interne `/api`-Routen, Schreibpfade sind pro Feld whitelisted.
+  In Produktion **fail-closed**: ohne `AUTH_MODE=entra` startet kein Login (kein stiller
+  Mock-Fallback); Massen-Merge ist gedeckelt; Kundenmail nur auf ausdrückliche Bestätigung.
 - **🔑 Login nach Wahl.** Lokaler Mock **oder** Microsoft Entra ID (inkl. Profilbild aus
   Microsoft Graph) – Umschalten kostet **eine** Umgebungsvariable.
 
@@ -116,7 +119,8 @@ npm run dev            # http://localhost:3000
 | `npm run test:e2e` | Playwright-Smoke-Suite (einmalig: `npx playwright install chromium`) |
 
 > **Verbindung prüfen:** `node --env-file=.env.local scripts/verify-api.mjs ping`
-> testet die Autotask-Anbindung gegen deine Sandbox.
+> testet die Autotask-Anbindung (read-only, druckt kein Secret) gegen die in
+> `.env.local` konfigurierte Zone.
 
 ## Konfiguration
 
@@ -125,8 +129,8 @@ nie committet). Vorlage: [`.env.example`](.env.example).
 
 | Variable | Nötig | Zweck |
 |---|---|---|
-| `AUTH_MODE` | immer | `mock` (lokaler Login) oder `entra` (Microsoft Entra ID) |
-| `NEXT_PUBLIC_ORG_NAME` | optional | Eigener Firmen-/Markenname (Sidebar, Login, Manifest, Mail-Signatur); Default `Acme GmbH` |
+| `AUTH_MODE` | immer | `mock` (lokaler Login) oder `entra` (Microsoft Entra ID). **In Produktion (`NODE_ENV=production`) zwingend `entra`** – sonst startet der Login nicht (fail-closed, kein stiller Mock-Fallback). |
+| `NEXT_PUBLIC_ORG_NAME` | optional | Firmen-/Markenname (Sidebar, Login, Manifest, Mail-Signatur). **Ohne Wert** wird der Name zur Laufzeit automatisch aus Autotask gezogen (eigene Firma = `companyID 0`, 24 h gecacht); Fallback `Acme GmbH`. Setzen = Override. |
 | `AUTOTASK_BASE_URL` | immer | Zone-Endpoint, z. B. `https://webservicesX.autotask.net/ATServicesRest/V1.0` |
 | `AUTOTASK_API_USERNAME` | immer | API-User |
 | `AUTOTASK_API_SECRET` | immer | API-Secret (Sonderzeichen → in `.env.local` in **einfache** Quotes) |
@@ -144,9 +148,10 @@ nie committet). Vorlage: [`.env.example`](.env.example).
 
 > **Entra-Namen:** Der Provider wird in [`lib/auth/authjs.ts`](lib/auth/authjs.ts) **explizit**
 > aus `ENTRA_CLIENT_ID/_SECRET/_TENANT_ID` konfiguriert — **nicht** aus den Auth.js-
-> Defaults `AUTH_MICROSOFT_ENTRA_ID_*`. **Kundenmail:** Eine Chat-Nachricht legt die
-> TicketNote an **und** sendet via Resend (`Reply-To` = Inbound-Mailbox); ohne
-> Resend-Konfig bleibt der alte Autotask-Workflow-Pfad aktiv.
+> Defaults `AUTH_MICROSOFT_ENTRA_ID_*`. **Kundenmail:** Eine Chat-Nachricht legt immer die
+> TicketNote an; die Mail an den Kunden geht **nur bei aktivem Schalter** „Per E-Mail an
+> Kunden senden" (Default aus) nach Bestätigung via Resend (`Reply-To` = Inbound-Mailbox);
+> ohne Resend-Konfig bleibt der alte Autotask-Workflow-Pfad aktiv.
 
 ## Deployment
 
@@ -200,9 +205,19 @@ ENTRA_TENANT_ID=...
 
 ```bash
 docker build -t autotask-ui .
-# Optional eigene Marke einbacken (sonst steht "Acme GmbH" in Sidebar/Login):
+# Marke wird zur Laufzeit automatisch aus Autotask gezogen (companyID 0). Nur falls du
+# einen abweichenden Namen ODER den korrekten PWA-Manifest-Namen einbacken willst:
 # docker build -t autotask-ui --build-arg NEXT_PUBLIC_ORG_NAME="Deine Firma" .
 ```
+
+> **Mehrere Plattformen (amd64 + arm64):** `docker build` erzeugt nur ein Image für die
+> Architektur des bauenden Rechners. Wer ein Image baut, das auf Intel/AMD **und** ARM
+> (Apple Silicon, ARM-Server) läuft, nutzt buildx:
+> ```bash
+> docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/autotask-ui:tag --push .
+> ```
+> Für „klonen → lokal bauen → lokal starten" ist das **nicht** nötig (Build trifft die
+> eigene Arch automatisch).
 
 **3. Container starten:**
 
@@ -232,7 +247,7 @@ docker rm -f autotask-ui       # Container stoppen + entfernen
 |---|---|
 | Login → **„Server error / UntrustedHost"** | `AUTH_TRUST_HOST=true` in `prod.env` fehlt (im Container Pflicht). |
 | Autotask-Login schlägt fehl (401) | Anführungszeichen um Werte in `prod.env` → **entfernen** (`--env-file` mag keine Quotes). |
-| Marke zeigt weiter „Acme GmbH" | `NEXT_PUBLIC_ORG_NAME` wirkt nur **beim Build** → als `--build-arg` setzen, nicht zur Laufzeit. |
+| Marke zeigt weiter „Acme GmbH" | Auto-Name braucht Autotask-Zugriff zur Laufzeit (`companyID 0`); bei fehlenden Creds greift der Fallback. Fixen Namen erzwingen: `NEXT_PUBLIC_ORG_NAME` als `--build-arg` einbacken (wirkt nur beim Build, auch fürs PWA-Manifest). |
 | `port is already allocated` | Port 3000 belegt (z. B. `npm run dev`) → anderen Host-Port nehmen: `-p 127.0.0.1:3001:3000`. |
 | Microsoft-Login bricht ab | Redirect-URI in der Entra-App muss exakt zu `AUTH_URL` passen: `<AUTH_URL>/api/auth/callback/microsoft-entra-id`. |
 
