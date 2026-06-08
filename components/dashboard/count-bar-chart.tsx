@@ -80,7 +80,7 @@ export function CountBarChart({
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>
-          Offene Tickets je zugewiesenem Mitarbeiter – Balken zum Filtern klicken.
+          Offene Tickets je zugewiesenem Mitarbeiter.
         </CardDescription>
       </CardHeader>
       <CardContent>

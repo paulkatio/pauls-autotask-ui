@@ -2,7 +2,14 @@
 
 import * as React from "react";
 
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TicketsList, type TicketRow } from "@/components/tickets/tickets-list";
 import type { TicketPicklists } from "@/lib/autotask/types";
 
@@ -51,13 +58,18 @@ export function RecentlyEdited({
     <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold tracking-tight">{HEADINGS[win]}</h2>
-        <Tabs value={win} onValueChange={(v) => setWin(v as TimeWindow)}>
-          <TabsList variant="line">
-            <TabsTrigger value="today">Heute</TabsTrigger>
-            <TabsTrigger value="3">Letzte 3 Tage</TabsTrigger>
-            <TabsTrigger value="7">Letzte 7 Tage</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <Select value={win} onValueChange={(v) => setWin(v as TimeWindow)}>
+          <SelectTrigger size="sm" className="w-auto min-w-36" aria-label="Zeitraum">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="today">Heute</SelectItem>
+              <SelectItem value="3">Letzte 3 Tage</SelectItem>
+              <SelectItem value="7">Letzte 7 Tage</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
       <TicketsList
         data={{ items, nextCursor: null, prevCursor: null }}
