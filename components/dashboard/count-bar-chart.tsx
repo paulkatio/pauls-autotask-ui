@@ -54,6 +54,20 @@ export function CountBarChart({
     return () => mq.removeEventListener("change", update);
   }, []);
 
+  // Auf dem Smartphone funktioniert das Balkendiagramm schlecht (zu viele Namen auf
+  // wenig Breite) → unter sm stattdessen eine kompakte, sortierte Liste mit Mini-
+  // Auslastungsbalken. Gleiche Klick-Aktion (Filter auf den Mitarbeiter).
+  const [small, setSmall] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const update = () => setSmall(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  const maxCount = Math.max(1, ...data.map((d) => d.count));
+
   // Klick auf einen Balken -> Tickets dieses Mitarbeiters (nur wenn id vorhanden).
   // Recharts liefert das Datum unter `payload`.
   function handleBarClick(entry: { payload?: CountDatum }) {
@@ -70,7 +84,43 @@ export function CountBarChart({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="aspect-auto h-56 w-full">
+        {small ? (
+          data.length === 0 ? (
+            <p className="text-muted-foreground py-8 text-center text-sm">
+              Keine offenen Tickets.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {data.map((d) => (
+                <li key={d.id ?? d.label}>
+                  <button
+                    type="button"
+                    disabled={d.id == null}
+                    onClick={() =>
+                      d.id != null &&
+                      router.push(`/tickets/team?resource=${d.id}`)
+                    }
+                    className="hover:bg-muted flex w-full flex-col gap-1.5 rounded-md px-3 py-2 text-left transition-colors disabled:pointer-events-none"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="truncate text-sm">{d.label}</span>
+                      <span className="text-sm font-semibold tabular-nums">
+                        {d.count}
+                      </span>
+                    </div>
+                    <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
+                      <div
+                        className="h-full rounded-full bg-[var(--chart-1)]"
+                        style={{ width: `${(d.count / maxCount) * 100}%` }}
+                      />
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : (
+          <ChartContainer config={chartConfig} className="aspect-auto h-56 w-full">
           <BarChart accessibilityLayer data={data} margin={{ top: 8 }}>
             <CartesianGrid vertical={false} />
             <XAxis
@@ -107,7 +157,8 @@ export function CountBarChart({
               onClick={(d) => handleBarClick(d as { payload?: CountDatum })}
             />
           </BarChart>
-        </ChartContainer>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   );

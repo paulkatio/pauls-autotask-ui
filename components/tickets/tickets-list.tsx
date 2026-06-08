@@ -504,7 +504,63 @@ export function TicketsList({
         </Empty>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border">
+          {/* Mobile-First: unter md je Ticket eine Karte (kein Querscrollen). Ab md
+              die volle Tabelle mit umsortierbaren Spalten. */}
+          <div className="flex flex-col gap-2 md:hidden">
+            {items.map((t) => (
+              <div
+                key={t.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => openTicketPopup(t.id)}
+                className="hover:bg-muted/50 active:bg-muted flex items-start gap-3 rounded-lg border p-3 transition-colors"
+              >
+                {selectableActive && (
+                  <div onClick={(e) => e.stopPropagation()} className="pt-0.5">
+                    <Checkbox
+                      checked={selectedIds.has(t.id)}
+                      onCheckedChange={(c) => toggleRow(t.id, c === true)}
+                      aria-label={`Ticket ${t.ticketNumber} auswählen`}
+                    />
+                  </div>
+                )}
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm font-medium tabular-nums">
+                      {t.ticketNumber}
+                    </span>
+                    <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                      {formatDate(t.dueDateTime)}
+                    </span>
+                  </div>
+                  <span className="text-sm break-words">{t.title ?? "—"}</span>
+                  {columns.company !== false && t.companyName && (
+                    <span className="text-muted-foreground truncate text-xs">
+                      {t.companyName}
+                    </span>
+                  )}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge variant={statusVariant(t.status)}>
+                      {labelOf(picklists.status, t.status)}
+                    </Badge>
+                    <Badge variant={priorityVariant(t.priority)}>
+                      {labelOf(picklists.priority, t.priority)}
+                    </Badge>
+                    {columns.queue && (
+                      <Badge variant="outline">
+                        {labelOf(picklists.queue, t.queueID)}
+                      </Badge>
+                    )}
+                    {columns.assigned && t.assignedResourceName && (
+                      <Badge variant="outline">{t.assignedResourceName}</Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden overflow-x-auto rounded-lg border md:block">
             <Table className="min-w-3xl">
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
