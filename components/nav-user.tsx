@@ -23,7 +23,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import * as React from "react"
-import { ChevronsUpDownIcon, BadgeCheckIcon, BellIcon, HistoryIcon, LogOutIcon } from "lucide-react"
+import { ChevronsUpDownIcon, HistoryIcon, LogOutIcon } from "lucide-react"
 
 import { useTheme } from "next-themes"
 
@@ -91,17 +91,9 @@ export function NavUser({
             <DropdownMenuSeparator />
             {/* Platzhalter bis B04 (Mock-Provider / echte Session). */}
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheckIcon />
-                Konto
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setHistoryOpen(true)}>
                 <HistoryIcon />
                 Verlauf
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon />
-                Benachrichtigungen
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
