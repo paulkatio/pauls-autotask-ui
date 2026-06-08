@@ -68,6 +68,25 @@ export function CountBarChart({
 
   const maxCount = Math.max(1, ...data.map((d) => d.count));
 
+  // Schräge X-Achsen-Labels brauchen je nach Namenslänge unterschiedlich viel
+  // vertikalen Platz – sonst werden lange Namen unten abgeschnitten. Wir messen die
+  // (im Compact-Modus gekürzten) Labels und leiten die Achsenhöhe geometrisch ab:
+  // bei Winkel θ ragt ein Label sin(θ)·Textbreite nach unten. Plot-Höhe bleibt
+  // konstant, nur die Gesamthöhe wächst → die Balken springen nicht.
+  const ANGLE_DEG = 35; // etwas steiler als zuvor (-30) → kompaktere Breite je Label
+  const PLOT_HEIGHT = 180; // reine Balkenfläche, unabhängig von der Labelhöhe
+  const { axisHeight, chartHeight } = React.useMemo(() => {
+    if (!compact) return { axisHeight: 28, chartHeight: PLOT_HEIGHT + 28 };
+    const labels = data.map((d) => shortName(d.label));
+    const maxLen = Math.max(0, ...labels.map((l) => l.length));
+    const charPx = 7.2; // ~0.6em bei 12px Tick-Schrift (text-xs)
+    const labelWidthPx = maxLen * charPx;
+    const needed =
+      Math.ceil(Math.sin((ANGLE_DEG * Math.PI) / 180) * labelWidthPx) + 18;
+    const h = Math.min(140, Math.max(48, needed)); // sinnvolle Ober-/Untergrenze
+    return { axisHeight: h, chartHeight: PLOT_HEIGHT + h };
+  }, [compact, data]);
+
   // Klick auf einen Balken -> Tickets dieses Mitarbeiters (nur wenn id vorhanden).
   // Recharts liefert das Datum unter `payload`.
   function handleBarClick(entry: { payload?: CountDatum }) {
@@ -120,7 +139,11 @@ export function CountBarChart({
             </ul>
           )
         ) : (
-          <ChartContainer config={chartConfig} className="aspect-auto h-56 w-full">
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-auto w-full"
+            style={{ height: chartHeight }}
+          >
           <BarChart accessibilityLayer data={data} margin={{ top: 8 }}>
             <CartesianGrid vertical={false} />
             <XAxis
@@ -129,9 +152,9 @@ export function CountBarChart({
               axisLine={false}
               tickMargin={8}
               interval={0}
-              angle={compact ? -30 : 0}
+              angle={compact ? -ANGLE_DEG : 0}
               textAnchor={compact ? "end" : "middle"}
-              height={compact ? 52 : 28}
+              height={axisHeight}
               tickFormatter={compact ? shortName : undefined}
             />
             <YAxis
