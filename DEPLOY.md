@@ -33,19 +33,21 @@ RESEND_FROM=...                # verifizierte Resend-Domain, z. B. SSIG-IT Servi
 AUTOTASK_INBOUND_MAILBOX=...   # Reply-To = Autotask-Eingangspostfach (Antwort-Threading)
 ```
 
-**Nur bei `AUTH_MODE=entra` zusätzlich:**
+**Nur bei `AUTH_MODE=entra` zusätzlich** (der Provider wird in `lib/auth/authjs.ts`
+explizit aus den `ENTRA_*`-Namen konfiguriert, **nicht** aus den Auth.js-Defaults):
 ```
-AUTH_SECRET=...                                  # openssl rand -base64 32
-AUTH_MICROSOFT_ENTRA_ID_ID=<client id>
-AUTH_MICROSOFT_ENTRA_ID_SECRET=<client secret>
-AUTH_MICROSOFT_ENTRA_ID_ISSUER=https://login.microsoftonline.com/<TENANT_ID>/v2.0
-AUTH_URL=https://<DOMAIN>                         # öffentliche https-Domain
-AUTH_TRUST_HOST=true                             # nötig hinter Caddy/Non-Vercel
+AUTH_SECRET=...                          # openssl rand -base64 32
+ENTRA_CLIENT_ID=<client id>
+ENTRA_CLIENT_SECRET=<client secret>
+ENTRA_TENANT_ID=<tenant id>              # tenant-spezifischer Issuer (.../<tenant>/v2.0)
+AUTH_URL=https://<DOMAIN>                # öffentliche https-Domain
+AUTH_TRUST_HOST=true                     # nötig hinter Caddy/Non-Vercel
+# ENTRA_EMAIL_LOOSE_MATCH=1             # NUR Sandbox (+psasandbox-Tag); in Prod weglassen
 ```
 
 **Entra-App-Registrierung:** die Prod-Redirect-URI ergänzen:
-`https://<DOMAIN>/api/auth/callback/microsoft-entra-id` · Scopes minimal
-`openid profile email` (kein Graph).
+`https://<DOMAIN>/api/auth/callback/microsoft-entra-id` · Scope
+`openid profile email User.Read` (User.Read = Profilfoto via Graph).
 
 ---
 

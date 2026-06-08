@@ -37,8 +37,9 @@ bleiben **immer** serverseitig.
 - **Ticketlisten** (Meine / Team / Neben / Ball) – server-seitige Filter, Volltextsuche,
   **Bulk-Aktionen mit Undo** (Status/Priorität/Queue/Zuweisung über das bestehende
   PATCH, max. 3 parallel) und **per Drag & Drop umsortierbare Spalten** (persistent).
-- **Ticketdetail** – Inline-Edit aller Kernfelder, **Chat-Sidebar** (kundensichtbare
-  Notizen), **Zeiterfassung + Stoppuhr**, interne Notizen, Anhänge lesen/laden.
+- **Ticketdetail** – Inline-Edit aller Kernfelder, **Chat-Sidebar** mit echter
+  **Kundenmail via Resend** (Senden legt die TicketNote an + mailt; Antworten threaden
+  über die Ticketnummer zurück), **Zeiterfassung + Stoppuhr**, interne Notizen, Anhänge.
 - **Firmen + Kundenakte** und **Kontakte** mit Suche/Filter.
 - **Globale Suche** – Spotlight-Palette (`Cmd/Ctrl+K`) mit 4 parallelen Spalten und eine
   `/search`-Seite mit „Mehr laden" je Spalte und Gesamtzahl.
@@ -110,11 +111,21 @@ nie committet). Vorlage: [`.env.example`](.env.example).
 | `AUTOTASK_API_SECRET` | immer | API-Secret (Sonderzeichen → in `.env.local` in **einfache** Quotes) |
 | `AUTOTASK_INTEGRATION_CODE` | immer | Integration-Code |
 | `AUTH_SECRET` | bei `entra` | `openssl rand -base64 32` (JWT-Signatur) |
-| `AUTH_MICROSOFT_ENTRA_ID_ID` | bei `entra` | Application (client) ID |
-| `AUTH_MICROSOFT_ENTRA_ID_SECRET` | bei `entra` | Client-Secret |
-| `AUTH_MICROSOFT_ENTRA_ID_ISSUER` | bei `entra` | `https://login.microsoftonline.com/<TENANT_ID>/v2.0` |
-| `AUTH_URL` | bei `entra` | öffentliche https-Domain (Redirects) |
+| `ENTRA_CLIENT_ID` | bei `entra` | Application (client) ID |
+| `ENTRA_CLIENT_SECRET` | bei `entra` | Client-Secret-Wert |
+| `ENTRA_TENANT_ID` | bei `entra` | Directory (tenant) ID → tenant-spezifischer Issuer |
+| `AUTH_URL` | bei `entra` | öffentliche https-Domain (Redirects/Callback) |
 | `AUTH_TRUST_HOST` | bei `entra` (Non-Vercel) | `true` (hinter Reverse-Proxy) |
+| `ENTRA_EMAIL_LOOSE_MATCH` | nur Sandbox | `1` = toleranter E-Mail→Resource-Abgleich (`+psasandbox`-Tag); in **Prod weglassen** |
+| `RESEND_API_KEY` | für Chat-Mail | Resend-API-Key (Kundenmail beim Chat-Senden) |
+| `RESEND_FROM` | für Chat-Mail | Absender auf verifizierter Resend-Domain, z. B. `SSIG-IT Service Desk <service@ssig-it.com>` |
+| `AUTOTASK_INBOUND_MAILBOX` | für Chat-Mail | Autotask-Eingangspostfach = `Reply-To` (Antworten laufen als TicketNote zurück) |
+
+> **Entra-Namen:** Der Provider wird in [`lib/auth/authjs.ts`](lib/auth/authjs.ts) **explizit**
+> aus `ENTRA_CLIENT_ID/_SECRET/_TENANT_ID` konfiguriert — **nicht** aus den Auth.js-
+> Defaults `AUTH_MICROSOFT_ENTRA_ID_*`. **Kundenmail:** Eine Chat-Nachricht legt die
+> TicketNote an **und** sendet via Resend (`Reply-To` = Inbound-Mailbox); ohne
+> Resend-Konfig bleibt der alte Autotask-Workflow-Pfad aktiv.
 
 ## Deployment
 
