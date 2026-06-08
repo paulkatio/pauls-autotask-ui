@@ -21,6 +21,12 @@ const HEADINGS: Record<TimeWindow, string> = {
   "7": "Letzte 7 Tage",
 };
 
+const WINDOW_ITEMS = [
+  { value: "today", label: "Heute" },
+  { value: "3", label: "Letzte 3 Tage" },
+  { value: "7", label: "Letzte 7 Tage" },
+];
+
 // Dashboard-Liste „bearbeitete Tickets" mit Zeitfenster-Umschalter (Heute / letzte
 // 3 / letzte 7 Tage, Default Heute). Die Zeilen kommen serverseitig aus dem 7-Tage-
 // Fenster (nach lastActivityDate sortiert); hier nur clientseitig eingrenzen.
@@ -58,15 +64,21 @@ export function RecentlyEdited({
     <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold tracking-tight">{HEADINGS[win]}</h2>
-        <Select value={win} onValueChange={(v) => setWin(v as TimeWindow)}>
+        <Select
+          items={WINDOW_ITEMS}
+          value={win}
+          onValueChange={(v) => setWin(v as TimeWindow)}
+        >
           <SelectTrigger size="sm" className="w-auto min-w-36" aria-label="Zeitraum">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="today">Heute</SelectItem>
-              <SelectItem value="3">Letzte 3 Tage</SelectItem>
-              <SelectItem value="7">Letzte 7 Tage</SelectItem>
+              {WINDOW_ITEMS.map((i) => (
+                <SelectItem key={i.value} value={i.value}>
+                  {i.label}
+                </SelectItem>
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>
