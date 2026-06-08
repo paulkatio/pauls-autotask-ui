@@ -39,21 +39,32 @@ bleiben **immer** serverseitig.
 
 ## Features
 
-- **Dashboard** – KPI-Kacheln (offene/Pool/Ball-liegt-bei-mir) + „Tickets pro Mitarbeiter"-
-  Diagramm + zuletzt bearbeitete Tickets.
-- **Ticketlisten** (Meine / Team / Neben / Ball) – server-seitige Filter, Volltextsuche,
-  **Bulk-Aktionen mit Undo** (Status/Priorität/Queue/Zuweisung über das bestehende
-  PATCH, max. 3 parallel) und **per Drag & Drop umsortierbare Spalten** (persistent).
-- **Ticketdetail** – Inline-Edit aller Kernfelder, **Chat-Sidebar** mit echter
-  **Kundenmail via Resend** (Senden legt die TicketNote an + mailt; Antworten threaden
-  über die Ticketnummer zurück), **Zeiterfassung + Stoppuhr**, interne Notizen, Anhänge.
-- **Firmen + Kundenakte** und **Kontakte** mit Suche/Filter.
-- **Globale Suche** – Spotlight-Palette (`Cmd/Ctrl+K`) mit 4 parallelen Spalten und eine
-  `/search`-Seite mit „Mehr laden" je Spalte und Gesamtzahl.
-- **Durchgängig responsiv**, Light/Dark über semantische Tokens, Ampel-Badges,
-  layout-treue Lade-Skeletons.
-- **Auth gekapselt:** lokaler Mock-Login **oder** Microsoft Entra ID – Umschalten kostet
-  eine Env-Variable.
+Schnell, fokussiert, **mobile-first**: die tägliche Arbeit von Technikern und Service-Desk
+in einer aufgeräumten Oberfläche statt in der schwergewichtigen Autotask-Maske – vom
+Smartphone bis zum Breitbild dieselbe App.
+
+- **📱 Perfekt am Smartphone (Mobile First).** Jede Liste, jedes Detail, jeder Dialog ist
+  für den Touch gebaut. Ticket-, Firmen- und Kontaktlisten werden auf dem Handy zu
+  übersichtlichen **Karten** (kein Querscrollen), KPI-Kacheln im **2×2-Raster**, große
+  Touch-Navigation, der **Chat immer griffbereit**. Tabellen erst ab Tablet/Desktop.
+- **⚡ Dashboard auf einen Blick.** KPI-Kacheln (meine offenen / Pool / Ball liegt bei
+  mir), „Tickets pro Mitarbeiter" als Diagramm (auf dem Handy als Liste) und „heute
+  bearbeitet" mit Zeitraum-Filter (Heute / 3 / 7 Tage).
+- **🎯 Ticketlisten, die mitdenken.** Server-seitige Filter, Volltextsuche,
+  **Bulk-Aktionen mit Undo** (Status/Priorität/Queue/Zuweisung) und **per Drag & Drop
+  umsortierbare Spalten** (gemerkt pro Gerät).
+- **💬 Ticketdetail mit echtem Kunden-Chat.** Inline-Edit aller Kernfelder, **Chat-Sidebar
+  mit Kundenmail via Resend** (Senden legt die Notiz an *und* mailt; Antworten threaden
+  über die Ticketnummer automatisch zurück ans Ticket), **Zeiterfassung + Stoppuhr**,
+  interne Notizen, Anhänge.
+- **🔎 Globale Blitz-Suche.** Spotlight-Palette (`Cmd/Ctrl+K`) sucht Tickets, Firmen und
+  Kontakte gleichzeitig; dazu eine `/search`-Seite mit „Mehr laden" und Gesamtzahl.
+- **🏢 Firmen & Kontakte** mit Suche/Filter und kompakter Kundenakte.
+- **🌗 Hell & Dunkel** automatisch über semantische Tokens – kein hartes Theming, AA-Kontrast.
+- **🔒 Sicher per Design (BFF).** Autotask-Zugangsdaten bleiben **immer** serverseitig;
+  der Browser sieht nur interne `/api`-Routen, Schreibpfade sind pro Feld whitelisted.
+- **🔑 Login nach Wahl.** Lokaler Mock **oder** Microsoft Entra ID (inkl. Profilbild aus
+  Microsoft Graph) – Umschalten kostet **eine** Umgebungsvariable.
 
 ## Tech-Stack
 
@@ -115,6 +126,7 @@ nie committet). Vorlage: [`.env.example`](.env.example).
 | Variable | Nötig | Zweck |
 |---|---|---|
 | `AUTH_MODE` | immer | `mock` (lokaler Login) oder `entra` (Microsoft Entra ID) |
+| `NEXT_PUBLIC_ORG_NAME` | optional | Eigener Firmen-/Markenname (Sidebar, Login, Manifest, Mail-Signatur); Default `Acme GmbH` |
 | `AUTOTASK_BASE_URL` | immer | Zone-Endpoint, z. B. `https://webservicesX.autotask.net/ATServicesRest/V1.0` |
 | `AUTOTASK_API_USERNAME` | immer | API-User |
 | `AUTOTASK_API_SECRET` | immer | API-Secret (Sonderzeichen → in `.env.local` in **einfache** Quotes) |
@@ -127,7 +139,7 @@ nie committet). Vorlage: [`.env.example`](.env.example).
 | `AUTH_TRUST_HOST` | bei `entra` (Non-Vercel) | `true` (hinter Reverse-Proxy) |
 | `ENTRA_EMAIL_LOOSE_MATCH` | nur Sandbox | `1` = toleranter E-Mail→Resource-Abgleich (`+psasandbox`-Tag); in **Prod weglassen** |
 | `RESEND_API_KEY` | für Chat-Mail | Resend-API-Key (Kundenmail beim Chat-Senden) |
-| `RESEND_FROM` | für Chat-Mail | Absender auf verifizierter Resend-Domain, z. B. `SSIG-IT Service Desk <service@ssig-it.com>` |
+| `RESEND_FROM` | für Chat-Mail | Absender auf verifizierter Resend-Domain, z. B. `Acme Service Desk <service@example.com>` |
 | `AUTOTASK_INBOUND_MAILBOX` | für Chat-Mail | Autotask-Eingangspostfach = `Reply-To` (Antworten laufen als TicketNote zurück) |
 
 > **Entra-Namen:** Der Provider wird in [`lib/auth/authjs.ts`](lib/auth/authjs.ts) **explizit**

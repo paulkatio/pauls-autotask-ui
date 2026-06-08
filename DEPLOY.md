@@ -29,7 +29,7 @@ AUTH_MODE=mock     # oder: entra
 **Kundenmail-Versand (B17, app-eigene Resend-Mail — einziger Weg):**
 ```
 RESEND_API_KEY=...             # https://resend.com -> API Keys
-RESEND_FROM=...                # verifizierte Resend-Domain, z. B. SSIG-IT Service Desk <service@ssig-it.com>
+RESEND_FROM=...                # verifizierte Resend-Domain, z. B. Acme Service Desk <service@example.com>
 AUTOTASK_INBOUND_MAILBOX=...   # Reply-To = Autotask-Eingangspostfach (Antwort-Threading)
 ```
 
@@ -96,5 +96,5 @@ curl -I http://127.0.0.1:3000/login    # erwartet HTTP 200
 Aktuell zeigt `AUTOTASK_*` auf die **Sandbox**. Für den echten Kundeneinsatz erst
 nach Freigabe auf den Produktiv-Mandanten umstellen (eigener Schritt, eigene
 Verifikation). ⚠️ Vorher gilt weiter die Sandbox-Test-Regel (Schreibtests nur an
-SSIG-IT Sandbox / Paul-Harald Katio). Außerdem offen vor Kundeneinsatz: **B17**
+Acme Sandbox / Paul-Harald Katio). Außerdem offen vor Kundeneinsatz: **B17**
 (Kundenmail app-eigen via Resend) und **B17a** (Inbound-noteType in Prod bestätigen).

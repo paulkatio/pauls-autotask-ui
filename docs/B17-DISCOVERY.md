@@ -246,12 +246,12 @@ Doppel-Mails: Resend **und** Workflow).
 
 **A — Resend / Versand**
 1. **Absenderdomain/-adresse:** Welche Domain/Adresse ist in **Resend verifiziert**
-   (SPF/DKIM)? Was soll als `From` stehen (z. B. `service@ssig-it.com` oder
+   (SPF/DKIM)? Was soll als `From` stehen (z. B. `service@example.com` oder
    `tickets@…`)? Anzeigename?
 2. **Resend-API-Key:** bitte als `RESEND_API_KEY` in `.env.local` (Sandbox-Test) und
    später Prod hinterlegen. Test-Key vs. Live-Key?
 3. Soll der **Anzeigename des sendenden Technikers** in der Mail erscheinen
-   (z. B. „Max von SSIG-IT") oder einheitlich „SSIG-IT Service Desk"?
+   (z. B. „Max von Acme") oder einheitlich „Acme Service Desk"?
 
 **B — Autotask Inbound / Threading (kritisch)**
 4. **Inbound-Mailboxadresse** (das Postfach von „Add Ticket Email Service") – das
@@ -308,7 +308,7 @@ Neue Env: `RESEND_API_KEY`, `RESEND_FROM`, `AUTOTASK_INBOUND_MAILBOX` (= `Reply-
   benötigt. `Reply-To` zusätzlich auf die Inbound-Mailbox (Sicherheit + sauberer Absender).
 - **Reply-To:** `AUTOTASK_INBOUND_MAILBOX`. (`From` = verifizierte Resend-Domain.)
 - **Body:** schlankes, brandfreundliches HTML + Text-Fallback; Ticketnummer + Inhalt
-  der Notiz; Signatur „SSIG-IT Service Desk".
+  der Notiz; Signatur „Acme Service Desk".
 
 ### 6.3 Fehlersemantik (wichtig)
 

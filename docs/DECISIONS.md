@@ -174,7 +174,7 @@ Regeln:
   `contactID`, `companyID` (REQ), `priority`/`status` (REQ), `queueID`,
   `lastCustomerVisibleActivityDateTime`, `lastCustomerNotificationDateTime`.
 - SLA-Felder (verifiziert): `serviceLevelAgreementID` (PICK: `1`=Standard SLA,
-  `3`=Standard SLA SSIG-IT GmbH), `serviceLevelAgreementHasBeenMet`(RO),
+  `3`=Standard SLA Acme GmbH), `serviceLevelAgreementHasBeenMet`(RO),
   `firstResponseDueDateTime`/`firstResponseDateTime`(RO),
   `resolutionPlanDueDateTime`/`resolutionPlanDateTime`(RO),
   `resolvedDueDateTime`/`resolvedDateTime`(RO),
@@ -200,7 +200,7 @@ Regeln:
   da kein Header-Feedback kommt.
 
 ### Testdaten-Hinweis
-Phase-0-Testobjekte (sauber als `ZZZ TEST` markiert, Firma SSIG-IT GmbH Sandbox /
+Phase-0-Testobjekte (sauber als `ZZZ TEST` markiert, Firma Acme GmbH Sandbox /
 Kontakt Paul-Harald Katio): Ticket `43180`, TicketNotes `29926287`/`29926288`,
 TimeEntry `30548`. Keine dieser Aktionen hat eine Mail ausgelöst.
 
@@ -233,7 +233,7 @@ TimeEntry `30548`. Keine dieser Aktionen hat eine Mail ausgelöst.
 - Begründung: Sicherheit + Autotask-Thread-Limit + keine Blindflug-Schreibvorgänge.
 
 ### [2026-06-01] Sandbox-Testdaten-Regel
-- Entscheidung: Test-Schreibvorgänge ausschließlich an Firma **„SSIG-IT GmbH
+- Entscheidung: Test-Schreibvorgänge ausschließlich an Firma **„Acme GmbH
   Sandbox"** (`companyID = 0`) mit Kontakt **„Paul-Harald Katio"**
   (`contactID = 30684646`, Mail `qalab@autotask.com` = Sandbox-Catch-all).
 - Begründung: Die Sandbox enthält echte Kontakte mit potenziell echten Mail-
@@ -534,7 +534,7 @@ Zwei-Schritt (TSR → `in`-Count). K4 = ein `query` (meine offenen, inkl.
 ### [2026-06-03] Ticket-Bearbeitung – Schreibfelder verifiziert (gegen .env.local)
 
 Verifiziert über den **App-Client** (`.env.local`-Mandant, NICHT MCP) an
-**Ticket 43180** (Firma SSIG-IT Sandbox `companyID 0`, Kontakt Paul-Harald Katio
+**Ticket 43180** (Firma Acme Sandbox `companyID 0`, Kontakt Paul-Harald Katio
 `30684646`). Alle Schreibtests mit anschließendem **Restore** auf die
 Originalwerte (verifiziert: Ticket nach Lauf unverändert). Lesequelle für
 Feld-Metadaten: `GET {Entity}/entityInformation/fields`.
@@ -773,7 +773,7 @@ Verifiziert: Build grün; Screenshots Hell/Dunkel Desktop (alle Tabs) + Mobile
 ### [2026-06-04] Slice 1 umgesetzt – Neues Ticket erstellen (Schreibpfad)
 
 Erster Create-Schreibpfad. End-to-end gegen `.env.local` verifiziert; beide
-Test-Tickets an Firma SSIG-IT Sandbox (`companyID 0`) / Kontakt Paul-Harald Katio
+Test-Tickets an Firma Acme Sandbox (`companyID 0`) / Kontakt Paul-Harald Katio
 (`30684646`), danach auf `status=5` (Abgeschlossen) gesetzt.
 
 - **POST Tickets (Top-Level)** verifiziert: `itemId 43181` (API-Probe) und
@@ -1251,7 +1251,7 @@ Round-Trip funktioniert.
   Auswahl leeren.
 - **Resources** für die Zuweisung: neue, 5 min gecachte `getAssignableResources()`
   (`unstable_cache`) statt pro Liste neu zu laden.
-- **Verifiziert (NUR an den ZZZ-Testtickets, IDs 43180–43183, Firma „SSIG-IT GmbH
+- **Verifiziert (NUR an den ZZZ-Testtickets, IDs 43180–43183, Firma „Acme GmbH
   Sandbox"):**
   - Kopf-Checkbox wählt die ganze Seite (4 Tickets), Bulk-Leiste zeigt „4 … ausgewählt".
   - Bulk-Status **In Bearbeitung** (3 Tickets 43181–43183) → „3 erfolgreich", Liste nach
@@ -1630,7 +1630,7 @@ Ticketstände anzeigen — schädlicher als nützlich. (Backlog **B28** hält di
 optionale Push-Erweiterung fest; Web-Push würde einen SW erfordern und diese
 Entscheidung gezielt nur für den Push-Pfad aufweichen.)
 - **Manifest:** `app/manifest.ts` (`MetadataRoute.Manifest`). `id`/`start_url`/
-  `scope` = „/", `display` = `standalone`, `name` „SSIG-IT Tickets" /
+  `scope` = „/", `display` = `standalone`, `name` „Acme Tickets" /
   `short_name` „Tickets". Next serviert es als `/manifest.webmanifest` und fügt
   den `<link rel="manifest">` automatisch ein.
 - **Farben aus v2-Token:** `background_color`/`theme_color` statisch = Eggshell
@@ -1671,14 +1671,14 @@ Entscheidung gezielt nur für den Push-Pfad aufweichen.)
   Issuer (`…/<tenant>/v2.0`) beschränkt auf die eigene Organisation.
 - **Sandbox-E-Mail-Realität (verifiziert über die App-Creds):** Der Autotask-
   Sandbox-Refresh hängt allen Resource-Mails ein Plus-Tag an
-  (`Paul.Katio+psasandbox@ssig-it.com`, `koenig+psasandbox@…`,
+  (`Paul.Katio+psasandbox@example.com`, `koenig+psasandbox@…`,
   `vitalii.morgunov+psasandbox@…`). Die echte Microsoft-Login-Mail
-  (`Paul.Katio@ssig-it.com`) hat diesen Zusatz nicht ⇒ **exakter** `byEmail`-
+  (`Paul.Katio@example.com`) hat diesen Zusatz nicht ⇒ **exakter** `byEmail`-
   Abgleich scheitert → `/no-access`. In **Produktion** stimmen die Mails überein.
 - **Fix – toleranter Fallback in `resources.byEmail`:** zuerst exakt (Produktionspfad,
   unverändert streng); bei Misserfolg werden – **nur wenn `ENTRA_EMAIL_LOOSE_MATCH=1`** –
   alle aktiven Resources normalisiert verglichen (Kleinschreibung + Plus-Tag entfernt:
-  `local+tag@domain` → `local@domain`). Verifiziert: `Paul.Katio@ssig-it.com` →
+  `local+tag@domain` → `local@domain`). Verifiziert: `Paul.Katio@example.com` →
   Resource **29682926 / Paul-Harald Katio**. Flag ist in `.env.local` (Sandbox)
   gesetzt; **Produktion lässt es weg** → streng exakter Abgleich, kein Fabrizieren.
 - **`/no-access`** zeigt jetzt die empfangene Login-Mail an (erleichtert dem Admin
@@ -1687,7 +1687,7 @@ Entscheidung gezielt nur für den Push-Pfad aufweichen.)
 ### B17 – Chat→Kundenmail via Resend + Inbound-Threading (2026-06-05)
 - **Resend live + zugestellt verifiziert.** Eine Chat-Nachricht legt jetzt die
   Notiz (noteType 18) an UND versendet die Kundenmail über Resend. Reale Zustellung
-  an ein kontrolliertes Postfach (`paul.katio@ssig-it.com`) bestätigt.
+  an ein kontrolliertes Postfach (`paul.katio@example.com`) bestätigt.
 - **Verkabelung:** `lib/mail/resend.ts` (Versand über die Resend-REST-API, **kein**
   npm-Paket; Secrets server-only). `sendTicketChatNote` (Reihenfolge umgedreht ggü.
   früher): **Notiz zuerst** → Notiz scheitert = Abbruch, keine Mail; **dann** Mail.

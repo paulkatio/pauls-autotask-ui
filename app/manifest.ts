@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 
+import { ORG_NAME } from "@/lib/branding";
+
 // PWA-Manifest. Next serviert das als /manifest.webmanifest und fügt das
 // <link rel="manifest"> automatisch in den <head> ein (siehe app/layout.tsx).
 //
@@ -14,7 +16,7 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "SSIG-IT Tickets",
+    name: `${ORG_NAME} Tickets`,
     short_name: "Tickets",
     description:
       "Fokussierte Oberfläche für Autotask – Dashboard, Ticketlisten und Ticket-Chat.",

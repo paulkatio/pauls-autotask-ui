@@ -29,7 +29,7 @@ Sandbox-Daten.
 
 ## Schreibdisziplin
 
-Schreibende Tests laufen **ausschließlich** am Testticket 43180 (Firma SSIG-IT
+Schreibende Tests laufen **ausschließlich** am Testticket 43180 (Firma Acme
 Sandbox, Kontakt Paul-Harald Katio). Es werden keine Datensätze gelöscht. Hinweis:
 Autotask-Workflow-Regeln verändern den Status von 43180 gelegentlich selbst – der
 Status-Test liest daher den Ausgangswert dynamisch und setzt ihn zurück.

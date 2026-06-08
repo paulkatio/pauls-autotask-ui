@@ -20,6 +20,7 @@ import {
 
 import { NavMain, type NavItem } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
+import { ORG_NAME } from "@/lib/branding"
 import type { SessionUser } from "@/lib/auth/session"
 import {
   Sidebar,
@@ -67,7 +68,7 @@ export function AppSidebar({
               />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">Autotask UI</span>
-                <span className="truncate text-xs">SSIG-IT</span>
+                <span className="truncate text-xs">{ORG_NAME}</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

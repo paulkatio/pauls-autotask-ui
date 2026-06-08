@@ -24,6 +24,6 @@ Architektur, Features, Weichen, Env, Cutover-Lücken, alles selbsterklärend.
 
 Pro Arbeits-Slice: gegen die Sandbox verifizieren → `npm run build` grün → Browser
 Hell/Dunkel/Mobile → EIN kleiner Commit → `DECISIONS.md`/`BACKLOG.md` nachziehen.
-**Schreibtests nur** an der Firma „SSIG-IT GmbH Sandbox" (`companyID 0`) / Kontakt
+**Schreibtests nur** an der Firma „Acme GmbH Sandbox" (`companyID 0`) / Kontakt
 Paul-Harald Katio (`contactID 30684646`), Test-Titel `ZZZ TEST`. Nichts „fertig"
 behaupten ohne echten Test.

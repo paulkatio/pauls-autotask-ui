@@ -214,7 +214,7 @@ URL, Cache-bust bei Tausch).
 | Weiche | Wo | Default / Wert |
 |---|---|---|
 | **AUTH_MODE** | `process.env`, gelesen in `lib/auth/index.ts` | `mock` (Cutover: `entra`) |
-| **Sandbox-Schreibregel** | `CLAUDE.md` §5 + Memory; **keine Runtime-Sperre, Disziplin** | Schreibtests NUR Firma „SSIG-IT GmbH Sandbox" `companyID 0`, Kontakt Paul-Harald Katio `contactID 30684646`, Titel-Präfix `ZZZ TEST` |
+| **Sandbox-Schreibregel** | `CLAUDE.md` §5 + Memory; **keine Runtime-Sperre, Disziplin** | Schreibtests NUR Firma „Acme GmbH Sandbox" `companyID 0`, Kontakt Paul-Harald Katio `contactID 30684646`, Titel-Präfix `ZZZ TEST` |
 | **Schreib-Whitelist Ticket** | `app/api/tickets/[id]/route.ts` `EDITABLE_FIELDS` + `STRING_FIELDS` | nur gelistete Felder; Zuweisung Resource+Rolle nur zusammen |
 | **Default-Queue neues Ticket** | `lib/autotask/new-ticket.ts` `NEW_TICKET_DEFAULT_QUEUE` | `29682833` (Level I-Support) |
 | **Chat-noteTypes** | `lib/autotask/conversation.ts` | outbound 18 (Kundenportal), inbound 101 (E-Mail) – inbound **in Prod unverifiziert** |

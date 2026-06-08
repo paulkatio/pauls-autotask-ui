@@ -575,7 +575,7 @@ beidseitig verlinkt, Ziel zeigt die Quell-Inhalte; cross-Firma blockiert; an ZZZ
 
 ## B27 — PWA-Basis: installierbar als Web-App (kein Service Worker) — ERLEDIGT (2026-06-05)
 **Abhängigkeit:** —
-**Umgesetzt:** `app/manifest.ts` (`MetadataRoute.Manifest`: „SSIG-IT Tickets", `start_url`/
+**Umgesetzt:** `app/manifest.ts` (`MetadataRoute.Manifest`: „Acme Tickets", `start_url`/
 `scope` „/", `display` standalone, `background_color`/`theme_color` Eggshell aus v2-Token);
 adaptive `theme_color` Hell/Dunkel über `viewport`-Export (media-Queries, Hell `#fdfcfb` /
 Dunkel `#13100e`). Icons aus dem App-Logo generiert (`scripts/generate-pwa-icons.mjs`, sharp):
