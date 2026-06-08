@@ -48,7 +48,10 @@ export default async function AppLayout({
                   currentUserName={session.id}
                 />
               )}
-              <ThemeToggle />
+              {/* Auf Mobile sitzt der Theme-Umschalter im Benutzermenü (NavUser). */}
+              <span className="hidden md:inline-flex">
+                <ThemeToggle />
+              </span>
             </div>
           </div>
         </header>

@@ -11,6 +11,8 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -22,6 +24,8 @@ import {
 } from "@/components/ui/sidebar"
 import * as React from "react"
 import { ChevronsUpDownIcon, BadgeCheckIcon, BellIcon, HistoryIcon, LogOutIcon } from "lucide-react"
+
+import { useTheme } from "next-themes"
 
 import { logout } from "@/lib/auth/actions"
 import { HistorySheet } from "@/components/history-sheet"
@@ -36,6 +40,7 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const { theme, setTheme } = useTheme()
   const [historyOpen, setHistoryOpen] = React.useState(false)
   const initials =
     user.name
@@ -99,6 +104,18 @@ export function NavUser({
                 Benachrichtigungen
               </DropdownMenuItem>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+              Design
+            </DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={theme ?? "system"}
+              onValueChange={setTheme}
+            >
+              <DropdownMenuRadioItem value="light">Hell</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="dark">Dunkel</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="system">System</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => logout()}>
               <LogOutIcon />
