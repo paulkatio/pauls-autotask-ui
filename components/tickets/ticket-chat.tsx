@@ -9,7 +9,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Empty,
   EmptyDescription,
@@ -58,6 +70,11 @@ export function TicketChat({
   const [sending, setSending] = React.useState(false);
   const [sendError, setSendError] = React.useState<string | null>(null);
   const [mailNotice, setMailNotice] = React.useState<string | null>(null);
+  // Mailversand standardmäßig AUS (Sicherheit): ohne aktiven Schalter wird die
+  // Nachricht nur als Notiz gespeichert, NICHT an den Kunden gemailt. Bei aktivem
+  // Schalter erscheint vor dem Versand ein Bestätigungsdialog (irreversibel).
+  const [notify, setNotify] = React.useState(false);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
   const tempId = React.useRef(-1);
 
   const load = React.useCallback(async () => {
@@ -83,6 +100,10 @@ export function TicketChat({
   }, [ticketId]);
 
   React.useEffect(() => {
+    // Fetch-on-Mount + Polling = legitime externe Synchronisation (kein abgeleiteter
+    // State). load() ist async, setState passiert erst NACH await – also kein
+    // synchrones Cascading-Render. Die Compiler-Regel ist hier ein False-Positive.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
     // Polling nur bei sichtbarem Tab (Document Visibility); kein Dauerfeuer.
     const timer = setInterval(() => {
@@ -98,10 +119,22 @@ export function TicketChat({
     };
   }, [load]);
 
-  async function handleSend(e: React.FormEvent) {
+  // Form-Submit: bei aktivem Mailversand erst bestätigen lassen, sonst direkt senden.
+  function attemptSend(e: React.FormEvent) {
     e.preventDefault();
     const body = text.trim();
     if (!body || sending) return;
+    if (notify) {
+      setConfirmOpen(true);
+      return;
+    }
+    void doSend();
+  }
+
+  async function doSend() {
+    const body = text.trim();
+    if (!body || sending) return;
+    setConfirmOpen(false);
     setSending(true);
     setSendError(null);
     setMailNotice(null);
@@ -123,7 +156,7 @@ export function TicketChat({
       const res = await fetch(`/api/tickets/${ticketId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: body, notify: true }),
+        body: JSON.stringify({ text: body, notify }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -165,7 +198,7 @@ export function TicketChat({
           <CardTitle>Chat</CardTitle>
           <span className="text-muted-foreground flex items-center gap-1 text-xs">
             <MailIcon className="size-3.5" />
-            Per E-Mail zugestellt
+            Kundenkommunikation
           </span>
         </div>
       </CardHeader>
@@ -256,21 +289,56 @@ export function TicketChat({
           </Alert>
         )}
 
-        <form onSubmit={handleSend} className="mt-auto flex flex-col gap-2">
+        <form onSubmit={attemptSend} className="mt-auto flex flex-col gap-2">
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Nachricht an den Kunden …"
+            placeholder={
+              notify ? "Nachricht an den Kunden …" : "Interne Notiz …"
+            }
             rows={2}
             aria-label="Nachricht"
           />
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="chat-notify"
+                checked={notify}
+                onCheckedChange={(v) => setNotify(v === true)}
+              />
+              <Label
+                htmlFor="chat-notify"
+                className="text-muted-foreground text-xs font-normal"
+              >
+                Per E-Mail an Kunden senden
+              </Label>
+            </div>
             <Button type="submit" size="sm" disabled={sending || !text.trim()}>
-              Senden
+              {notify ? "Senden & mailen" : "Speichern"}
             </Button>
           </div>
         </form>
       </CardContent>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Nachricht per E-Mail an den Kunden senden?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Die Nachricht wird dem Ticket-Kontakt als E-Mail zugestellt und ist
+              im Kundenportal sichtbar. Das lässt sich nicht zurücknehmen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void doSend()}>
+              Senden &amp; mailen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

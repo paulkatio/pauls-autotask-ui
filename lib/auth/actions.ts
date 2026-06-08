@@ -14,7 +14,11 @@ const cookieOptions = {
 };
 
 // Login im Mock-Modus: setzt die Auswahl als Cookie und leitet zur App.
+// Hart auf den Mock-Modus begrenzt – im Entra-/Prod-Modus existiert dieser Pfad
+// effektiv nicht (Defense-in-depth, Sicherheits-Audit): so lässt sich auch durch
+// direktes Aufrufen der Server-Action keine Mock-Identität erschleichen.
 export async function loginAs(formData: FormData) {
+  if (authMode() !== "mock") redirect("/login");
   const userName = String(formData.get("userName") ?? "");
   if (findMockUser(userName)) {
     (await cookies()).set(MOCK_COOKIE, userName, cookieOptions);
@@ -22,8 +26,9 @@ export async function loginAs(formData: FormData) {
   redirect("/");
 }
 
-// Umschalten zwischen Mock-Usern (Header-Dropdown).
+// Umschalten zwischen Mock-Usern (Header-Dropdown). Nur im Mock-Modus wirksam.
 export async function switchMockUser(userName: string) {
+  if (authMode() !== "mock") return;
   if (findMockUser(userName)) {
     (await cookies()).set(MOCK_COOKIE, userName, cookieOptions);
     revalidatePath("/", "layout");

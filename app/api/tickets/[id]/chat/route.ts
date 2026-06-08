@@ -56,7 +56,10 @@ export async function POST(
     notify?: unknown;
   } | null;
   const text = typeof body?.text === "string" ? body.text.trim() : "";
-  const notify = body?.notify !== false; // Default: an
+  // FAIL-SAFE: Mail nur bei EXPLIZITEM notify === true. Fehlt das Feld, wird die
+  // Notiz angelegt, aber KEINE Kunden-Mail versendet (Sicherheits-Audit: früher
+  // war der Default „an" → jeder Klick mailte ungewollt an echte Kunden).
+  const notify = body?.notify === true;
   if (!text) {
     return NextResponse.json(
       { error: "Nachricht darf nicht leer sein." },
