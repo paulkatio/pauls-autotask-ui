@@ -105,13 +105,13 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
-              Design
-            </DropdownMenuLabel>
             <DropdownMenuRadioGroup
               value={theme ?? "system"}
               onValueChange={setTheme}
             >
+              <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+                Design
+              </DropdownMenuLabel>
               <DropdownMenuRadioItem value="light">Hell</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="dark">Dunkel</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="system">System</DropdownMenuRadioItem>
