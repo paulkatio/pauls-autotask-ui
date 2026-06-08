@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { ORG_NAME } from "@/lib/branding";
+import { getOrgName } from "@/lib/branding-server";
 
 // PWA-Manifest. Next serviert das als /manifest.webmanifest und fügt das
 // <link rel="manifest"> automatisch in den <head> ein (siehe app/layout.tsx).
@@ -13,10 +13,11 @@ import { ORG_NAME } from "@/lib/branding";
 // adaptive Hell/Dunkel-Umschaltung der Browser-Leiste passiert über den
 // viewport-Export in app/layout.tsx (media-Queries) – das Manifest erlaubt nur
 // einen statischen Wert.
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const orgName = await getOrgName();
   return {
     id: "/",
-    name: `${ORG_NAME} Tickets`,
+    name: `${orgName} Tickets`,
     short_name: "Tickets",
     description:
       "Fokussierte Oberfläche für Autotask – Dashboard, Ticketlisten und Ticket-Chat.",

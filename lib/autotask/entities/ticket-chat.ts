@@ -5,7 +5,7 @@ import { tickets } from "@/lib/autotask/entities/tickets";
 import { resources } from "@/lib/autotask/entities/resources";
 import { contacts } from "@/lib/autotask/entities/contacts";
 import { sendMail, isResendConfigured } from "@/lib/mail/resend";
-import { MAIL_SENDER_NAME } from "@/lib/branding";
+import { getMailSenderName } from "@/lib/branding-server";
 import {
   CONVERSATION_NOTE_TYPES,
   CONVERSATION_TYPE_IDS,
@@ -171,12 +171,13 @@ export async function sendTicketChatNote(
       const number = ticket?.ticketNumber ?? `#${ticketId}`;
       const ticketTitle = ticket?.title?.trim() ?? "";
       const subject = ticketTitle ? `[${number}] ${ticketTitle}` : `[${number}]`;
-      const textBody = `${text}\n\n—\n${MAIL_SENDER_NAME}\nTicket ${number}`;
+      const senderName = await getMailSenderName();
+      const textBody = `${text}\n\n—\n${senderName}\nTicket ${number}`;
       const html =
         `<div style="font-family:system-ui,sans-serif;font-size:14px;line-height:1.5">` +
         `<p style="white-space:pre-wrap;margin:0 0 16px">${escapeHtml(text)}</p>` +
         `<hr style="border:none;border-top:1px solid #e5e5e5;margin:16px 0">` +
-        `<p style="color:#666;margin:0">${escapeHtml(MAIL_SENDER_NAME)} · Ticket ${escapeHtml(number)}</p>` +
+        `<p style="color:#666;margin:0">${escapeHtml(senderName)} · Ticket ${escapeHtml(number)}</p>` +
         `</div>`;
 
       await sendMail({ to, subject, text: textBody, html });

@@ -56,10 +56,33 @@ const listActiveCached = unstable_cache(
   { revalidate: 60 },
 );
 
+// Eigene Firma = companyID 0 (Autotask-Konvention: der Tenant selbst). Dient dem
+// App-Branding (Sidebar/Login/Manifest/Mail-Signatur). SEHR lang gecacht (24 h) –
+// der eigene Firmenname ändert sich praktisch nie, kostet so kaum Threads/Rate.
+const ownCompanyNameCached = unstable_cache(
+  async (): Promise<string | null> => {
+    const rows = await autotask.query<Company>(
+      "Companies",
+      {
+        MaxRecords: 1,
+        IncludeFields: ["id", "companyName"],
+        Filter: [{ op: "eq", field: "id", value: 0 }],
+      },
+      { autoPage: false },
+    );
+    return rows[0]?.companyName?.trim() || null;
+  },
+  ["own-company-name"],
+  { revalidate: 86400 },
+);
+
 export const companies = {
   // Einzelne Firma inkl. Anschrift/Telefon (lesend, fürs Kontextpanel).
   get: (id: number): Promise<Company | null> =>
     autotask.get<Company>("Companies", id),
+
+  // Name der eigenen Firma (companyID 0), gecacht. null bei Fehler/leer.
+  ownName: (): Promise<string | null> => ownCompanyNameCached(),
 
   // Aktive Firmen für die Firmenliste (gecacht, s. listActiveCached).
   listActive: () => listActiveCached(),

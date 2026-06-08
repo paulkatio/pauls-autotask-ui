@@ -6,6 +6,7 @@
 
 import * as React from "react"
 import Image from "next/image"
+import Link from "next/link"
 // Statischer Import: Next vergibt eine inhalts-gehashte URL → ein ausgetauschtes
 // Logo-Bild bricht Browser-/Optimizer-Cache automatisch (keine veraltete Anzeige).
 import autotaskLogo from "../public/autotask-logo.png"
@@ -20,7 +21,6 @@ import {
 
 import { NavMain, type NavItem } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
-import { ORG_NAME } from "@/lib/branding"
 import type { SessionUser } from "@/lib/auth/session"
 import {
   Sidebar,
@@ -47,8 +47,12 @@ const navItems: NavItem[] = [
 
 export function AppSidebar({
   user,
+  orgName,
   ...props
-}: { user: SessionUser } & React.ComponentProps<typeof Sidebar>) {
+}: {
+  user: SessionUser
+  orgName: string
+} & React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -56,7 +60,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              render={<a href="/" aria-label="Autotask UI – Startseite" />}
+              render={<Link href="/" aria-label="Autotask UI – Startseite" />}
             >
               <Image
                 src={autotaskLogo}
@@ -68,7 +72,7 @@ export function AppSidebar({
               />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">Autotask UI</span>
-                <span className="truncate text-xs">{ORG_NAME}</span>
+                <span className="truncate text-xs">{orgName}</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -14,12 +14,14 @@ import {
 } from "@/components/ui/sidebar";
 import { requireSession, authMode } from "@/lib/auth";
 import { mockUsers } from "@/lib/auth/mock-users";
+import { getOrgName } from "@/lib/branding-server";
 
 export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   // requireSession() leitet selbst um (/login bzw. /no-access im Entra-Modus).
   const session = await requireSession();
+  const orgName = await getOrgName();
 
   const isMock = authMode() === "mock";
   const switcherUsers = mockUsers.map((u) => ({
@@ -29,7 +31,7 @@ export default async function AppLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar user={session} />
+      <AppSidebar user={session} orgName={orgName} />
       <SidebarInset className="min-w-0">
 
         <header className="bg-background/80 supports-[backdrop-filter]:bg-background/65 sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b backdrop-blur">

@@ -4,7 +4,7 @@ import { loginAs } from "@/lib/auth/actions";
 import { signInEntra } from "@/lib/auth/entra-actions";
 import { authMode } from "@/lib/auth";
 import { mockUsers } from "@/lib/auth/mock-users";
-import { ORG_NAME } from "@/lib/branding";
+import { getOrgName } from "@/lib/branding-server";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 // Statischer Import: Next vergibt eine inhalts-gehashte, optimierte URL.
@@ -30,6 +30,7 @@ export default async function LoginPage({
 }) {
   const mode = authMode();
   const { error } = await searchParams;
+  const orgName = await getOrgName();
 
   return (
     <main className="bg-background flex min-h-svh items-center justify-center p-6">
@@ -47,7 +48,7 @@ export default async function LoginPage({
             <span className="text-2xl font-semibold tracking-tight">
               Autotask UI
             </span>
-            <span className="text-muted-foreground text-sm">{ORG_NAME}</span>
+            <span className="text-muted-foreground text-sm">{orgName}</span>
           </div>
         </div>
 
