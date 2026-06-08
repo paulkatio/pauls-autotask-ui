@@ -16,7 +16,6 @@ import {
   Building2Icon,
   ContactIcon,
   ClockIcon,
-  SettingsIcon,
 } from "lucide-react"
 
 import { NavMain, type NavItem } from "@/components/nav-main"
@@ -43,7 +42,6 @@ const navItems: NavItem[] = [
   { title: "Firmen", url: "/companies", icon: Building2Icon },
   { title: "Kontakte", url: "/contacts", icon: ContactIcon },
   { title: "Meine Zeiten", url: "/zeiten", icon: ClockIcon },
-  { title: "Admin", url: "/admin", icon: SettingsIcon },
 ]
 
 export function AppSidebar({

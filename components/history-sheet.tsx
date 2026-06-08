@@ -49,9 +49,19 @@ async function patchTicket(
   }
 }
 
-// Globaler Verlauf im Header. Liest den clientseitigen Verlauf (lib/history) und
-// bietet „Rückgängig" für reversible Feldänderungen (re-PATCH der Alt-Werte).
-export function HistorySheet() {
+// Globaler Verlauf. Liest den clientseitigen Verlauf (lib/history) und bietet
+// „Rückgängig" für reversible Feldänderungen (re-PATCH der Alt-Werte).
+// Optional steuerbar (open/onOpenChange) + Trigger abschaltbar, damit der Verlauf
+// auch aus dem Benutzer-Menü (NavUser) geöffnet werden kann statt aus dem Header.
+export function HistorySheet({
+  open,
+  onOpenChange,
+  showTrigger = true,
+}: {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  showTrigger?: boolean;
+} = {}) {
   const router = useRouter();
   const [entries, setEntries] = React.useState<HistoryEntry[]>([]);
   const [busy, setBusy] = React.useState<string | null>(null);
@@ -90,19 +100,21 @@ export function HistorySheet() {
   const undoableCount = entries.filter((e) => e.reversible && !e.undone).length;
 
   return (
-    <Sheet>
-      <SheetTrigger
-        render={
-          <Button variant="ghost" size="icon" aria-label="Verlauf" className="relative" />
-        }
-      >
-        <HistoryIcon />
-        {undoableCount > 0 && (
-          <span className="bg-primary text-primary-foreground absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full text-[10px] tabular-nums">
-            {undoableCount > 9 ? "9+" : undoableCount}
-          </span>
-        )}
-      </SheetTrigger>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      {showTrigger && (
+        <SheetTrigger
+          render={
+            <Button variant="ghost" size="icon" aria-label="Verlauf" className="relative" />
+          }
+        >
+          <HistoryIcon />
+          {undoableCount > 0 && (
+            <span className="bg-primary text-primary-foreground absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full text-[10px] tabular-nums">
+              {undoableCount > 9 ? "9+" : undoableCount}
+            </span>
+          )}
+        </SheetTrigger>
+      )}
       <SheetContent className="flex flex-col gap-0 p-0">
         <SheetHeader>
           <SheetTitle>Verlauf</SheetTitle>

@@ -20,9 +20,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { ChevronsUpDownIcon, BadgeCheckIcon, BellIcon, LogOutIcon } from "lucide-react"
+import * as React from "react"
+import { ChevronsUpDownIcon, BadgeCheckIcon, BellIcon, HistoryIcon, LogOutIcon } from "lucide-react"
 
 import { logout } from "@/lib/auth/actions"
+import { HistorySheet } from "@/components/history-sheet"
 
 export function NavUser({
   user,
@@ -34,6 +36,7 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const [historyOpen, setHistoryOpen] = React.useState(false)
   const initials =
     user.name
       .split(" ")
@@ -87,6 +90,10 @@ export function NavUser({
                 <BadgeCheckIcon />
                 Konto
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setHistoryOpen(true)}>
+                <HistoryIcon />
+                Verlauf
+              </DropdownMenuItem>
               <DropdownMenuItem>
                 <BellIcon />
                 Benachrichtigungen
@@ -99,6 +106,12 @@ export function NavUser({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        {/* Verlauf-Sheet steuerbar aus dem Menü heraus (kein eigener Header-Button). */}
+        <HistorySheet
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          showTrigger={false}
+        />
       </SidebarMenuItem>
     </SidebarMenu>
   )
