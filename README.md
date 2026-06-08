@@ -161,13 +161,52 @@ Anleitung + Entra-Redirect-URIs: [`DEPLOY.md`](DEPLOY.md).
 3. Im Entra-Modus die Redirect-URI ergänzen:
    `https://<projekt>.vercel.app/api/auth/callback/microsoft-entra-id`.
 
-### Docker (Self-Hosting auf einem Linux-Server, z. B. hinter Caddy)
+### Docker — Schritt für Schritt (lokal verifiziert)
+
+> Funktioniert auf jedem Rechner/Server mit **Docker**. In ~3 Minuten läuft die App.
+> Das Image enthält **keine** Secrets – die kommen erst beim Start über `--env-file`.
+
+**Voraussetzung:** Docker ist installiert und läuft (`docker --version` muss eine Version zeigen).
+
+**1. Eine Datei `prod.env` anlegen** (neben dem Projekt). ⚠️ **Keine Anführungszeichen um
+Werte** – `docker --env-file` nimmt sie wörtlich und macht damit z. B. das API-Secret kaputt.
+
+Einfachste Variante zum Ausprobieren (lokaler Login per Klick, **kein** Microsoft nötig):
+
+```env
+AUTH_MODE=mock
+AUTH_SECRET=ersetze-durch-32-zufaellige-zeichen
+AUTOTASK_BASE_URL=https://webservicesNN.autotask.net/ATServicesRest/V1.0
+AUTOTASK_API_USERNAME=dein-api-user
+AUTOTASK_API_SECRET=dein-api-secret-OHNE-anfuehrungszeichen
+AUTOTASK_INTEGRATION_CODE=dein-integration-code
+```
+
+Für **echten Microsoft-Login** stattdessen/zusätzlich:
+
+```env
+AUTH_MODE=entra
+AUTH_TRUST_HOST=true               # PFLICHT im Container, sonst "UntrustedHost" beim Login
+AUTH_URL=http://localhost:3000     # lokal so; in Prod deine echte https-Domain
+ENTRA_CLIENT_ID=...
+ENTRA_CLIENT_SECRET=...
+ENTRA_TENANT_ID=...
+```
+
+(`AUTH_SECRET` per `openssl rand -base64 32` erzeugen. Alle Variablen: siehe
+[Konfiguration](#konfiguration).)
+
+**2. Image bauen:**
 
 ```bash
-# Image bauen (enthält KEINE Secrets)
 docker build -t autotask-ui .
+# Optional eigene Marke einbacken (sonst steht "Acme GmbH" in Sidebar/Login):
+# docker build -t autotask-ui --build-arg NEXT_PUBLIC_ORG_NAME="Deine Firma" .
+```
 
-# Starten – Env aus einer Datei injizieren (prod.env NICHT committen)
+**3. Container starten:**
+
+```bash
 docker run -d --name autotask-ui \
   --env-file ./prod.env \
   -p 127.0.0.1:3000:3000 \
@@ -175,18 +214,31 @@ docker run -d --name autotask-ui \
   autotask-ui
 ```
 
-Den Container nur an `127.0.0.1:3000` binden; öffentlich erreichbar macht ihn ein
-Reverse-Proxy mit TLS. Beispiel **Caddy** (automatisches Let's-Encrypt-Zertifikat):
-[`Caddyfile.example`](Caddyfile.example).
-
-```caddyfile
-deine-domain.example.com {
-    encode zstd gzip
-    reverse_proxy 127.0.0.1:3000
-}
-```
+**4. Öffnen:** http://localhost:3000 → einloggen. Fertig.
 
 Health-Check: `curl -I http://127.0.0.1:3000/login` → `HTTP 200`.
+
+**Verwalten:**
+
+```bash
+docker logs -f autotask-ui     # Logs ansehen (bei Problemen zuerst hier schauen)
+docker rm -f autotask-ui       # Container stoppen + entfernen
+# Update: git pull → docker build … → docker rm -f autotask-ui → docker run … (Schritt 2+3)
+```
+
+#### Häufige Stolpersteine
+
+| Symptom | Ursache / Fix |
+|---|---|
+| Login → **„Server error / UntrustedHost"** | `AUTH_TRUST_HOST=true` in `prod.env` fehlt (im Container Pflicht). |
+| Autotask-Login schlägt fehl (401) | Anführungszeichen um Werte in `prod.env` → **entfernen** (`--env-file` mag keine Quotes). |
+| Marke zeigt weiter „Acme GmbH" | `NEXT_PUBLIC_ORG_NAME` wirkt nur **beim Build** → als `--build-arg` setzen, nicht zur Laufzeit. |
+| `port is already allocated` | Port 3000 belegt (z. B. `npm run dev`) → anderen Host-Port nehmen: `-p 127.0.0.1:3001:3000`. |
+| Microsoft-Login bricht ab | Redirect-URI in der Entra-App muss exakt zu `AUTH_URL` passen: `<AUTH_URL>/api/auth/callback/microsoft-entra-id`. |
+
+**Produktion hinter Reverse-Proxy:** Container nur an `127.0.0.1` binden, öffentlich macht
+ihn ein Proxy mit TLS. Beispiel **Caddy** (auto-HTTPS) + Prod-Details:
+[`DEPLOY.md`](DEPLOY.md) · [`Caddyfile.example`](Caddyfile.example).
 
 > Funktioniert auf jedem Docker-fähigen Host (eigener VPS, Hetzner, etc.). Im
 > Entra-Modus zusätzlich `AUTH_URL=https://<domain>` und `AUTH_TRUST_HOST=true` setzen
