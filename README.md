@@ -3,7 +3,11 @@
 > A focused, modern web UI for Kaseya Autotask PSA — a Backend-for-Frontend that keeps
 > all API credentials server-side. *(German-language internal tool.)*
 
+[![CI](https://github.com/paulkatio/pauls-autotask-ui/actions/workflows/ci.yml/badge.svg)](https://github.com/paulkatio/pauls-autotask-ui/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/paulkatio/pauls-autotask-ui?sort=semver&color=success)](https://github.com/paulkatio/pauls-autotask-ui/releases)
+[![Last commit](https://img.shields.io/github/last-commit/paulkatio/pauls-autotask-ui)](https://github.com/paulkatio/pauls-autotask-ui/commits/master)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38BDF8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
@@ -30,7 +34,8 @@ bleiben **immer** serverseitig.
 [Features](#features) · [Tech-Stack](#tech-stack) · [Architektur](#architektur) ·
 [Schnellstart](#schnellstart) · [Konfiguration](#konfiguration) ·
 [Deployment](#deployment) · [Sicherheit](#sicherheit) · [Tests](#tests) ·
-[Projektstruktur](#projektstruktur) · [Doku](#dokumentation) · [Lizenz](#lizenz)
+[Projektstruktur](#projektstruktur) · [Versionierung](#versionierung) ·
+[Doku](#dokumentation) · [Lizenz](#lizenz)
 
 ## Features
 
@@ -202,9 +207,20 @@ e2e/              Playwright-Smoke
 docs/             STATE, DECISIONS, BACKLOG, BLUEPRINT, ARCHITECTURE, PHASE-0
 ```
 
+## Versionierung
+
+Dieses Projekt folgt **[Semantic Versioning](https://semver.org/lang/de/)**
+(`MAJOR.MINOR.PATCH`) und **[Conventional Commits](https://www.conventionalcommits.org/de/)**
+(`feat:`, `fix:`, `docs:` …). Nennenswerte Änderungen stehen im
+**[Changelog](CHANGELOG.md)**; veröffentlichte Stände als
+**[GitHub-Releases](https://github.com/paulkatio/pauls-autotask-ui/releases)** mit
+`vX.Y.Z`-Tags. Aktuell **Pre-1.0** (`0.x`) — bis zum Produktiv-Cutover kann sich die
+Oberfläche noch ändern.
+
 ## Dokumentation
 
 - **[`docs/STATE.md`](docs/STATE.md)** — Stand, Architektur, Features, Weichen, Cutover (Start hier).
+- [`CHANGELOG.md`](CHANGELOG.md) — versionierte Änderungshistorie (Keep a Changelog).
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — verifizierte API-Fakten + Entscheidungs-Historie.
 - [`docs/BACKLOG.md`](docs/BACKLOG.md) · [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) ·
   [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`DEPLOY.md`](DEPLOY.md) ·
