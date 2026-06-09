@@ -1800,4 +1800,59 @@ Mehr-Instanz aggregiert >3 bzw. höhere Calls möglich; echter Fix = geteilter L
 (Redis/Upstash). Bei aktueller Teamlast unkritisch. Threshold-Mails gehen an die API-User-
 Adresse → muss auf echten Empfänger zeigen.
 
+### [2026-06-09] Chat als Kundenkanal, Mail-Template, Status-Workflow, Anhänge, Responsive, Aktivität-Feed
+
+**Chat = reines Kundenfenster (Paul).** Intern/Kunde-Switch entfernt; jede Chat-Nachricht
+geht an den Kunden (`notify:true`), Bestätigungsdialog vor jedem Versand bleibt. Interne
+Notizen laufen separat über „Neue Notiz" (noteType 2). Fehlgeschlagene Zustellung wird pro
+Bubble dauerhaft markiert (Session-Status je Notiz-ID), die Notiz bleibt erhalten (§6.3).
+
+**Inbound-Realität nachgeschärft (verifiziert an Ticket 56313, Prod).** Eine echte
+Mailantwort kann `noteType 3` + **`createdByContactID = NULL`** haben, wenn Autotask den
+Absender auf eine RESOURCE (statt Kontakt) mappt (z. B. Antwort aus einer Mitarbeiter-
+Mailbox). Zuverlässiges Inbound-Signal daher zusätzlich: Body-Marker
+**„Durch eingehende E-Mail-Verarbeitung erstellt"** (interne Notizen tragen ihn nicht).
+`conversation.ts` (`INBOUND_EMAIL_MARKER`/`isInboundEmailNote`/`directionOf`) +
+`ticket-notes.ts` (`byTicketConversation` OR-Zweig `contains description`). Server-Query
+gegen 56313 liefert genau Outbound (18) + Inbound (Marker); interne 2/13 bleiben raus.
+Ergänzt/relativiert „Inbound = noteType 3 + createdByContactID" früherer B17a-Einträge.
+
+**Kunden-Mail-Template.** Eigenes `buildCustomerEmail` (`lib/mail/customer-email.ts`) im Look
+der Autotask-Vorlage (hell, SSIG-Logo, Footer) – gleiche Optik wie aus dem echten Autotask.
+Inhalt schlicht: „Hallo {Vor-/Nachname}," → getippte Nachricht → „Ihr Support-Team der
+{Firma}". Betreff `[<Ticketnr>] Neue Nachricht zu Ihrem Ticket` (Nr. = Threading, NICHT im
+Body). Firmenname via `getOrgName` (companyID 0). `sendMail` unterstützt Resend-Attachments.
+Test-Mails via `node .playwright-mcp/mail-preview.mjs` an pka@ssig-it.com (Wegwerf-Script).
+
+**Anhänge (ausgehend, v1).** Drag&Drop im Chat → Datei wird als Autotask-Ticket-Attachment
+(`attachments.upload`) UND als Resend-Mail-Anhang versandt. Limits 5 Dateien / 10 MB / 25 MB
+gesamt; multipart-Variante der `/chat`-Route. Eingehende Anhänge im Chat = später.
+
+**Status-Workflow.** Wechsel auf „Abgeschlossen" (Status 5) bzw. Wieder-Öffnen verlangt eine
+Pflichtnotiz (`StatusEdit`-Dialog): Schließen mit Toggle intern/an-Kunden, Öffnen interne
+Notiz. Notiz ZUERST, dann Status → kein Statuswechsel ohne dokumentierte Notiz. Zeit-Dialog:
+optionaler Status-Select + „Abschlussbenachrichtigung an Kunden" (separater Text, Chat-Pfad)
++ breiter; Folgeaktionen (Status/Mail) best effort, kippen den Zeiteintrag nicht.
+**Offen:** Massen-Statuswechsel (Listen-Bulk-Leiste) umgeht die Pflichtnotiz noch.
+
+**Responsive Tabellen.** Card↔Table-Umschaltung angehoben: TicketsList ab `xl` (Sekundär-
+spalten Firma/Queue/Zugewiesen erst ab `2xl`, Titel schmaler), Companies/Contacts/
+SearchableTable ab `xl` (bei `lg`/1024 px gemessen 222 px Klippung → daher xl statt lg).
+Loading-Skeletons (`TableSkeleton` `breakpoint`-Prop) synchron → kein Layout-Sprung.
+Ticketdetail: Seitenlayout erst ab `lg`, 3 Spalten ab `xl`; Ticket-Popup öffnet 1360 px
+(≥ xl), damit die Chat-Rail direkt rechts steht. Firma+Ansprechpartner über dem Chat.
+Mobil-Karten: Enter/Space-Keyboard + sichtbarer focus-visible-Ring.
+
+**Aktivität-Feed.** Standardmäßig eingeklappt (einzeilig: Typ · Titel · Datum),
+Kundenantworten offen + „Kundenantwort"-Badge; Auf-/Einklappen-Button neben „Aktivität".
+Status-Farbpunkt (`statusColor` in `mappers.ts`, `StatusDot`/`StatusBadge`) vor den Status-
+Badges in Listen + in den Status-Dropdowns (Ticketdetail + Zeit-Dialog) – erste Farb-Fassung,
+je Status anpassbar.
+
+**Thread-Threshold-Mails (Klärung).** Die „Thread Threshold Exceeded"-Alerts vom 2026-06-09
+kamen NICHT von n8n (App hat dedizierten API-User), sondern vom prozess-lokalen Limiter bei
+Mehr-Instanz/Hot-Reload: zeitweise ein zweiter Dev-Server (Audit-Mock) neben dem regulären +
+viele HMR-Generationen während ticket-lastiger Loads. Deckt sich mit dem Skalierungs-Hinweis
+vom 2026-06-08 (Limiter prozess-lokal). Einzel-Prod-Instanz löst es praktisch nicht aus.
+
 <!-- Neue Entscheidungen hier anhängen -->

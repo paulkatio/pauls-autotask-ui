@@ -11,12 +11,22 @@ verlinkten Dateien.
 - **Fachlicher Bauplan:** [`BLUEPRINT.md`](BLUEPRINT.md). **Repo-Karte:** [`ARCHITECTURE.md`](ARCHITECTURE.md).
 - **Deployment + Env:** [`../DEPLOY.md`](../DEPLOY.md).
 
-Stand: 2026-06-08. **Produktiv-Cutover erfolgt:** läuft gegen den **Autotask-Produktiv-
+Stand: 2026-06-09. **Produktiv-Cutover erfolgt:** läuft gegen den **Autotask-Produktiv-
 Mandanten** (Zone DE1, `webservices18`, eigener API-User „AutoTask UI" → Thread-Budget von
-n8n entkoppelt). **Entra-ID-Login live** (`AUTH_MODE=entra`, B16a). **Chat→Kundenmail via
-Resend** verkabelt; Versand jetzt **opt-in** (Schalter Default aus + Bestätigung). Inbound-
-Threading bestätigt (B17 – noteType 3 + `createdByContactID`). Profilbild aus Microsoft
+n8n entkoppelt). **Entra-ID-Login live** (`AUTH_MODE=entra`, B16a). Profilbild aus Microsoft
 Graph (B16b).
+
+**2026-06-09 (UI-/Workflow-Ausbau, branch `fix/responsive-tables-ticket-popup`, noch nicht
+gemerged):** Chat ist jetzt ein **reines Kundenfenster** (Intern/Kunde-Switch raus, jede
+Nachricht geht an den Kunden, Bestätigungsdialog bleibt; interne Notizen via „Neue Notiz").
+**Inbound prod-verifiziert** (Ticket 56313): Kundenantworten zuverlässig über Body-Marker
+„Durch eingehende E-Mail-Verarbeitung erstellt" erkannt (createdByContactID kann NULL sein).
+**Kunden-Mail** im Autotask-Vorlagen-Look (hell, Logo, Footer; Betreff `[<Nr>] Neue Nachricht
+zu Ihrem Ticket`). **Drag&Drop-Anhänge** (ausgehend) → Ticket-Attachment + Mail-Anhang.
+**Status-Workflow:** Schließen/Öffnen verlangt Pflichtnotiz; Zeit-Dialog mit Status +
+Abschlussbenachrichtigung. **Responsive Tabellen** (Card↔Table ab xl/2xl, Skeletons synchron),
+**Aktivität-Feed** einklappbar (Kundenantworten offen), **Status-Farbpunkte**. Details:
+DECISIONS „[2026-06-09]".
 
 **Sicherheits-Härtung 2026-06-08:** Auth fail-closed (`AUTH_MODE` in Prod zwingend explizit),
 Chat-Mail opt-in statt default-an, Merge-Cap (max 10), `ENTRA_EMAIL_LOOSE_MATCH` in Prod
@@ -224,8 +234,8 @@ URL, Cache-bust bei Tausch).
 | **Branding-Name** | `lib/branding-server.ts` `getOrgName()` | Env `NEXT_PUBLIC_ORG_NAME` (Override) → sonst Autotask `companyID 0` (24 h gecacht) → Fallback „Acme GmbH" |
 | **Schreib-Whitelist Ticket** | `app/api/tickets/[id]/route.ts` `EDITABLE_FIELDS` + `STRING_FIELDS` | nur gelistete Felder; Zuweisung Resource+Rolle nur zusammen |
 | **Default-Queue neues Ticket** | `lib/autotask/new-ticket.ts` `NEW_TICKET_DEFAULT_QUEUE` | `29682833` (Level I-Support) |
-| **Chat-noteTypes** | `lib/autotask/conversation.ts` | outbound 18 (Kundenportal), inbound 101 (E-Mail) – inbound **in Prod unverifiziert** |
-| **Chat-Mailversand** | `ticket-chat.tsx` Switch + `chat/route.ts` | **opt-in, Default AUS** + Bestätigungsdialog; Server mailt nur bei explizitem `notify:true` |
+| **Chat-noteTypes / Inbound** | `lib/autotask/conversation.ts` | outbound 18; Inbound = `createdByContactID` gesetzt **ODER** Body-Marker „Durch eingehende E-Mail-Verarbeitung erstellt" (echte Antworten sind noteType 3, createdByContactID ggf. NULL). **Prod-verifiziert (56313, 2026-06-09).** |
+| **Chat-Mailversand** | `ticket-chat.tsx` + `chat/route.ts` | **Reines Kundenfenster:** jede Chat-Nachricht geht an den Kunden (`notify:true`), Bestätigungsdialog vor Versand. Interne Notizen separat via „Neue Notiz" (noteType 2). |
 | **Merge-Cap** | `app/api/tickets/merge/route.ts` | max **10** Quelltickets pro Request |
 | **E2E-Schreibtest** | Env `E2E_SKIP_WRITE_TESTS`, `e2e/smoke.spec.ts` | lokal an; in CI setzen → Schreibtest übersprungen |
 | **Caps** | div. Entities | `COMPANIES_CAP 1000`, `OPEN_BY_COMPANY_CAP 5000`, `BALL_FETCH_CAP 500`, `SEARCH_PAGE 25`, Palette-Limit 8 |
@@ -267,8 +277,10 @@ Branding aus `companyID 0`). `tsc` + `next build` + Docker-Build grün.
 1. **Doppel-Mail-Check.** Falls in Autotask noch die Workflow-Regel „Kunde benachrichtigen"
    aktiv ist: deaktivieren, sonst mailt Resend **und** der Autotask-Workflow. Inbound-Mailbox
    als Prod-Adresse gegenprüfen.
-2. **Inbound-Anzeige in Prod (B17a).** Kundenantworten = **noteType 3 + `createdByContactID`**;
-   Threading in der Sandbox bestätigt. Offen: einmaliger Prod-Gegencheck.
+2. **Inbound-Anzeige in Prod (B17a) — ERLEDIGT (2026-06-09, Ticket 56313).** Kundenantwort kam
+   als noteType 3 mit **`createdByContactID = NULL`** (auf Resource gemappt) → Erkennung jetzt
+   zusätzlich über Body-Marker „Durch eingehende E-Mail-Verarbeitung erstellt". Threading via
+   Ticketnummer im Betreff bestätigt.
 3. **Anhänge (B17b)** · **Doppel-Mail-Workflow** wie oben.
 4. **Bewusst aufgeschoben:** kein globaler READ_ONLY-Riegel (abgelehnt) · Rollen-Gating
    (alle sehen alles, B12) · Anhang-Löschen (API erlaubt es nicht) · Webhook statt Chat-Polling ·

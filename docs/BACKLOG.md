@@ -30,12 +30,13 @@ Merge-Cap (10), Branding aus `companyID 0`. `tsc`+`build`+Docker-Build grün. (D
   Resend-Mail (`Reply-To` = Inbound), Zustellung verifiziert; Mail-Status in der UI;
   Fallback auf alten UDF-Pfad ohne Resend-Konfig. Prod-Cutover offen (Workflow-Regel
   deaktivieren, Inbound-Mailbox gegenprüfen). Details DECISIONS „B17".
-- **B17a Inbound-noteType + Threading** – ERLEDIGT (Sandbox): Inbound = noteType 3 +
-  `createdByContactID` (nicht 101); Chat holt + zeigt sie; `cleanInboundBody` kürzt
-  zitierten Thread. **Threading in der Sandbox live bestätigt** (Antwort → zurück ans
-  Ticket via Betreff-Ticketnummer). Offen für Prod: einmaliger Gegencheck.
-- **B17b Datei-Anhänge per Drag&Drop im Chat** – nach B17-Kern; Drop → Upload ans Ticket
-  (A3-Pfad) + Resend-Anhang. Nur Anhänge (kein Inline).
+- **B17a Inbound-noteType + Threading** – ERLEDIGT + **Prod-verifiziert (2026-06-09, T56313)**:
+  Inbound = noteType 3, `createdByContactID` kann **NULL** sein (Absender auf Resource gemappt)
+  → Erkennung zusätzlich über Body-Marker „Durch eingehende E-Mail-Verarbeitung erstellt".
+  Threading via Betreff-Ticketnummer bestätigt. `cleanInboundBody` kürzt zitierten Thread.
+- **B17b Datei-Anhänge per Drag&Drop im Chat** – ERLEDIGT (v1, ausgehend, 2026-06-09): Drop →
+  Upload ans Ticket (`attachments.upload`) + Resend-Anhang. Limits 5/10 MB/25 MB. Eingehende
+  Anhänge im Chat = später.
 - Aufgeschoben: Rollen-Gating (B12), Anhang-Löschen (API 405).
 
 ---
