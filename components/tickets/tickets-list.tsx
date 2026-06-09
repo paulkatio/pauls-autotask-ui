@@ -38,6 +38,7 @@ import { RotateCcwIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { labelOf, priorityVariant } from "@/lib/autotask/mappers";
 import { StatusBadge } from "@/components/status-indicator";
+import { TicketCard } from "@/components/tickets/ticket-card";
 import type { Ticket, TicketPicklists } from "@/lib/autotask/types";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import { openTicketPopup } from "@/lib/open-popup";
@@ -511,69 +512,21 @@ export function TicketsList({
         </Empty>
       ) : (
         <>
-          {/* Mobile-First: unter md je Ticket eine Karte (kein Querscrollen). Ab md
-              die volle Tabelle mit umsortierbaren Spalten. */}
+          {/* Mobile-First: unter xl je Ticket eine Karte (kein Querscrollen). Ab xl
+              die volle Tabelle mit umsortierbaren Spalten. Die Karte ist die
+              gemeinsame TicketCard (Variante "worklist" → "Fällig …"). */}
           <div className="flex flex-col gap-2 xl:hidden">
             {items.map((t) => (
-              <div
+              <TicketCard
                 key={t.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => openTicketPopup(t.id)}
-                onKeyDown={(e) => {
-                  // Nur reagieren, wenn die Karte selbst fokussiert ist – nicht, wenn
-                  // das Keydown von einem Kind (z. B. der Auswahl-Checkbox) hochbubbelt.
-                  if (e.target !== e.currentTarget) return;
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    openTicketPopup(t.id);
-                  }
-                }}
-                className="hover:bg-muted/50 active:bg-muted flex items-start gap-3 rounded-lg border p-3 transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                {selectableActive && (
-                  <div onClick={(e) => e.stopPropagation()} className="pt-0.5">
-                    <Checkbox
-                      checked={selectedIds.has(t.id)}
-                      onCheckedChange={(c) => toggleRow(t.id, c === true)}
-                      aria-label={`Ticket ${t.ticketNumber} auswählen`}
-                    />
-                  </div>
-                )}
-                <div className="flex min-w-0 flex-1 flex-col gap-2">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-sm font-medium tabular-nums">
-                      {t.ticketNumber}
-                    </span>
-                    <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                      {formatDate(t.dueDateTime)}
-                    </span>
-                  </div>
-                  <span className="text-sm break-words">{t.title ?? "—"}</span>
-                  {columns.company !== false && t.companyName && (
-                    <span className="text-muted-foreground truncate text-xs">
-                      {t.companyName}
-                    </span>
-                  )}
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <StatusBadge
-                      status={t.status}
-                      label={labelOf(picklists.status, t.status)}
-                    />
-                    <Badge variant={priorityVariant(t.priority)}>
-                      {labelOf(picklists.priority, t.priority)}
-                    </Badge>
-                    {columns.queue && (
-                      <Badge variant="outline">
-                        {labelOf(picklists.queue, t.queueID)}
-                      </Badge>
-                    )}
-                    {columns.assigned && t.assignedResourceName && (
-                      <Badge variant="outline">{t.assignedResourceName}</Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
+                ticket={t}
+                picklists={picklists}
+                variant="worklist"
+                columns={columns}
+                selectable={selectableActive}
+                selected={selectedIds.has(t.id)}
+                onToggleSelect={(c) => toggleRow(t.id, c)}
+              />
             ))}
           </div>
 
