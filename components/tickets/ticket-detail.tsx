@@ -52,6 +52,7 @@ import {
   DescriptionEdit,
 } from "@/components/tickets/meta-edit";
 import { labelOf } from "@/lib/autotask/mappers";
+import { directionOf } from "@/lib/autotask/conversation";
 import { formatHours } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -348,13 +349,11 @@ export function TicketDetailView({
               <div className="flex flex-col gap-6">
                 <TimeEntriesList entries={detail.timeEntries} />
                 <Separator />
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-sm font-semibold">Aktivität</h3>
-                    <NoteForm ticketId={ticket.id} />
-                  </div>
-                  <NotesFeed notes={detail.notes} notePicklists={notePicklists} />
-                </div>
+                <ActivitySection
+                  ticketId={ticket.id}
+                  notes={detail.notes}
+                  notePicklists={notePicklists}
+                />
               </div>
             </TabsContent>
 
@@ -524,45 +523,130 @@ export function TicketDetailView({
   );
 }
 
-// ----- Aktivität (Notizen) – unter den Zeiten -----
-function NotesFeed({
+// ----- Aktivität (Notizen) – unter den Zeiten. Header trägt den Auf-/Einklappen-
+// Button (neben "Aktivität") und die "Neue Notiz"-Aktion. -----
+function ActivitySection({
+  ticketId,
   notes,
   notePicklists,
 }: {
+  ticketId: number;
   notes: TicketNote[];
   notePicklists: NotePicklists;
 }) {
-  if (notes.length === 0) {
-    return (
-      <p className="text-muted-foreground text-sm">Keine Notizen vorhanden.</p>
-    );
-  }
-  const sorted = [...notes].sort(
-    (a, b) =>
-      (Date.parse(b.createDateTime ?? "") || 0) -
-      (Date.parse(a.createDateTime ?? "") || 0),
+  const sorted = React.useMemo(
+    () =>
+      [...notes].sort(
+        (a, b) =>
+          (Date.parse(b.createDateTime ?? "") || 0) -
+          (Date.parse(a.createDateTime ?? "") || 0),
+      ),
+    [notes],
   );
+  // Standardmäßig sind nur Kundenantworten (inbound) offen; der Rest eingeklappt.
+  const [openSet, setOpenSet] = React.useState<Set<number>>(
+    () => new Set(sorted.filter((n) => directionOf(n) === "inbound").map((n) => n.id)),
+  );
+  const allOpen = sorted.length > 0 && sorted.every((n) => openSet.has(n.id));
+  function toggle(id: number) {
+    setOpenSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      {sorted.map((note) => (
-        <div key={note.id} className="flex flex-col gap-1 border-b pb-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">
-              {labelOf(notePicklists.noteType, note.noteType)}
-            </Badge>
-            <Badge variant="outline">
-              {labelOf(notePicklists.publish, note.publish)}
-            </Badge>
-            <span className="text-muted-foreground text-xs tabular-nums">
-              {fmtDate(note.createDateTime, true)}
-            </span>
-          </div>
-          {note.title && (
-            <span className="text-sm font-medium">{note.title}</span>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          <h3 className="text-sm font-semibold">Aktivität</h3>
+          {sorted.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                setOpenSet(allOpen ? new Set() : new Set(sorted.map((n) => n.id)))
+              }
+            >
+              {allOpen ? "Alle einklappen" : "Alle aufklappen"}
+            </Button>
           )}
-          {note.description && <ExpandableText text={note.description} />}
         </div>
-      ))}
+        <NoteForm ticketId={ticketId} />
+      </div>
+      {sorted.length === 0 ? (
+        <p className="text-muted-foreground text-sm">Keine Notizen vorhanden.</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {sorted.map((note) => (
+            <ActivityItem
+              key={note.id}
+              note={note}
+              notePicklists={notePicklists}
+              open={openSet.has(note.id)}
+              onToggle={() => toggle(note.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Eine Aktivität: standardmäßig EINGEKLAPPT (nur Typ + Titel + Datum), per Klick
+// aufklappbar. Ausnahme: Kundenantworten (inbound) sind das Signal → offen und mit
+// hervorgehobenem „Kundenantwort"-Badge. So verschwindet das RMM-/Workflow-/System-
+// Rauschen aus dem Blickfeld, ohne dass etwas verloren geht.
+function ActivityItem({
+  note,
+  notePicklists,
+  open,
+  onToggle,
+}: {
+  note: TicketNote;
+  notePicklists: NotePicklists;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const isReply = directionOf(note) === "inbound";
+  const hasBody = Boolean(note.description);
+  return (
+    <div className="flex flex-col gap-1 border-b pb-3">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-2 text-left"
+        aria-expanded={open ? "true" : "false"}
+      >
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground size-4 shrink-0 transition-transform",
+            !open && "-rotate-90",
+          )}
+        />
+        {isReply ? (
+          <Badge className="shrink-0">Kundenantwort</Badge>
+        ) : (
+          <Badge variant="secondary" className="shrink-0">
+            {labelOf(notePicklists.noteType, note.noteType)}
+          </Badge>
+        )}
+        {note.title && (
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+            {note.title}
+          </span>
+        )}
+        <span className="text-muted-foreground ml-auto shrink-0 text-xs tabular-nums">
+          {fmtDate(note.createDateTime, true)}
+        </span>
+      </button>
+      {open && hasBody && (
+        <div className="pl-6">
+          <ExpandableText text={note.description ?? ""} />
+        </div>
+      )}
     </div>
   );
 }
