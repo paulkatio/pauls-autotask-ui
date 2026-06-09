@@ -347,19 +347,19 @@ export function TicketChat({
                       outbound && "flex-row-reverse",
                     )}
                   >
-                    <Avatar className="size-7">
-                      {mine && <AvatarImage src={me!.avatar} alt={m.sender} />}
-                      <AvatarFallback>{initials(m.sender)}</AvatarFallback>
+                    <Avatar className="size-7 shrink-0">
+                      {mine && <AvatarImage src={me!.avatar} alt={senderLabel} />}
+                      <AvatarFallback>{initials(senderLabel)}</AvatarFallback>
                     </Avatar>
                     <div
                       className={cn(
-                        "flex max-w-md flex-col gap-1",
+                        "flex min-w-0 max-w-md flex-col gap-1",
                         outbound && "items-end",
                       )}
                     >
                       <div
                         className={cn(
-                          "flex w-fit flex-col gap-1 rounded-lg px-3 py-2",
+                          "flex w-fit min-w-0 max-w-full flex-col gap-1 rounded-lg px-3 py-2",
                           outbound
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted",

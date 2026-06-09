@@ -7,6 +7,7 @@ import {
   FileIcon,
   MailIcon,
   MapPinIcon,
+  MessageSquarePlusIcon,
   PhoneIcon,
   SmartphoneIcon,
 } from "lucide-react";
@@ -165,7 +166,7 @@ function ExpandableText({ text }: { text: string }) {
     <div className="flex flex-col items-start gap-1">
       <p
         className={cn(
-          "text-sm break-words whitespace-pre-wrap",
+          "w-full break-words whitespace-pre-wrap text-sm",
           isLong && !expanded && "line-clamp-[14]",
         )}
       >
@@ -211,20 +212,13 @@ export function TicketDetailView({
             </div>
           </Field>
           <Field label="Kontakt">
-            <div className="flex flex-col gap-1">
-              <RefCombobox
-                ticketId={ticket.id}
-                field="contactID"
-                valueLabel={contact?.name || null}
-                options={detail.refOptions.contacts}
-                placeholder="Kontakt wählen"
-              />
-              {contact?.email && (
-                <span className="text-muted-foreground truncate text-xs">
-                  {contact.email}
-                </span>
-              )}
-            </div>
+            <RefCombobox
+              ticketId={ticket.id}
+              field="contactID"
+              valueLabel={contact?.name || null}
+              options={detail.refOptions.contacts}
+              placeholder="Kontakt wählen"
+            />
           </Field>
           <Field label="Status">
             <StatusEdit
@@ -548,6 +542,7 @@ function ActivitySection({
     () => new Set(sorted.filter((n) => directionOf(n) === "inbound").map((n) => n.id)),
   );
   const allOpen = sorted.length > 0 && sorted.every((n) => openSet.has(n.id));
+  const [noteOpen, setNoteOpen] = React.useState(false);
   function toggle(id: number) {
     setOpenSet((prev) => {
       const next = new Set(prev);
@@ -574,8 +569,16 @@ function ActivitySection({
             </Button>
           )}
         </div>
-        <NoteForm ticketId={ticketId} />
+        {!noteOpen && (
+          <Button variant="outline" size="sm" onClick={() => setNoteOpen(true)}>
+            <MessageSquarePlusIcon />
+            Neue Notiz
+          </Button>
+        )}
       </div>
+      {noteOpen && (
+        <NoteForm ticketId={ticketId} onClose={() => setNoteOpen(false)} />
+      )}
       {sorted.length === 0 ? (
         <p className="text-muted-foreground text-sm">Keine Notizen vorhanden.</p>
       ) : (
@@ -618,7 +621,7 @@ function ActivityItem({
         type="button"
         onClick={onToggle}
         className="flex w-full items-center gap-2 text-left"
-        aria-expanded={open ? "true" : "false"}
+        aria-expanded={open}
       >
         <ChevronDownIcon
           className={cn(

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { LockIcon, MessageSquarePlusIcon } from "lucide-react";
+import { LockIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,21 +11,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-// Inline-Formular für eine interne Notiz im Aktivität-Feed. Schreibt über die
+// Volle-Breite-Formular für eine interne Notiz im Aktivität-Feed. Schreibt über die
 // interne Route POST /api/tickets/[id]/note (immer intern, nie kundensichtbar).
-export function NoteForm({ ticketId }: { ticketId: number }) {
+// Kontrolliert: das Auf-/Zuklappen liegt im Aktivität-Bereich (ticket-detail.tsx),
+// damit das Panel die ganze Breite des mittleren Bereichs einnimmt – kein Mini-Popup.
+export function NoteForm({
+  ticketId,
+  onClose,
+}: {
+  ticketId: number;
+  onClose: () => void;
+}) {
   const router = useRouter();
-  const [open, setOpen] = React.useState(false);
   const [title, setTitle] = React.useState("");
   const [text, setText] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-
-  function reset() {
-    setTitle("");
-    setText("");
-    setError(null);
-  }
 
   async function submit() {
     if (!text.trim() || saving) return;
@@ -45,8 +46,7 @@ export function NoteForm({ ticketId }: { ticketId: number }) {
         throw new Error(j.error ?? "Notiz konnte nicht gespeichert werden.");
       }
       toast.success("Notiz hinzugefügt.");
-      reset();
-      setOpen(false);
+      onClose();
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Notiz konnte nicht gespeichert werden.");
@@ -55,17 +55,8 @@ export function NoteForm({ ticketId }: { ticketId: number }) {
     }
   }
 
-  if (!open) {
-    return (
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <MessageSquarePlusIcon />
-        Neue Notiz
-      </Button>
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-3">
+    <div className="flex w-full flex-col gap-3 rounded-lg border p-3">
       <div className="flex flex-col gap-2">
         <Label htmlFor="note-title">Titel (optional)</Label>
         <Input
@@ -102,10 +93,7 @@ export function NoteForm({ ticketId }: { ticketId: number }) {
         <Button
           size="sm"
           variant="outline"
-          onClick={() => {
-            reset();
-            setOpen(false);
-          }}
+          onClick={onClose}
           disabled={saving}
         >
           Abbrechen
