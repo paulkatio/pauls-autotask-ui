@@ -101,11 +101,16 @@ export function TicketCard({
   const showAssignee =
     !!t.assignedResourceName && (variant === "activity" || !!columns.assigned);
 
-  // Datum auflösen: explizit > Varianten-Default.
+  // Datum auflösen: explizit > Varianten-Default. Im Aktivitätsfeed ist bei einem
+  // noch NEUEN Ticket (Autotask-System-Status 1 = Neu) das Erstelldatum die
+  // sprechendere Information als „Aktualisiert" – sonst die letzte Aktivität.
+  const isNew = t.status === 1;
   const resolved =
     date ??
     (variant === "activity"
-      ? { label: "Aktualisiert", iso: t.lastActivityDate ?? null, relative: true }
+      ? isNew && t.createDate
+        ? { label: "Erstellt", iso: t.createDate, relative: true }
+        : { label: "Aktualisiert", iso: t.lastActivityDate ?? null, relative: true }
       : { label: "Fällig", iso: t.dueDateTime ?? null, relative: false });
   const dateText = resolved.iso
     ? `${resolved.label} ${resolved.relative ? relTime(resolved.iso) : formatDate(resolved.iso)}`

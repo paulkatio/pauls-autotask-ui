@@ -218,6 +218,7 @@ const RECENT_FIELDS = [
   "status",
   "priority",
   "dueDateTime",
+  "createDate",
   "lastActivityDate",
 ];
 
