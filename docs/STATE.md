@@ -145,7 +145,15 @@ interface SessionUser {
 
 **Dashboard `/`** — 4 KPI-Kacheln (Meine offenen / Pool / Zusätzlicher Mitarbeiter / Ball
 liegt bei mir; Count-Endpoint, 60 s gecacht, klickbar in Drill-down-Listen) + Balkendiagramm
-„Tickets pro Mitarbeiter" (Klick filtert Teamtickets) + Tabelle „Zuletzt bearbeitet".
+„Tickets pro Mitarbeiter" (Klick filtert Teamtickets) + Sektion **„Letzte Aktivität"**
+(`recently-edited.tsx`): zuletzt aktive Tickets systemweit, dezente Stat-Zeile „X heute aktiv
+· Y in 7 Tagen" + 10 neueste als `TicketCard` (variant `activity`).
+
+**Gemeinsames mobiles Karten-System** — `components/tickets/ticket-card.tsx`: EINE Hierarchie
+für alle mobilen Ticketlisten (Titel → „Firma · Nummer" → Status/Priorität/Queue/Bearbeiter →
+Kontextdatum). Variante `worklist` (→ „Fällig …") und `activity` (→ „Aktualisiert …", bei
+Status Neu „Erstellt …"). `tickets-list.tsx` und `recently-edited.tsx` nutzen sie; Firmen/
+Kontakte (`searchable-table.tsx`) teilen Radius/Border/Focus/Hover/Abstände – keine Insel-Designs.
 
 **Ticketlisten** — gemeinsame `components/tickets/tickets-list.tsx`:
 - `/tickets/my` (server-gefiltert auf `assignedResourceID` der Session), `/tickets/team`

@@ -15,6 +15,16 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
   mailt nur bei explizitem `notify`.
 - **Branding dynamisch:** Firmenname wird zur Laufzeit aus Autotask (`companyID 0`) gezogen
   (24 h gecacht); `NEXT_PUBLIC_ORG_NAME` bleibt optionaler Override.
+- **Einheitliches mobiles Karten-System:** neue, gemeinsame `TicketCard`
+  (`components/tickets/ticket-card.tsx`) für alle mobilen Ticketlisten – Aufbau immer
+  Titel → „Firma · Nummer" → Status/Priorität/Queue/Bearbeiter → Kontextdatum. Varianten
+  `worklist` (Meine/Team/secondary/ball/Kundenakte → „Fällig …") und `activity`
+  (Dashboard → „Aktualisiert …", bei neuem Ticket „Erstellt …"). `TicketsList` und
+  `RecentlyEdited` nutzen dieselbe Karte; Firmen/Kontakte teilen die Karten-Sprache.
+- **Dashboard-Sektion „Letzte Aktivität"** (vormals „Bearbeitete Tickets", mehrdeutig):
+  zuletzt aktive Tickets systemweit. Drei große KPI-Kacheln ersetzt durch eine dezente
+  Stat-Zeile „X heute aktiv · Y in 7 Tagen"; Datum kontextbewusst (neues Ticket →
+  Erstelldatum statt „aktualisiert heute").
 
 ### Security
 - **Auth fail-closed:** in Produktion muss `AUTH_MODE` explizit `entra`/`mock` sein – kein
