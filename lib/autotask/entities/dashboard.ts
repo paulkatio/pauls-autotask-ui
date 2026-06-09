@@ -225,6 +225,36 @@ const RECENT_FIELDS = [
 // Wir holen das volle 7-Tage-Fenster und lassen den Client je Auswahl eingrenzen.
 const RECENT_WINDOW_DAYS = 7;
 
+// Management-KPI: Anzahl bearbeiteter Tickets je Zeitfenster (heute / 3 / 7 Tage) über
+// den Count-Endpoint (kein Vollabruf). 60 s gecacht. „Heute" = ab Mitternacht der
+// Server-Zeit – ein Tagespuls, kein minutengenauer Wert.
+export interface RecentEditedCounts {
+  today: number;
+  d3: number;
+  d7: number;
+}
+
+async function computeRecentEditedCounts(): Promise<RecentEditedCounts> {
+  const now = Date.now();
+  const midnight = new Date(now);
+  midnight.setHours(0, 0, 0, 0);
+  const since = (ms: number): AutotaskFilter[] => [
+    { op: "gte", field: "lastActivityDate", value: new Date(ms).toISOString() },
+  ];
+  const [today, d3, d7] = await Promise.all([
+    autotask.count("Tickets", since(midnight.getTime())),
+    autotask.count("Tickets", since(now - 3 * 24 * 3600 * 1000)),
+    autotask.count("Tickets", since(now - 7 * 24 * 3600 * 1000)),
+  ]);
+  return { today, d3, d7 };
+}
+
+export function getRecentEditedCounts(): Promise<RecentEditedCounts> {
+  return unstable_cache(computeRecentEditedCounts, ["recent-edited-counts"], {
+    revalidate: 60,
+  })();
+}
+
 // "Zuletzt aktiv" über ALLE Tickets (auch fremde / nicht zugewiesene), nicht nur
 // die eigenen. Serverseitiges Sortieren unterstützt Autotask NICHT (sort wird
 // ignoriert). Daher per lastActivityDate-Fenster (letzte RECENT_WINDOW_DAYS Tage)

@@ -12,6 +12,7 @@ import { getSession } from "@/lib/auth";
 import {
   getDashboardKpis,
   getRecentlyEdited,
+  getRecentEditedCounts,
   getTicketsPerResource,
 } from "@/lib/autotask/entities/dashboard";
 import { CountBarChart } from "@/components/dashboard/count-bar-chart";
@@ -82,69 +83,79 @@ export default async function DashboardPage() {
 
   const picklists = await getTicketPicklists();
 
-  try {
-    const [kpis, recent, perResource] = await Promise.all([
-      getDashboardKpis(rid),
-      getRecentlyEdited(),
-      getTicketsPerResource(),
-    ]);
+  // Datenabruf vom Rendern trennen: Fehler werden zu einem Sentinel, das JSX entsteht
+  // AUSSERHALB von try/catch (React-19-Error-Boundary-Regel, kein JSX im try).
+  const data = await Promise.all([
+    getDashboardKpis(rid),
+    getRecentlyEdited(),
+    getRecentEditedCounts(),
+    getTicketsPerResource(),
+  ]).catch((e) =>
+    e instanceof AutotaskError && e.status === 429
+      ? ("rate-limited" as const)
+      : ("error" as const),
+  );
 
-    return (
-      <div className="flex flex-col gap-6">
-        <PageHeader
-          title="Übersicht"
-          description="Deine Tickets auf einen Blick."
-        />
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <KpiCard
-            title="Meine offenen Tickets"
-            value={kpis.myOpen}
-            href="/tickets/my"
-            icon={TicketIcon}
-          />
-          <KpiCard
-            title="Nicht zugewiesen (Pool)"
-            value={kpis.pool}
-            href="/tickets/team?assigned=unassigned"
-            icon={InboxIcon}
-          />
-          <KpiCard
-            title="Zusätzlicher Mitarbeiter"
-            value={kpis.secondaryOpen}
-            href="/tickets/secondary"
-            icon={UsersIcon}
-          />
-          <KpiCard
-            title="Ball liegt bei mir"
-            value={kpis.ballApprox ? `~${kpis.ballInMyCourt}` : kpis.ballInMyCourt}
-            href="/tickets/ball"
-            icon={ReplyIcon}
-            accent
-            hint={
-              kpis.ballApprox
-                ? "approximativ (Obergrenze erreicht)"
-                : undefined
-            }
-          />
-        </div>
-
-        <CountBarChart title="Tickets pro Mitarbeiter" data={perResource} />
-
-        <RecentlyEdited rows={recent} picklists={picklists} />
-      </div>
-    );
-  } catch (e) {
-    const rateLimited = e instanceof AutotaskError && e.status === 429;
+  if (data === "rate-limited" || data === "error") {
     return (
       <Alert variant="destructive">
         <AlertCircleIcon />
         <AlertTitle>Dashboard konnte nicht geladen werden</AlertTitle>
         <AlertDescription>
-          {rateLimited
+          {data === "rate-limited"
             ? "Rate-Limit erreicht (429). Bitte kurz warten und erneut versuchen."
             : "Bitte später erneut versuchen."}
         </AlertDescription>
       </Alert>
     );
   }
+
+  const [kpis, recent, recentCounts, perResource] = data;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Übersicht"
+        description="Deine Tickets auf einen Blick."
+      />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiCard
+          title="Meine offenen Tickets"
+          value={kpis.myOpen}
+          href="/tickets/my"
+          icon={TicketIcon}
+        />
+        <KpiCard
+          title="Nicht zugewiesen (Pool)"
+          value={kpis.pool}
+          href="/tickets/team?assigned=unassigned"
+          icon={InboxIcon}
+        />
+        <KpiCard
+          title="Zusätzlicher Mitarbeiter"
+          value={kpis.secondaryOpen}
+          href="/tickets/secondary"
+          icon={UsersIcon}
+        />
+        <KpiCard
+          title="Ball liegt bei mir"
+          value={kpis.ballApprox ? `~${kpis.ballInMyCourt}` : kpis.ballInMyCourt}
+          href="/tickets/ball"
+          icon={ReplyIcon}
+          accent
+          hint={
+            kpis.ballApprox ? "approximativ (Obergrenze erreicht)" : undefined
+          }
+        />
+      </div>
+
+      <CountBarChart title="Tickets pro Mitarbeiter" data={perResource} />
+
+      <RecentlyEdited
+        rows={recent}
+        counts={recentCounts}
+        picklists={picklists}
+      />
+    </div>
+  );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { ArrowRightIcon } from "lucide-react";
 
 import {
   Select,
@@ -10,16 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { TicketsList, type TicketRow } from "@/components/tickets/tickets-list";
 import type { TicketPicklists } from "@/lib/autotask/types";
+import type { RecentEditedCounts } from "@/lib/autotask/entities/dashboard";
 
 type TimeWindow = "today" | "3" | "7";
-
-const HEADINGS: Record<TimeWindow, string> = {
-  today: "Heute bearbeitet",
-  "3": "Letzte 3 Tage",
-  "7": "Letzte 7 Tage",
-};
 
 const WINDOW_ITEMS = [
   { value: "today", label: "Heute" },
@@ -27,14 +25,25 @@ const WINDOW_ITEMS = [
   { value: "7", label: "Letzte 7 Tage" },
 ];
 
-// Dashboard-Liste „bearbeitete Tickets" mit Zeitfenster-Umschalter (Heute / letzte
-// 3 / letzte 7 Tage, Default Heute). Die Zeilen kommen serverseitig aus dem 7-Tage-
-// Fenster (nach lastActivityDate sortiert); hier nur clientseitig eingrenzen.
+const SUBLABEL: Record<TimeWindow, string> = {
+  today: "heute bearbeitet",
+  "3": "in den letzten 3 Tagen bearbeitet",
+  "7": "in den letzten 7 Tagen bearbeitet",
+};
+
+const nf = new Intl.NumberFormat("de-DE");
+
+// Dashboard-Sektion „Bearbeitete Tickets": Management-Puls als große KPI-Zahl je
+// Zeitfenster (springt beim Umschalten) + kompakte Liste der jüngsten Tickets als
+// Kontext + „Alle ansehen" zum Drill-down. Die KPI kommt server-seitig aus dem
+// Count-Endpoint (`counts`), die Liste aus dem 7-Tage-Fenster (clientseitig eingegrenzt).
 export function RecentlyEdited({
   rows,
+  counts,
   picklists,
 }: {
   rows: TicketRow[];
+  counts: RecentEditedCounts;
   picklists: TicketPicklists;
 }) {
   const [win, setWin] = React.useState<TimeWindow>("today");
@@ -58,12 +67,13 @@ export function RecentlyEdited({
     [rows, cutoff],
   );
 
+  const total = win === "today" ? counts.today : win === "3" ? counts.d3 : counts.d7;
   const listFilters = { status: "open", priority: "", queue: "" };
 
   return (
     <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold tracking-tight">{HEADINGS[win]}</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Bearbeitete Tickets</h2>
         <Select
           items={WINDOW_ITEMS}
           value={win}
@@ -83,6 +93,27 @@ export function RecentlyEdited({
           </SelectContent>
         </Select>
       </div>
+
+      <div className="flex items-baseline gap-2">
+        <span className="text-3xl font-semibold tracking-tight tabular-nums">
+          {nf.format(total)}
+        </span>
+        <span className="text-muted-foreground text-sm">{SUBLABEL[win]}</span>
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-muted-foreground text-xs font-medium">Neueste</span>
+        <Button
+          variant="link"
+          size="sm"
+          className="text-muted-foreground h-auto p-0"
+          render={<Link href="/tickets/team" />}
+        >
+          Alle ansehen
+          <ArrowRightIcon className="size-3.5" />
+        </Button>
+      </div>
+
       <TicketsList
         data={{ items, nextCursor: null, prevCursor: null }}
         picklists={picklists}
