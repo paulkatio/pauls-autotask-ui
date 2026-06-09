@@ -1775,4 +1775,29 @@ Repo-Sicherheitsscan (4 parallele Audits) + umgesetzte Fixes (`tsc`+`build` grü
   (`sin(35°)·Textbreite`, Clamp 48–140 px); Plot-Höhe bleibt konstant → Balken springen
   nicht. ChartContainer-Höhe = Plot + Achse statt fixem `h-56`.
 
+### [2026-06-08] API-Nutzung gegen „API thread limiting" geprüft + nachgeschärft
+Vollaudit der REST-Nutzung gegen Autotasks Thread-Limit-Artikel (Limit 3 pro
+Tracking-ID + **Objekt-Endpoint**, Latenz ab ≥3, 10k/h separat, ZoneInformation ausgenommen).
+
+**Befund:** Alle Laufzeit-Calls laufen durch `client.ts request()` → Limiter (max **2**/Objekt)
+→ `withRetry` (429-Backoff) → `fetch`. App bleibt mit 2 < 3 unter dem Limit, löst Autotasks
+Latenzstrafe (≥3) nie aus, Fan-outs (Dashboard-/Firmen-Counts) werden auf 2 gedrosselt statt
+429. Pro Instanz konform und konservativ.
+
+**Zwei Lücken gefixt:**
+- **`entityKey` buchte Kind-Schreibpfade falsch** (`Tickets/{id}/Notes` → „Tickets" statt
+  „TicketNotes"). Autotask zählt Kind-Collections als eigene Objekt-Endpoints → getrennte
+  Budgets konnten zusammen >3 auf dem realen `TicketNotes`-Objekt erreichen (theoretisch 429).
+  Fix: `entityKey` mappt `{Parent}/{id}/{Child}` aufs echte Objekt (`CHILD_OBJECT_ENDPOINT`:
+  Notes→TicketNotes, Attachments→TicketAttachments), unbekannte Kind-Pfade fallen sicher auf
+  den Parent zurück. Logik per Node-Sanity-Check belegt.
+- **Kein 10k/h-Frühwarnsystem.** Neu: `lib/autotask/rate-monitor.ts` zählt HTTP-Calls pro
+  Instanz im 1-h-Fenster und `console.warn` ab 8.000 (80 %). KEIN harter Riegel; pro Prozess
+  (wie der Limiter), global ggf. höher — reine Betriebs-Warnung.
+
+**Bekannt/offen (kein Bug, Skalierung):** Limiter + Monitor sind prozess-lokal → bei
+Mehr-Instanz aggregiert >3 bzw. höhere Calls möglich; echter Fix = geteilter Limiter
+(Redis/Upstash). Bei aktueller Teamlast unkritisch. Threshold-Mails gehen an die API-User-
+Adresse → muss auf echten Empfänger zeigen.
+
 <!-- Neue Entscheidungen hier anhängen -->

@@ -28,6 +28,13 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
   Achsenhöhe passt sich jetzt dynamisch an die Namenslänge an (Plot-Höhe konstant).
 - **Docker-Build** lief nach der Auth-Härtung nicht mehr (Prerender ohne `AUTH_MODE`);
   fail-closed greift nun nur zur Laufzeit, nicht während `next build`.
+- **Autotask-Thread-Keying:** Kind-Schreibpfade (`…/Notes`, `…/Attachments`) zählen jetzt
+  aufs korrekte Objekt-Budget (`TicketNotes`/`TicketAttachments`) statt aufs Parent
+  „Tickets" – behebt ein theoretisches 429-Szenario am `TicketNotes`-Endpoint.
+
+### Added
+- **10k/h-Frühwarn-Monitor** (`lib/autotask/rate-monitor.ts`): loggt bei 80 % des
+  Autotask-Stundenlimits eine Warnung (Zähler pro Instanz, Betriebs-Hinweis, kein Riegel).
 
 ### Docs
 - README/DEPLOY/STATE/DECISIONS auf Prod-Stand: Secret-Quoting (`.env.local` vs.
