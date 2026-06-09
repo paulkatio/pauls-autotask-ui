@@ -11,7 +11,7 @@ export default function Loading() {
     <div className="flex flex-col gap-6">
       <PageHeaderSkeleton />
       <FiltersSkeleton search filters={1} />
-      <TableSkeleton columns={5} rows={10} minWidthClass="min-w-2xl" />
+      <TableSkeleton columns={5} rows={10} minWidthClass="min-w-2xl" breakpoint="xl" />
     </div>
   );
 }

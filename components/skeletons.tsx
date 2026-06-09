@@ -52,16 +52,28 @@ export function TableSkeleton({
   rows = 8,
   withCheckbox = false,
   minWidthClass = "min-w-3xl",
+  breakpoint = "md",
 }: {
   columns?: number;
   rows?: number;
   withCheckbox?: boolean;
   minWidthClass?: string;
+  // Muss zum Card↔Table-Breakpoint der jeweiligen Liste passen, sonst springt das
+  // Layout beim Laden (TicketsList = "xl", Companies/Contacts/SearchableTable = "lg").
+  breakpoint?: "md" | "lg" | "xl";
 }) {
+  // Literale Klassennamen (nicht dynamisch zusammensetzen) – sonst findet sie der
+  // Tailwind-JIT nicht.
+  const cardHiddenClass = { md: "md:hidden", lg: "lg:hidden", xl: "xl:hidden" }[
+    breakpoint
+  ];
+  const tableBlockClass = { md: "md:block", lg: "lg:block", xl: "xl:block" }[
+    breakpoint
+  ];
   return (
     <>
-    {/* Mobile: Karten-Skeletons (spiegeln das Karten-Layout der Listen unter md). */}
-    <div className="flex flex-col gap-2 md:hidden">
+    {/* Mobile/Tablet: Karten-Skeletons (spiegeln das Karten-Layout der Listen). */}
+    <div className={cn("flex flex-col gap-2", cardHiddenClass)}>
       {Array.from({ length: Math.min(rows, 6) }).map((_, r) => (
         <div key={r} className="flex flex-col gap-2 rounded-lg border p-3">
           <div className="flex items-center justify-between gap-2">
@@ -75,7 +87,7 @@ export function TableSkeleton({
     </div>
 
     {/* Desktop: echte Tabellen-Struktur. */}
-    <div className="hidden overflow-x-auto rounded-lg border md:block">
+    <div className={cn("hidden overflow-x-auto rounded-lg border", tableBlockClass)}>
       <Table className={minWidthClass}>
         <TableHeader>
           <TableRow className="bg-muted/50 hover:bg-muted/50">

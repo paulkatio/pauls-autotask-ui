@@ -9,8 +9,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -70,10 +68,9 @@ export function TicketChat({
   const [sending, setSending] = React.useState(false);
   const [sendError, setSendError] = React.useState<string | null>(null);
   const [mailNotice, setMailNotice] = React.useState<string | null>(null);
-  // Mailversand standardmäßig AUS (Sicherheit): ohne aktiven Schalter wird die
-  // Nachricht nur als Notiz gespeichert, NICHT an den Kunden gemailt. Bei aktivem
-  // Schalter erscheint vor dem Versand ein Bestätigungsdialog (irreversibel).
-  const [notify, setNotify] = React.useState(false);
+  // Reines Kundenfenster: jede Chat-Nachricht geht per E-Mail an den Ticket-Kontakt.
+  // Vor JEDEM Versand erscheint ein Bestätigungsdialog (irreversibel). Interne Notizen
+  // laufen separat über „Neue Notiz" im Aktivitäts-Feed (note-form.tsx).
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const tempId = React.useRef(-1);
 
@@ -119,16 +116,12 @@ export function TicketChat({
     };
   }, [load]);
 
-  // Form-Submit: bei aktivem Mailversand erst bestätigen lassen, sonst direkt senden.
+  // Form-Submit: Versand geht immer an den Kunden → vor jedem Senden bestätigen lassen.
   function attemptSend(e: React.FormEvent) {
     e.preventDefault();
     const body = text.trim();
     if (!body || sending) return;
-    if (notify) {
-      setConfirmOpen(true);
-      return;
-    }
-    void doSend();
+    setConfirmOpen(true);
   }
 
   async function doSend() {
@@ -156,7 +149,7 @@ export function TicketChat({
       const res = await fetch(`/api/tickets/${ticketId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: body, notify }),
+        body: JSON.stringify({ text: body, notify: true }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -293,28 +286,17 @@ export function TicketChat({
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={
-              notify ? "Nachricht an den Kunden …" : "Interne Notiz …"
-            }
+            placeholder="Nachricht an den Kunden …"
             rows={2}
             aria-label="Nachricht"
           />
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="chat-notify"
-                checked={notify}
-                onCheckedChange={(v) => setNotify(v === true)}
-              />
-              <Label
-                htmlFor="chat-notify"
-                className="text-muted-foreground text-xs font-normal"
-              >
-                Per E-Mail an Kunden senden
-              </Label>
-            </div>
+            <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+              <MailIcon className="size-3.5 shrink-0" />
+              Geht per E-Mail an den Kunden
+            </span>
             <Button type="submit" size="sm" disabled={sending || !text.trim()}>
-              {notify ? "Senden & mailen" : "Speichern"}
+              Senden &amp; mailen
             </Button>
           </div>
         </form>

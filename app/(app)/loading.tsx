@@ -24,7 +24,7 @@ export default function Loading() {
           <Skeleton className="h-4 w-16" />
           <Skeleton className="h-4 w-24" />
         </div>
-        <TableSkeleton columns={7} rows={6} />
+        <TableSkeleton columns={7} rows={6} breakpoint="xl" />
       </section>
     </div>
   );

@@ -236,10 +236,14 @@ export function TicketsList({
 
   // Spalten als Defs (für Drag-&-Drop-Reihenfolge). Die Checkbox-Spalte bleibt
   // fest vorne und ist NICHT Teil der umsortierbaren Spalten.
+  // Sekundärspalten (Firma/Queue/Zugewiesen) erst ab 2xl einblenden, damit die
+  // Kernspalten im xl-Band (Tabelle ab xl sichtbar) ohne Horizontal-Scroll passen.
+  const hideSecondary = "hidden 2xl:table-cell";
   const dataColumns: {
     id: string;
     header: string;
     cell: (t: TicketRow) => React.ReactNode;
+    headClass?: string;
   }[] = [
     {
       id: "number",
@@ -255,7 +259,9 @@ export function TicketsList({
       header: "Titel",
       cell: (t) => (
         <TableCell>
-          <TruncatedText className="max-w-md">{t.title ?? "—"}</TruncatedText>
+          <TruncatedText className="max-w-xs 2xl:max-w-md">
+            {t.title ?? "—"}
+          </TruncatedText>
         </TableCell>
       ),
     },
@@ -264,8 +270,9 @@ export function TicketsList({
           {
             id: "company",
             header: "Firma",
+            headClass: hideSecondary,
             cell: (t: TicketRow) => (
-              <TableCell>
+              <TableCell className={hideSecondary}>
                 <TruncatedText className="max-w-44">
                   {t.companyName ?? "—"}
                 </TruncatedText>
@@ -279,8 +286,9 @@ export function TicketsList({
           {
             id: "queue",
             header: "Queue",
+            headClass: hideSecondary,
             cell: (t: TicketRow) => (
-              <TableCell>
+              <TableCell className={hideSecondary}>
                 <TruncatedText className="max-w-36">
                   {labelOf(picklists.queue, t.queueID)}
                 </TruncatedText>
@@ -294,8 +302,9 @@ export function TicketsList({
           {
             id: "assigned",
             header: "Zugewiesen",
+            headClass: hideSecondary,
             cell: (t: TicketRow) => (
-              <TableCell>
+              <TableCell className={hideSecondary}>
                 <TruncatedText className="max-w-40">
                   {t.assignedResourceName ?? "—"}
                 </TruncatedText>
@@ -506,14 +515,23 @@ export function TicketsList({
         <>
           {/* Mobile-First: unter md je Ticket eine Karte (kein Querscrollen). Ab md
               die volle Tabelle mit umsortierbaren Spalten. */}
-          <div className="flex flex-col gap-2 md:hidden">
+          <div className="flex flex-col gap-2 xl:hidden">
             {items.map((t) => (
               <div
                 key={t.id}
                 role="button"
                 tabIndex={0}
                 onClick={() => openTicketPopup(t.id)}
-                className="hover:bg-muted/50 active:bg-muted flex items-start gap-3 rounded-lg border p-3 transition-colors"
+                onKeyDown={(e) => {
+                  // Nur reagieren, wenn die Karte selbst fokussiert ist – nicht, wenn
+                  // das Keydown von einem Kind (z. B. der Auswahl-Checkbox) hochbubbelt.
+                  if (e.target !== e.currentTarget) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openTicketPopup(t.id);
+                  }
+                }}
+                className="hover:bg-muted/50 active:bg-muted flex items-start gap-3 rounded-lg border p-3 transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 {selectableActive && (
                   <div onClick={(e) => e.stopPropagation()} className="pt-0.5">
@@ -560,7 +578,7 @@ export function TicketsList({
             ))}
           </div>
 
-          <div className="hidden overflow-x-auto rounded-lg border md:block">
+          <div className="hidden overflow-x-auto rounded-lg border xl:block">
             <Table className="min-w-3xl">
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -576,7 +594,10 @@ export function TicketsList({
                   {orderedCols.map((c) => (
                     <TableHead
                       key={c.id}
-                      className="data-[dragover]:bg-accent data-[dragging]:opacity-60 cursor-grab transition-colors select-none active:cursor-grabbing"
+                      className={cn(
+                        "data-[dragover]:bg-accent data-[dragging]:opacity-60 cursor-grab transition-colors select-none active:cursor-grabbing",
+                        c.headClass,
+                      )}
                       title="Spalte ziehen, um die Reihenfolge zu ändern"
                       {...colHeadProps(c.id)}
                     >

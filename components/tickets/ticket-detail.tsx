@@ -198,7 +198,7 @@ export function TicketDetailView({
 
   // ===== LINKS: Meta-Schiene (Inline-Edits aus B15b/c) =====
   const leftRail = (
-    <Rail title="Ticketinformationen" className="md:w-72 md:shrink-0">
+    <Rail title="Ticketinformationen" className="lg:w-72 lg:shrink-0">
 
       <Card>
         <CardContent className="flex flex-col gap-4">
@@ -381,23 +381,23 @@ export function TicketDetailView({
   // wegen Chat-Höhe) =====
   const rightRail = (
     <div className="flex w-full flex-col gap-4 xl:w-80 xl:shrink-0">
-      {/* Chat zuerst + immer offen (auf dem Smartphone sofort griffbereit, nicht im
-          eingeklappten Akkordeon versteckt). Kontext darunter bleibt einklappbar. */}
-      <TicketChat ticketId={ticket.id} me={me} />
-      <Rail title="Kontext">
+      {/* Firma + Ansprechpartner ZUERST, über dem Chat – damit beim Schreiben
+          sofort sichtbar ist, mit wem kommuniziert wird. Alles bricht sauber um. */}
       {(company || contact) && (
         <Card>
           <CardHeader className="border-b">
-            <CardTitle className="text-base">
+            <CardTitle className="text-base break-words">
               {company?.name ?? "Kontakt"}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-1 text-sm">
             {contact ? (
               <>
-                <span className="font-medium">{contact.name}</span>
+                <span className="font-medium break-words">{contact.name}</span>
                 {contact.title && (
-                  <span className="text-muted-foreground">{contact.title}</span>
+                  <span className="text-muted-foreground break-words">
+                    {contact.title}
+                  </span>
                 )}
                 {contact.email && (
                   <span className="text-muted-foreground flex items-center gap-1.5 break-all">
@@ -406,12 +406,14 @@ export function TicketDetailView({
                 )}
                 {contact.phone && (
                   <span className="text-muted-foreground flex items-center gap-1.5">
-                    <PhoneIcon className="size-3.5" /> {contact.phone}
+                    <PhoneIcon className="size-3.5 shrink-0" />
+                    <span className="break-all">{contact.phone}</span>
                   </span>
                 )}
                 {contact.mobilePhone && (
                   <span className="text-muted-foreground flex items-center gap-1.5">
-                    <SmartphoneIcon className="size-3.5" /> {contact.mobilePhone}
+                    <SmartphoneIcon className="size-3.5 shrink-0" />
+                    <span className="break-all">{contact.mobilePhone}</span>
                   </span>
                 )}
               </>
@@ -422,6 +424,9 @@ export function TicketDetailView({
         </Card>
       )}
 
+      <TicketChat ticketId={ticket.id} me={me} />
+
+      <Rail title="Kontext">
       <Card>
         <CardHeader className="border-b">
           <CardTitle className="text-base">Arbeitszeit &amp; Abrechnung</CardTitle>
@@ -512,8 +517,12 @@ export function TicketDetailView({
         </span>
       </div>
 
-      {/* 3 Spalten ab xl; ab md zwei Spalten + Kontext darunter; mobil gestapelt. */}
-      <div className="flex flex-col gap-6 md:flex-row md:flex-wrap md:items-start xl:flex-nowrap">
+      {/* 3 Spalten ab xl; ab lg zwei Spalten + Kontext darunter; darunter gestapelt
+          (Feed bekommt bis lg die volle Breite, statt sich ab md mit der Meta-Schiene
+          ~512 px zu teilen). Collapsible-Trigger der Rail bleibt bei md:hidden — der
+          useIsMobile()-Schwelle (768) wegen, sonst wäre er bei 768–1023 sichtbar aber
+          funktionslos. */}
+      <div className="flex flex-col gap-6 lg:flex-row lg:flex-wrap lg:items-start xl:flex-nowrap">
         {leftRail}
         {center}
         {rightRail}

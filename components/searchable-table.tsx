@@ -128,18 +128,30 @@ export function SearchableTable<T extends { id: number | string }>({
         </Empty>
       ) : (
         <>
-        {/* Mobile-First: unter md je Zeile eine Karte (kein Querscrollen). */}
-        <div className="flex flex-col gap-2 md:hidden">
+        {/* Mobile/Tablet: bis xl je Zeile eine Karte (Tabelle würde sonst bis ~1280
+            rechts klippen). */}
+        <div className="flex flex-col gap-2 xl:hidden">
           {filtered.map((row) => (
             <div
               key={String(row.id)}
               {...(handleRow
-                ? { role: "button" as const, tabIndex: 0, onClick: () => handleRow(row) }
+                ? {
+                    role: "button" as const,
+                    tabIndex: 0,
+                    onClick: () => handleRow(row),
+                    onKeyDown: (e: React.KeyboardEvent) => {
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleRow(row);
+                      }
+                    },
+                  }
                 : {})}
               className={cn(
                 "flex flex-col gap-1.5 rounded-lg border p-3",
                 handleRow &&
-                  "hover:bg-muted/50 active:bg-muted cursor-pointer transition-colors",
+                  "hover:bg-muted/50 active:bg-muted cursor-pointer transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
               )}
             >
               {mobileCard
@@ -165,7 +177,7 @@ export function SearchableTable<T extends { id: number | string }>({
           ))}
         </div>
 
-        <div className="hidden overflow-x-auto rounded-lg border md:block">
+        <div className="hidden overflow-x-auto rounded-lg border xl:block">
           <Table className={cn(minWidthClass)}>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">

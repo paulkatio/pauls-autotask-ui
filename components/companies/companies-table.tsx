@@ -293,15 +293,23 @@ export function CompaniesTable({
         </Empty>
       ) : (
         <>
-        {/* Mobile-First: unter md je Firma eine Karte (kein Querscrollen). */}
-        <div className="flex flex-col gap-2 md:hidden">
+        {/* Mobile/Tablet: bis xl je Firma eine Karte (Tabelle würde sonst bis ~1280
+            rechts klippen – echte Tabellenbreite > verfügbarer Content). */}
+        <div className="flex flex-col gap-2 xl:hidden">
           {filtered.map((c) => (
             <div
               key={c.id}
               role="button"
               tabIndex={0}
               onClick={() => openCompanyPopup(c.id)}
-              className="hover:bg-muted/50 active:bg-muted flex flex-col gap-1.5 rounded-lg border p-3 transition-colors"
+              onKeyDown={(e) => {
+                if (e.target !== e.currentTarget) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  openCompanyPopup(c.id);
+                }
+              }}
+              className="hover:bg-muted/50 active:bg-muted flex flex-col gap-1.5 rounded-lg border p-3 transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-sm font-medium break-words">{c.name}</span>
@@ -324,7 +332,7 @@ export function CompaniesTable({
           ))}
         </div>
 
-        <div className="hidden overflow-x-auto rounded-lg border md:block">
+        <div className="hidden overflow-x-auto rounded-lg border xl:block">
           <Table className="min-w-2xl">
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">

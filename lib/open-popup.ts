@@ -4,9 +4,9 @@
 // dasselbe Fenster wiederverwendet statt viele zu öffnen.
 // Kontakte öffnen NICHT hierüber – die laufen als In-App-Overlay.
 
-function openRecordPopup(path: string, name: string): void {
+function openRecordPopup(path: string, name: string, width = 1200): void {
   if (typeof window === "undefined") return;
-  const w = 1200;
+  const w = width;
   const h = 860;
   const left = Math.round(
     window.screenX + Math.max(0, (window.outerWidth - w) / 2),
@@ -20,7 +20,9 @@ function openRecordPopup(path: string, name: string): void {
 }
 
 export function openTicketPopup(id: number): void {
-  openRecordPopup(`/popup/tickets/${id}`, `ticket-${id}`);
+  // 1360 > xl (1280): Ticketdetail startet im 3-Spalten-Layout mit Chat-Rail rechts,
+  // statt den Chat unter den Aktivitäts-Feed zu wrappen.
+  openRecordPopup(`/popup/tickets/${id}`, `ticket-${id}`, 1360);
 }
 
 export function openCompanyPopup(id: number): void {

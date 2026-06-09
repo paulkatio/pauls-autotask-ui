@@ -15,7 +15,7 @@ export default function Loading() {
         gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-3"
       />
       <FiltersSkeleton search />
-      <TableSkeleton columns={5} rows={8} minWidthClass="min-w-2xl" />
+      <TableSkeleton columns={5} rows={8} minWidthClass="min-w-2xl" breakpoint="xl" />
     </div>
   );
 }
