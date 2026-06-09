@@ -31,6 +31,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { StatusDot } from "@/components/status-indicator";
 
 interface WorkType {
   id: number;
@@ -384,13 +385,19 @@ export function TimeEntryDialog({
                 onValueChange={(v) => setStatusVal(String(v))}
               >
                 <SelectTrigger id="te-status" className="w-full">
-                  <SelectValue placeholder="Status wählen" />
+                  <span className="flex min-w-0 items-center gap-2">
+                    {statusVal && <StatusDot status={Number(statusVal)} />}
+                    <SelectValue placeholder="Status wählen" />
+                  </span>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     {statuses.map((s) => (
                       <SelectItem key={s.value} value={String(s.value)}>
-                        {s.label}
+                        <span className="flex items-center gap-2">
+                          <StatusDot status={s.value} />
+                          {s.label}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectGroup>

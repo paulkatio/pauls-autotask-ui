@@ -56,6 +56,7 @@ import type {
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import type { RefOption } from "@/lib/autotask/entities/contacts";
 import { recordHistory } from "@/lib/history";
+import { StatusDot } from "@/components/status-indicator";
 import { cn } from "@/lib/utils";
 
 const UNASSIGNED = "none";
@@ -453,13 +454,35 @@ export function StatusEdit({
 
   return (
     <div className="flex flex-col gap-1">
-      <OptionSelect
+      <Select
+        items={items}
         value={val}
-        options={items}
-        ariaLabel={ariaLabel}
-        disabled={saving}
-        onChange={onChange}
-      />
+        onValueChange={(v) => onChange(String(v))}
+      >
+        <SelectTrigger
+          size="sm"
+          className="w-full"
+          disabled={saving}
+          aria-label={ariaLabel}
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            {val && <StatusDot status={Number(val)} />}
+            <SelectValue placeholder="Status wählen" />
+          </span>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {items.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                <span className="flex items-center gap-2">
+                  <StatusDot status={Number(o.value)} />
+                  {o.label}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
       <FieldError message={error} />
 
       <Dialog

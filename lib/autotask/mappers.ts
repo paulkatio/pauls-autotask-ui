@@ -50,6 +50,32 @@ export function statusVariant(id: number | null | undefined): BadgeVariant {
   }
 }
 
+// Farbiger Punkt vor dem Status (wie Autotask). Farben grob an den Autotask-Status-
+// Farben orientiert; die vielen Warte-/System-Status neutral (slate). Erste Fassung –
+// einzelne Farben bei Bedarf an die echten Autotask-Werte angleichen.
+export function statusColor(id: number | null | undefined): string {
+  switch (id) {
+    case 1: // Neu
+      return "#eab308"; // gelb/amber
+    case 11: // Eskaliert
+    case 21: // Reklamation
+      return "#ef4444"; // rot
+    case 13: // Warten auf Genehmigung
+    case 19: // Spätere Fälligkeit
+      return "#3b82f6"; // blau
+    case 22: // Genehmigung erteilt
+      return "#14b8a6"; // teal
+    case 23: // Genehmigung abgelehnt
+      return "#f97316"; // orange
+    case 5: // Abgeschlossen
+    case 14: // Gelöst warten auf Kunden
+      return "#22c55e"; // grün
+    default:
+      // In Bearbeitung, Servicetermin, Fälligkeit überschritten, Warte-/System-Status …
+      return "#64748b"; // neutral (slate)
+  }
+}
+
 // Priorität (Farbsystem v2): Kritisch=rot, Hoch=schwarz (selten+bedeutsam),
 // Mittel=grau, Niedrig=outline. Quiet-Scale — nur Kritisch ist "laut".
 export function priorityVariant(id: number | null | undefined): BadgeVariant {

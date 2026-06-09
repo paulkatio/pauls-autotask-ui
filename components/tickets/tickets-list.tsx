@@ -36,11 +36,8 @@ import { TruncatedText } from "@/components/truncated-text";
 import { useColumnOrder } from "@/hooks/use-column-order";
 import { RotateCcwIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  labelOf,
-  statusVariant,
-  priorityVariant,
-} from "@/lib/autotask/mappers";
+import { labelOf, priorityVariant } from "@/lib/autotask/mappers";
+import { StatusBadge } from "@/components/status-indicator";
 import type { Ticket, TicketPicklists } from "@/lib/autotask/types";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import { openTicketPopup } from "@/lib/open-popup";
@@ -318,9 +315,10 @@ export function TicketsList({
       header: "Status",
       cell: (t) => (
         <TableCell>
-          <Badge variant={statusVariant(t.status)}>
-            {labelOf(picklists.status, t.status)}
-          </Badge>
+          <StatusBadge
+            status={t.status}
+            label={labelOf(picklists.status, t.status)}
+          />
         </TableCell>
       ),
     },
@@ -558,9 +556,10 @@ export function TicketsList({
                     </span>
                   )}
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge variant={statusVariant(t.status)}>
-                      {labelOf(picklists.status, t.status)}
-                    </Badge>
+                    <StatusBadge
+                      status={t.status}
+                      label={labelOf(picklists.status, t.status)}
+                    />
                     <Badge variant={priorityVariant(t.priority)}>
                       {labelOf(picklists.priority, t.priority)}
                     </Badge>
