@@ -44,6 +44,7 @@ import { NoteForm } from "@/components/tickets/note-form";
 import { AttachmentUpload } from "@/components/tickets/attachment-upload";
 import {
   TicketFieldSelect,
+  StatusEdit,
   CategoryEdit,
   AssignmentEdit,
   RefCombobox,
@@ -222,19 +223,11 @@ export function TicketDetailView({
                   {contact.email}
                 </span>
               )}
-              {contact?.receivesEmailNotifications != null && (
-                <Badge variant="secondary" className="w-fit">
-                  {contact.receivesEmailNotifications
-                    ? "E-Mail-Benachrichtigung: an"
-                    : "E-Mail-Benachrichtigung: aus"}
-                </Badge>
-              )}
             </div>
           </Field>
           <Field label="Status">
-            <TicketFieldSelect
+            <StatusEdit
               ticketId={ticket.id}
-              field="status"
               value={ticket.status}
               options={picklists.status}
               ariaLabel="Status"
@@ -424,7 +417,7 @@ export function TicketDetailView({
         </Card>
       )}
 
-      <TicketChat ticketId={ticket.id} me={me} />
+      <TicketChat ticketId={ticket.id} me={me} contactName={contact?.name ?? null} />
 
       <Rail title="Kontext">
       <Card>

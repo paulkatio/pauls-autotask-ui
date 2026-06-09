@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Card,
@@ -298,6 +300,241 @@ export function TicketFieldSelect({
         onChange={onChange}
       />
       <FieldError message={error} />
+    </div>
+  );
+}
+
+// "Abgeschlossen" = Autotask-System-Status „Complete". Wechsel hierauf (Abschluss)
+// bzw. weg davon (Wieder-Öffnen) verlangt eine Pflichtnotiz im Ticket.
+const CLOSED_STATUS_ID = 5;
+
+// Statusfeld mit Pflichtnotiz beim Abschließen/Wieder-Öffnen.
+// - Auf "Abgeschlossen": Dialog mit Pflicht-Notiz + Toggle intern/an Kunden. „an Kunden"
+//   nutzt den Chat-Pfad (Notiz noteType 18 + Resend-Mail) → steht damit auch im Ticket.
+// - Weg von "Abgeschlossen" (Wieder-Öffnen): Dialog mit interner Pflicht-Notiz.
+// - Alle anderen Statuswechsel: wie gehabt sofort speichern.
+export function StatusEdit({
+  ticketId,
+  value,
+  options,
+  ariaLabel,
+}: {
+  ticketId: number;
+  value: number | null | undefined;
+  options: Picklist;
+  ariaLabel: string;
+}) {
+  const router = useRouter();
+  const [val, setVal] = React.useState(value == null ? "" : String(value));
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const [pending, setPending] = React.useState<{
+    next: number;
+    mode: "close" | "reopen";
+  } | null>(null);
+  const [note, setNote] = React.useState("");
+  const [toCustomer, setToCustomer] = React.useState(false);
+  const [dialogSaving, setDialogSaving] = React.useState(false);
+  const [dialogError, setDialogError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    // Controlled-Value nach router.refresh() mit dem neuen Prop synchronisieren –
+    // legitime externe Sync (gleiche Muster wie die übrigen Feld-Komponenten hier).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVal(value == null ? "" : String(value));
+  }, [value]);
+
+  async function applyStatusImmediate(next: number, prevVal: string) {
+    setVal(String(next));
+    setSaving(true);
+    setError(null);
+    try {
+      await patchTicket(ticketId, { status: next });
+      recordHistory({
+        label: `${ariaLabel} geändert`,
+        reversible: true,
+        reverse: [
+          { id: ticketId, ticketNumber: `#${ticketId}`, body: { status: value ?? null } },
+        ],
+      });
+      toast.success("Gespeichert.");
+      router.refresh();
+    } catch (e) {
+      setVal(prevVal);
+      setError(e instanceof Error ? e.message : "Fehler beim Speichern.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function onChange(next: string) {
+    if (next === val) return;
+    const n = Number(next);
+    const cur = value ?? null;
+    const isClose = n === CLOSED_STATUS_ID && cur !== CLOSED_STATUS_ID;
+    const isReopen = cur === CLOSED_STATUS_ID && n !== CLOSED_STATUS_ID;
+    if (isClose || isReopen) {
+      // Notiz-Dialog öffnen; Status erst nach Bestätigung. val bleibt vorerst
+      // unverändert, sodass das Select bis dahin den alten Status zeigt.
+      setNote("");
+      setToCustomer(false);
+      setDialogError(null);
+      setPending({ next: n, mode: isClose ? "close" : "reopen" });
+      return;
+    }
+    void applyStatusImmediate(n, val);
+  }
+
+  async function confirmPending() {
+    if (!pending) return;
+    const text = note.trim();
+    if (!text) {
+      setDialogError("Bitte eine Notiz eingeben.");
+      return;
+    }
+    setDialogSaving(true);
+    setDialogError(null);
+    try {
+      // 1) Notiz ZUERST, dann Status. So bleibt bei einem Statusfehler die Notiz
+      // erhalten – und der Status wechselt nie ohne dokumentierte Notiz.
+      if (pending.mode === "close" && toCustomer) {
+        const r = await fetch(`/api/tickets/${ticketId}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, notify: true }),
+        });
+        const j = (await r.json().catch(() => ({}))) as { error?: string };
+        if (!r.ok) throw new Error(j.error ?? "Senden an den Kunden fehlgeschlagen.");
+      } else {
+        const r = await fetch(`/api/tickets/${ticketId}/note`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: pending.mode === "close" ? "Abschluss" : "Wieder-Öffnung",
+            text,
+          }),
+        });
+        const j = (await r.json().catch(() => ({}))) as {
+          itemId?: number;
+          error?: string;
+        };
+        if (!r.ok || !j.itemId) {
+          throw new Error(j.error ?? "Notiz konnte nicht gespeichert werden.");
+        }
+      }
+      // 2) Status setzen.
+      await patchTicket(ticketId, { status: pending.next });
+      recordHistory({
+        label:
+          pending.mode === "close" ? "Ticket abgeschlossen" : "Ticket wieder geöffnet",
+        reversible: true,
+        reverse: [
+          { id: ticketId, ticketNumber: `#${ticketId}`, body: { status: value ?? null } },
+        ],
+      });
+      setVal(String(pending.next));
+      toast.success(
+        pending.mode === "close" ? "Ticket abgeschlossen." : "Ticket wieder geöffnet.",
+      );
+      setPending(null);
+      router.refresh();
+    } catch (e) {
+      setDialogError(e instanceof Error ? e.message : "Fehler beim Speichern.");
+    } finally {
+      setDialogSaving(false);
+    }
+  }
+
+  const items = options.map((o: PicklistEntry) => ({
+    label: o.label,
+    value: String(o.value),
+  }));
+
+  return (
+    <div className="flex flex-col gap-1">
+      <OptionSelect
+        value={val}
+        options={items}
+        ariaLabel={ariaLabel}
+        disabled={saving}
+        onChange={onChange}
+      />
+      <FieldError message={error} />
+
+      <Dialog
+        open={pending !== null}
+        onOpenChange={(o) => {
+          if (!o && !dialogSaving) setPending(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {pending?.mode === "close"
+                ? "Ticket abschließen"
+                : "Ticket wieder öffnen"}
+            </DialogTitle>
+            <DialogDescription>
+              {pending?.mode === "close"
+                ? "Eine Notiz zum Abschluss ist erforderlich."
+                : "Eine interne Notiz zur Wieder-Öffnung ist erforderlich."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-3">
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={
+                pending?.mode === "close" && toCustomer
+                  ? "Nachricht an den Kunden …"
+                  : "Notiz …"
+              }
+              rows={4}
+              autoFocus
+              aria-label="Notiz"
+            />
+            {pending?.mode === "close" && (
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="close-to-customer"
+                  checked={toCustomer}
+                  onCheckedChange={(v) => setToCustomer(v === true)}
+                />
+                <Label htmlFor="close-to-customer" className="font-normal">
+                  Als Abschlussbenachrichtigung per E-Mail an den Kunden senden
+                </Label>
+              </div>
+            )}
+            {pending?.mode === "close" && toCustomer && (
+              <p className="text-muted-foreground text-xs">
+                Geht an den Ticket-Kontakt und steht im Ticket. Lässt sich nicht
+                zurücknehmen.
+              </p>
+            )}
+            <FieldError message={dialogError} />
+          </div>
+
+          <DialogFooter>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Abbrechen
+            </DialogClose>
+            <Button
+              onClick={() => void confirmPending()}
+              disabled={dialogSaving || !note.trim()}
+            >
+              {dialogSaving
+                ? "Speichern …"
+                : pending?.mode === "close"
+                  ? toCustomer
+                    ? "Abschließen & mailen"
+                    : "Abschließen"
+                  : "Wieder öffnen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
