@@ -2,6 +2,7 @@ import "server-only";
 
 import { autotask } from "@/lib/autotask/client";
 import type { TicketNote } from "@/lib/autotask/types";
+import { INBOUND_EMAIL_MARKER } from "@/lib/autotask/conversation";
 
 const NOTE_FIELDS = [
   "id",
@@ -31,12 +32,15 @@ export const ticketNotes = {
       Filter: [{ op: "eq", field: "ticketID", value: ticketId }],
     }),
 
-  // Konversations-Notizen fürs Chat-Polling: kundenseitige noteTypes (typeIds, z. B.
-  // 18/101) ODER jede vom Kontakt erstellte Notiz (`createdByContactID` gesetzt).
-  // Der OR-Zweig deckt echte Inbound-Mailantworten ab, die in der Praxis als
-  // noteType 3 (Aufgabennotizen) + createdByContactID ankommen – NICHT als 101
-  // (mandantenweit belegt, B17-DISCOVERY). Interne Resource-Notizen (Typ 1/2/3 OHNE
-  // Kontakt) bleiben ausgeschlossen, gehören also weiter nur in den Aktivität-Feed.
+  // Konversations-Notizen fürs Chat-Polling. Inbound deckt drei Fälle ab:
+  //  (a) kundenseitige noteTypes (typeIds, z. B. 18/101),
+  //  (b) jede vom Kontakt erstellte Notiz (`createdByContactID` gesetzt),
+  //  (c) per eingehender E-Mail erzeugte Notizen (Body-Marker) – das fängt
+  //      Mailantworten, die Autotask auf eine RESOURCE statt einen Kontakt mappt
+  //      (createdByContactID leer, noteType 3), verifiziert an Ticket 56313.
+  // Echte Inbound-Mailantworten kommen mandantenweit als noteType 3 (NICHT 101,
+  // B17-DISCOVERY). Interne Resource-Notizen (Typ 1/2/3 ohne Kontakt UND ohne Marker)
+  // bleiben ausgeschlossen, gehören also weiter nur in den Aktivität-Feed.
   byTicketConversation: (
     ticketId: number,
     typeIds: number[],
@@ -51,6 +55,7 @@ export const ticketNotes = {
           items: [
             { op: "in", field: "noteType", value: typeIds },
             { op: "exist", field: "createdByContactID" },
+            { op: "contains", field: "description", value: INBOUND_EMAIL_MARKER },
           ],
         },
       ],

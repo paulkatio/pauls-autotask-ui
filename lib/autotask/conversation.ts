@@ -26,13 +26,29 @@ export const NOTIFY_UDF = {
 
 export type ChatDirection = "inbound" | "outbound";
 
-// Richtung: primär über den noteType (101 = inbound). Zusätzliches, klareres Signal:
-// createdByContactID gesetzt = von einem Kontakt erstellt -> inbound.
+// Autotask hängt an JEDE per eingehender E-Mail erzeugte Notiz diesen Footer an.
+// Zuverlässiges Inbound-Signal AUCH dann, wenn Autotask den Absender auf eine
+// Resource statt einen Kontakt gemappt hat (dann ist createdByContactID leer) –
+// verifiziert an Ticket 56313, Notiz 30100151 (Antwort aus einer Mitarbeiter-Mailbox).
+// Interne Notizen (noteType 1/2/3 ohne Mailbezug) enthalten den Marker NICHT.
+export const INBOUND_EMAIL_MARKER = "Durch eingehende E-Mail-Verarbeitung erstellt";
+
+export function isInboundEmailNote(note: {
+  description?: string | null;
+}): boolean {
+  return (note.description ?? "").includes(INBOUND_EMAIL_MARKER);
+}
+
+// Richtung: inbound, wenn (a) noteType 101 (Email Note), (b) von einem Kontakt
+// erstellt (createdByContactID gesetzt) ODER (c) der Mail-Verarbeitungs-Marker im
+// Body steckt. Sonst outbound (unsere Notiz, noteType 18).
 export function directionOf(note: {
   noteType?: number;
   createdByContactID?: number | null;
+  description?: string | null;
 }): ChatDirection {
   if (note.noteType === CONVERSATION_NOTE_TYPES.inbound) return "inbound";
   if (note.createdByContactID != null) return "inbound";
+  if (isInboundEmailNote(note)) return "inbound";
   return "outbound";
 }
