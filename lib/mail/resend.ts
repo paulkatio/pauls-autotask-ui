@@ -9,6 +9,8 @@ export interface SendMailArgs {
   subject: string;
   text: string;
   html?: string;
+  // Resend-Anhänge: content = base64 (ohne data:-Präfix), filename = Anzeigename.
+  attachments?: { filename: string; content: string }[];
 }
 
 // Resend ist nur dann nutzbar, wenn Key + Absender gesetzt sind.
@@ -23,6 +25,7 @@ export async function sendMail({
   subject,
   text,
   html,
+  attachments,
 }: SendMailArgs): Promise<{ id: string }> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
@@ -44,6 +47,7 @@ export async function sendMail({
       subject,
       text,
       ...(html ? { html } : {}),
+      ...(attachments?.length ? { attachments } : {}),
     }),
   });
 

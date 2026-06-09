@@ -4,6 +4,7 @@ import { ticketNotes } from "@/lib/autotask/entities/ticket-notes";
 import { tickets } from "@/lib/autotask/entities/tickets";
 import { resources } from "@/lib/autotask/entities/resources";
 import { contacts } from "@/lib/autotask/entities/contacts";
+import { attachments as ticketAttachments } from "@/lib/autotask/entities/attachments";
 import { sendMail, isResendConfigured } from "@/lib/mail/resend";
 import { getMailSenderName } from "@/lib/branding-server";
 import {
@@ -101,6 +102,12 @@ export interface ChatMailStatus {
 export interface SendChatResult {
   itemId: number; // angelegte Notiz (Quelle der Wahrheit am Ticket)
   mail: ChatMailStatus;
+  attachmentError?: string; // Grund, falls ein Datei-Upload ans Ticket scheiterte
+}
+
+export interface ChatAttachment {
+  fileName: string;
+  dataBase64: string; // base64 ohne data:-Präfix
 }
 
 // Sendet eine Chat-Notiz (immer noteType 18 = outbound) und – bei notify – die
@@ -118,6 +125,7 @@ export async function sendTicketChatNote(
   ticketId: number,
   text: string,
   notify: boolean,
+  files: ChatAttachment[] = [],
 ): Promise<SendChatResult> {
   return withTicketLock(ticketId, async () => {
     // title ist beim Anlegen Pflicht – aus der ersten Zeile ableiten (gekürzt).
@@ -132,24 +140,40 @@ export async function sendTicketChatNote(
       publish: 1,
     };
 
-    // 1) Notiz zuerst. Fehler hier propagiert (throw) → keine Mail.
+    // 1) Notiz zuerst. Fehler hier propagiert (throw) → keine Mail/Anhänge.
     const itemId = await ticketNotes.create(ticketId, noteData);
+
+    // 2) Anhänge an den Ticket-Datensatz hängen (unabhängig vom Mailversand).
+    // Best effort: scheitert eine Datei, bleibt die Notiz bestehen; der Grund
+    // wandert über attachmentError an die UI (kein stilles Schlucken).
+    let attachmentError: string | undefined;
+    for (const f of files) {
+      try {
+        await ticketAttachments.upload(ticketId, {
+          fileName: f.fileName,
+          dataBase64: f.dataBase64,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Upload fehlgeschlagen";
+        attachmentError = `${attachmentError ? `${attachmentError}; ` : ""}${f.fileName}: ${msg}`;
+      }
+    }
 
     const mail: ChatMailStatus = { attempted: false, sent: false };
 
     if (!notify) {
       mail.skipped = "Mailversand für diese Nachricht deaktiviert.";
-      return { itemId, mail };
+      return { itemId, mail, attachmentError };
     }
 
     // Alt-Pfad: ohne Resend-Konfig den UDF/Workflow-Weg nutzen (Bestandsverhalten).
     if (!isResendConfigured()) {
       await tickets.setNotify(ticketId, true);
       mail.skipped = "Resend nicht konfiguriert – UDF/Workflow-Pfad genutzt.";
-      return { itemId, mail };
+      return { itemId, mail, attachmentError };
     }
 
-    // 2) Empfänger = Mail des Ticket-Kontakts auflösen; dann Resend.
+    // 3) Empfänger = Mail des Ticket-Kontakts auflösen; dann Resend.
     mail.attempted = true;
     try {
       const ticket = await tickets.get(ticketId);
@@ -157,14 +181,14 @@ export async function sendTicketChatNote(
       if (contactId == null) {
         mail.attempted = false;
         mail.skipped = "Ticket hat keinen Kontakt – keine Mail versendet.";
-        return { itemId, mail };
+        return { itemId, mail, attachmentError };
       }
       const contact = await contacts.get(contactId);
       const to = contact?.emailAddress?.trim();
       if (!to) {
         mail.attempted = false;
         mail.skipped = "Kontakt hat keine E-Mail – keine Mail versendet.";
-        return { itemId, mail };
+        return { itemId, mail, attachmentError };
       }
 
       // Ticketnummer im Betreff genügt fürs Autotask-Threading (B17-DISCOVERY §6.2).
@@ -180,13 +204,22 @@ export async function sendTicketChatNote(
         `<p style="color:#666;margin:0">${escapeHtml(senderName)} · Ticket ${escapeHtml(number)}</p>` +
         `</div>`;
 
-      await sendMail({ to, subject, text: textBody, html });
+      await sendMail({
+        to,
+        subject,
+        text: textBody,
+        html,
+        attachments: files.map((f) => ({
+          filename: f.fileName,
+          content: f.dataBase64,
+        })),
+      });
       mail.sent = true;
     } catch (e) {
       mail.error = e instanceof Error ? e.message : "Mailversand fehlgeschlagen.";
     }
 
-    return { itemId, mail };
+    return { itemId, mail, attachmentError };
   });
 }
 
