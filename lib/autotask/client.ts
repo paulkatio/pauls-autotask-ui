@@ -2,6 +2,7 @@ import "server-only";
 
 import { createLimiter } from "@/lib/autotask/limiter";
 import { withRetry, RetryableError } from "@/lib/autotask/backoff";
+import { recordApiCall } from "@/lib/autotask/rate-monitor";
 
 // Zentrale, server-only Brücke zur Autotask REST API (BFF, CLAUDE.md §5).
 // Generischer Kern: query / get / create / update. Entitätsspezifische Wrapper
@@ -107,8 +108,28 @@ function authHeaders(): Record<string, string> {
   };
 }
 
+// Kind-Collections sind in Autotask EIGENE Objekt-Endpoints und zählen für das
+// Thread-Limit getrennt vom Parent. Der REST-Pfad führt aber über den Parent
+// (`Tickets/{id}/Notes`), darum hier explizit aufs echte Objekt mappen — sonst
+// würde ein Notiz-/Anhang-Write fälschlich aufs „Tickets"-Budget gebucht.
+const CHILD_OBJECT_ENDPOINT: Record<string, string> = {
+  "Tickets/Notes": "TicketNotes",
+  "Tickets/Attachments": "TicketAttachments",
+};
+
+// Schlüssel für den Concurrency-Limiter = der Autotask-Objekt-Endpoint, gegen den der
+// Call zählt. Top-Level: erstes Pfadsegment (`Tickets/query` → „Tickets"). Kind-
+// Collection `{Parent}/{id}/{Child}` → echtes Objekt (`Tickets/123/Notes` →
+// „TicketNotes"); unbekannte Kind-Pfade fallen sicher auf den Parent zurück.
 function entityKey(path: string): string {
-  return path.replace(/^https?:\/\/[^/]+\/[^/]+\/[^/]+\//i, "").split("/")[0];
+  const rel = path.replace(/^https?:\/\/[^/]+\/[^/]+\/[^/]+\//i, "");
+  const segs = rel.split("/").filter(Boolean);
+  const parent = segs[0]?.split("?")[0] ?? rel;
+  if (segs.length >= 3 && /^\d+$/.test(segs[1])) {
+    const child = segs[2].split("?")[0];
+    return CHILD_OBJECT_ENDPOINT[`${parent}/${child}`] ?? parent;
+  }
+  return parent;
 }
 
 function resolveUrl(pathOrUrl: string): string {
@@ -124,6 +145,8 @@ async function request<T = unknown>(
 ): Promise<T> {
   return limiter(key, () =>
     withRetry(async () => {
+      // Jeder echte HTTP-Versuch (inkl. Retries) zählt aufs 10k/h-Tenant-Limit.
+      recordApiCall();
       const res = await fetch(resolveUrl(pathOrUrl), {
         method,
         headers: authHeaders(),
