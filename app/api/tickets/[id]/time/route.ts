@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { timeEntries } from "@/lib/autotask/entities/time-entries";
 import { tickets } from "@/lib/autotask/entities/tickets";
+import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
 import { AutotaskError } from "@/lib/autotask/client";
 
 export const dynamic = "force-dynamic";
@@ -23,17 +24,33 @@ function autotaskError(e: unknown) {
   return NextResponse.json({ error: "Unerwarteter Fehler" }, { status: 500 });
 }
 
-// GET: Tätigkeitsarten (Work Types) für die Auswahl im Dialog. Die Rolle wird
-// NICHT mehr im UI gewählt (immer dieselbe) – sie wird beim POST server-seitig
-// gesetzt.
-export async function GET() {
+// GET: Tätigkeitsarten (Work Types) + Status-Picklist + aktueller Ticket-Status
+// für den Dialog (optionaler Status-Wechsel beim Zeiterfassen). Die Rolle wird
+// NICHT im UI gewählt – sie wird beim POST server-seitig gesetzt.
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
   }
+  const { id } = await params;
+  const ticketId = Number(id);
+  if (!Number.isFinite(ticketId)) {
+    return NextResponse.json({ error: "Ungültige ID" }, { status: 400 });
+  }
   try {
-    const workTypes = await timeEntries.workTypes();
-    return NextResponse.json({ workTypes });
+    const [workTypes, picklists, ticket] = await Promise.all([
+      timeEntries.workTypes(),
+      getTicketPicklists(),
+      tickets.get(ticketId),
+    ]);
+    return NextResponse.json({
+      workTypes,
+      statuses: picklists.status,
+      currentStatus: ticket?.status ?? null,
+    });
   } catch (e) {
     return autotaskError(e);
   }
