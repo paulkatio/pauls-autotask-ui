@@ -6,7 +6,8 @@ import { resources } from "@/lib/autotask/entities/resources";
 import { contacts } from "@/lib/autotask/entities/contacts";
 import { attachments as ticketAttachments } from "@/lib/autotask/entities/attachments";
 import { sendMail, isResendConfigured } from "@/lib/mail/resend";
-import { getMailSenderName } from "@/lib/branding-server";
+import { buildCustomerEmail } from "@/lib/mail/customer-email";
+import { getOrgName } from "@/lib/branding-server";
 import {
   CONVERSATION_NOTE_TYPES,
   CONVERSATION_TYPE_IDS,
@@ -191,18 +192,17 @@ export async function sendTicketChatNote(
         return { itemId, mail, attachmentError };
       }
 
-      // Ticketnummer im Betreff genügt fürs Autotask-Threading (B17-DISCOVERY §6.2).
+      // Ticketnummer im Betreff genügt fürs Autotask-Threading (B17-DISCOVERY §6.2);
+      // den Betreff baut buildCustomerEmail (eine Quelle).
       const number = ticket?.ticketNumber ?? `#${ticketId}`;
-      const ticketTitle = ticket?.title?.trim() ?? "";
-      const subject = ticketTitle ? `[${number}] ${ticketTitle}` : `[${number}]`;
-      const senderName = await getMailSenderName();
-      const textBody = `${text}\n\n—\n${senderName}\nTicket ${number}`;
-      const html =
-        `<div style="font-family:system-ui,sans-serif;font-size:14px;line-height:1.5">` +
-        `<p style="white-space:pre-wrap;margin:0 0 16px">${escapeHtml(text)}</p>` +
-        `<hr style="border:none;border-top:1px solid #e5e5e5;margin:16px 0">` +
-        `<p style="color:#666;margin:0">${escapeHtml(senderName)} · Ticket ${escapeHtml(number)}</p>` +
-        `</div>`;
+      const orgName = await getOrgName();
+      const contactName = `${contact?.firstName ?? ""} ${contact?.lastName ?? ""}`.trim();
+      const { html, text: textBody, subject } = buildCustomerEmail({
+        contactName,
+        message: text,
+        orgName,
+        ticketNumber: number,
+      });
 
       await sendMail({
         to,
@@ -245,12 +245,4 @@ function cleanInboundBody(raw: string): string {
 
   // Mehrfach-Leerzeilen zusammenfassen, trimmen.
   return text.replace(/\n{3,}/g, "\n\n").trim();
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
