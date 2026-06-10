@@ -165,6 +165,7 @@ export function DescriptionEdit({
               </Button>
               <Button
                 size="sm"
+                className="h-11 sm:h-7"
                 variant="outline"
                 onClick={() => {
                   setText(value ?? "");
@@ -542,10 +543,11 @@ export function StatusEdit({
           </div>
 
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+            <DialogClose render={<Button type="button" variant="outline" className="h-11 sm:h-9" />}>
               Abbrechen
             </DialogClose>
             <Button
+              className="h-11 sm:h-9"
               onClick={() => void confirmPending()}
               disabled={dialogSaving || !note.trim()}
             >
@@ -1056,7 +1058,7 @@ export function CompanyChange({
           <DialogClose render={<Button type="button" variant="outline" />}>
             Abbrechen
           </DialogClose>
-          <Button onClick={confirm} disabled={!selected || saving}>
+          <Button className="h-11 sm:h-9" onClick={confirm} disabled={!selected || saving}>
             {saving ? "Speichern …" : "Firma ändern"}
           </Button>
         </DialogFooter>
