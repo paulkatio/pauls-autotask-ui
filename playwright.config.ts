@@ -1,8 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // Smoke-Suite für die Kernpfade (Mock-Login, Listen, Detail, Suche, Inline-Edit,
-// Dialoge). Läuft seriell (ein Worker), weil ein Test schreibend am Testticket
-// 43180 arbeitet. Mock-Auth: Login einmal im Setup, Cookie als storageState geteilt.
+// Dialoge). Läuft seriell (ein Worker), weil ein Test schreibend am Prod-Testticket
+// 56313 arbeitet. Mock-Auth: Login einmal im Setup, Cookie als storageState geteilt.
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,

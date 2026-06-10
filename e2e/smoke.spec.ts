@@ -1,12 +1,13 @@
 import { test, expect } from "@playwright/test";
 
 // Kernpfad-Smoke-Tests. Authentifizierung über den geteilten Mock-Cookie
-// (siehe auth.setup.ts). Schreibtests AUSSCHLIESSLICH am Testticket 43180.
-const TEST_TICKET = 43180;
+// (siehe auth.setup.ts). Schreibtests AUSSCHLIESSLICH am Prod-Testticket 56313
+// („ZZZ TESTTICKET", T20260609.0014, Firma SSIG-IT GmbH, companyID 0).
+const TEST_TICKET = 56313;
 
 // Schreibtests (Status-Edit am Testticket) sind lokal standardmäßig AN. Mit
 // E2E_SKIP_WRITE_TESTS=1 (oder true/yes) lassen sie sich abschalten – nützlich,
-// um Ticket 43180 bei einem Lauf nicht zu mutieren (z. B. in CI / read-only).
+// um das Testticket bei einem Lauf nicht zu mutieren (z. B. in CI / read-only).
 const SKIP_WRITE_TESTS = ["1", "true", "yes"].includes(
   (process.env.E2E_SKIP_WRITE_TESTS ?? "").trim().toLowerCase(),
 );
@@ -48,9 +49,9 @@ test.describe("Smoke", () => {
     await page.keyboard.press("Control+k");
     const input = page.getByRole("textbox", { name: "Suche" });
     await expect(input).toBeVisible();
-    await input.fill("Phase-0");
+    await input.fill("ZZZ TESTTICKET");
     // Spotlight-Spalte „Ticket-Name": Treffer ist ein klickbarer Button.
-    const hit = page.getByRole("button", { name: /ZZZ TEST Phase-0/ });
+    const hit = page.getByRole("button", { name: /ZZZ TESTTICKET/ });
     await expect(hit).toBeVisible();
     await hit.click();
     await expect(page).toHaveURL(new RegExp(`/tickets/${TEST_TICKET}$`));
@@ -74,7 +75,7 @@ test.describe("Smoke", () => {
   });
 
   // Einziger Schreibtest: Status am Testticket ändern und wieder zurücksetzen.
-  // Hinweis: 43180 trägt teils einen automatisch gesetzten Status (z. B.
+  // Hinweis: das Testticket trägt teils einen automatisch gesetzten Status (z. B.
   // „Fälligkeit überschritten"), der NICHT in der manuell wählbaren Picklist steht –
   // dann wird auf einen normal wählbaren Wert zurückgesetzt (Workflow re-setzt selbst).
   test("Status inline ändern + zurücksetzen (Testticket)", async ({ page }) => {

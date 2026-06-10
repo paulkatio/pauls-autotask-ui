@@ -1,8 +1,9 @@
 # E2E-Smoke-Tests (Playwright)
 
 Wiederholbare Tests der Kernpfade gegen die laufende App (Mock-Auth, Autotask-
-Sandbox). Bewusst schlank gehalten – sie prüfen, dass die wichtigsten Seiten und
-Dialoge laden und der Inline-Schreibpfad funktioniert, nicht jede Detailregel.
+API gemäß `.env.local` – aktuell **Produktion**). Bewusst schlank gehalten – sie
+prüfen, dass die wichtigsten Seiten und Dialoge laden und der Inline-Schreibpfad
+funktioniert, nicht jede Detailregel.
 
 ## Ausführen
 
@@ -12,8 +13,8 @@ npm run test:e2e:ui       # interaktiver Playwright-UI-Modus
 ```
 
 Voraussetzungen: einmalig `npx playwright install chromium`. `.env.local` muss
-gesetzt sein (`AUTH_MODE=mock`, Autotask-Sandbox-Creds) – die Tests lesen echte
-Sandbox-Daten.
+gesetzt sein (`AUTH_MODE=mock`, Autotask-Creds) – die Tests lesen echte Daten
+der konfigurierten Umgebung (aktuell Produktion).
 
 ## Was getestet wird
 
@@ -21,22 +22,23 @@ Sandbox-Daten.
   den Cookie als `storageState` mit allen Tests (kein Login pro Test).
 - **Listen/Seiten laden**: Dashboard (KPIs), Meine Tickets (Tabelle), Teamtickets,
   Meine Zeiten (Summen).
-- **Ticketdetail** rendert (Testticket 43180).
+- **Ticketdetail** rendert (Testticket 56313, „ZZZ TESTTICKET").
 - **Command-Palette** (Cmd/Ctrl+K) findet das Testticket und navigiert hinein.
 - **Dialoge öffnen**: Zeit erfassen, Neues Ticket.
-- **Inline-Schreibpfad** (einziger Schreibtest): Status am **Testticket 43180**
+- **Inline-Schreibpfad** (einziger Schreibtest): Status am **Testticket 56313**
   ändern und wieder auf den Ausgangswert zurücksetzen.
 
 ## Schreibdisziplin
 
-Schreibende Tests laufen **ausschließlich** am Testticket 43180 (Firma Acme
-Sandbox, Kontakt Paul-Harald Katio). Es werden keine Datensätze gelöscht. Hinweis:
-Autotask-Workflow-Regeln verändern den Status von 43180 gelegentlich selbst – der
+Schreibende Tests laufen **ausschließlich** am Prod-Testticket 56313
+(T20260609.0014 „ZZZ TESTTICKET", Firma SSIG-IT GmbH `companyID 0`, Kontakt
+Paul-Harald Katio). Es werden keine Datensätze gelöscht. Hinweis:
+Autotask-Workflow-Regeln können den Status des Testtickets selbst verändern – der
 Status-Test liest daher den Ausgangswert dynamisch und setzt ihn zurück.
 
 ### Schreibtests abschalten (`E2E_SKIP_WRITE_TESTS`)
 
-Der einzige Schreibtest (Status-Inline-Edit an 43180) ist **lokal standardmäßig
+Der einzige Schreibtest (Status-Inline-Edit an 56313) ist **lokal standardmäßig
 aktiv**. Wer das Testticket bei einem Lauf nicht mutieren möchte (z. B. in CI oder
 einem rein lesenden Durchlauf), setzt das Flag – der Test wird dann als *skipped*
 markiert, alle Lesetests laufen normal:

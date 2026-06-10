@@ -1898,4 +1898,26 @@ Kontext verloren. Allgemein wirkte Mobile wie „Desktop klein gemacht".
 set-state-in-effect u. a.) unverändert — keine neuen Verstöße durch diese Arbeit.
 **Offen:** echter Gerätetest (iPhone/Android, installierte PWA) steht noch aus.
 
+---
+
+## 2026-06-10 — Prod-Testticket: 56313 ersetzt 43180 (E2E-Schreibtests)
+
+**Kontext:** Die App zeigt seit dem Umstieg auf die Produktions-API nicht mehr die
+Sandbox. Unter der alten Testticket-ID `43180` liegt in Produktion ein **echtes
+Kundenticket** (T20250220.0006, Monitoring-Alert DUO-DMS) — der E2E-Schreibtest
+(Status ändern + zurücksetzen) hätte dieses Ticket mutiert.
+
+**Entscheidung:** Einziges erlaubtes Test-/Schreibziel ist ab sofort das
+**Prod-Testticket `56313`** (per API verifiziert: `T20260609.0014`,
+Titel „ZZZ TESTTICKET", Firma SSIG-IT GmbH `companyID 0`, Kontakt Paul-Harald
+Katio `30684646`, Paul zugewiesen). Erreichbar u. a. als `/popup/tickets/56313`.
+
+**Umgestellt:** `e2e/smoke.spec.ts` (`TEST_TICKET`, Palette-Suche jetzt
+„ZZZ TESTTICKET" statt „Phase-0"), `playwright.config.ts` (Kommentar),
+`e2e/README.md`, `scripts/shots.mjs`. Historische 43180-Einträge in
+DECISIONS/BACKLOG bleiben unverändert (Sandbox-Historie).
+
+**Offen:** E2E-Lauf gegen 56313 noch nicht ausgeführt (nur statisch umgestellt);
+beim nächsten `npm run test:e2e` verifizieren.
+
 <!-- Neue Entscheidungen hier anhängen -->
