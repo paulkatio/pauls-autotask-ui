@@ -139,17 +139,17 @@ function Rail({
   className?: string;
   children: React.ReactNode;
 }) {
-  const isMobile = useIsMobile();
+  const isBelowLg = useIsMobile(1024);
   const [open, setOpen] = React.useState(false);
   return (
     <Collapsible
-      open={!isMobile || open}
+      open={!isBelowLg || open}
       onOpenChange={setOpen}
       className={cn("flex w-full flex-col gap-3", className)}
     >
       <CollapsibleTrigger
         render={
-          <Button variant="outline" className="w-full justify-between md:hidden" />
+          <Button variant="outline" className="w-full justify-between lg:hidden" />
         }
       >
         {title}
@@ -371,7 +371,7 @@ export function TicketDetailView({
   // ===== RECHTS: kompakter Kontext + Chat-Sidebar (rein lesend, kein sticky
   // wegen Chat-Höhe) =====
   const rightRail = (
-    <div className="flex w-full flex-col gap-4 xl:w-80 xl:shrink-0">
+    <div className="flex w-full flex-col gap-4 xl:w-72 xl:shrink-0 2xl:w-80">
       {/* Firma + Ansprechpartner ZUERST, über dem Chat – damit beim Schreiben
           sofort sichtbar ist, mit wem kommuniziert wird. Alles bricht sauber um. */}
       {(company || contact) && (
@@ -571,9 +571,9 @@ export function TicketDetailView({
 
       {/* 3 Spalten ab xl; ab lg zwei Spalten + Kontext darunter; darunter gestapelt
           (Feed bekommt bis lg die volle Breite, statt sich ab md mit der Meta-Schiene
-          ~512 px zu teilen). Collapsible-Trigger der Rail bleibt bei md:hidden — der
-          useIsMobile()-Schwelle (768) wegen, sonst wäre er bei 768–1023 sichtbar aber
-          funktionslos. */}
+          ~512 px zu teilen). Collapsible-Trigger der Rail ist lg:hidden, passend zur
+          useIsMobile(1024)-Schwelle — so ist die Meta-Schiene bei 768–1023 (iPad
+          hochkant) einklappbar statt zwangs-offen über dem Inhalt. */}
       <div className="flex flex-col gap-6 lg:flex-row lg:flex-wrap lg:items-start xl:flex-nowrap">
         {leftRail}
         {center}
@@ -697,9 +697,9 @@ function ActivityItem({
           )}
         />
         {isReply ? (
-          <Badge className="shrink-0">Kundenantwort</Badge>
+          <Badge className="min-w-0 max-w-[40vw] shrink truncate">Kundenantwort</Badge>
         ) : (
-          <Badge variant="secondary" className="shrink-0">
+          <Badge variant="secondary" className="min-w-0 max-w-[40vw] shrink truncate">
             {labelOf(notePicklists.noteType, note.noteType)}
           </Badge>
         )}

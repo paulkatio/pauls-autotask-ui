@@ -174,7 +174,7 @@ export function CompaniesTable({
       label: "Name",
       sortKey: "name",
       cell: (c) => (
-        <TruncatedText className="max-w-xs font-medium">{c.name}</TruncatedText>
+        <TruncatedText className="max-w-xs font-medium 2xl:max-w-md">{c.name}</TruncatedText>
       ),
     },
     {

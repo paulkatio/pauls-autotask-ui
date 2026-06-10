@@ -180,7 +180,7 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
       sortKey: "email",
       cellClassName: "text-muted-foreground",
       cell: (c) => (
-        <TruncatedText className="max-w-xs">{c.email || "—"}</TruncatedText>
+        <TruncatedText className="max-w-48 2xl:max-w-xs">{c.email || "—"}</TruncatedText>
       ),
     },
     {

@@ -235,9 +235,11 @@ export function TicketsList({
 
   // Spalten als Defs (für Drag-&-Drop-Reihenfolge). Die Checkbox-Spalte bleibt
   // fest vorne und ist NICHT Teil der umsortierbaren Spalten.
-  // Sekundärspalten (Firma/Queue/Zugewiesen) erst ab 2xl einblenden, damit die
-  // Kernspalten im xl-Band (Tabelle ab xl sichtbar) ohne Horizontal-Scroll passen.
+  // Firma/Queue erst ab 2xl, damit die Kernspalten im xl-Band (Tabelle ab xl
+  // sichtbar) ohne Horizontal-Scroll passen. "Zugewiesen" (Besitzer) schon ab xl,
+  // damit die Teamliste im häufigen 1280–1535-Band zeigt, wem ein Ticket gehört.
   const hideSecondary = "hidden 2xl:table-cell";
+  const hideAssignee = "hidden xl:table-cell";
   const dataColumns: {
     id: string;
     header: string;
@@ -258,7 +260,7 @@ export function TicketsList({
       header: "Titel",
       cell: (t) => (
         <TableCell>
-          <TruncatedText className="max-w-xs 2xl:max-w-md">
+          <TruncatedText className="max-w-xs xl:max-w-[12rem] 2xl:max-w-md">
             {t.title ?? "—"}
           </TruncatedText>
         </TableCell>
@@ -301,9 +303,9 @@ export function TicketsList({
           {
             id: "assigned",
             header: "Zugewiesen",
-            headClass: hideSecondary,
+            headClass: hideAssignee,
             cell: (t: TicketRow) => (
-              <TableCell className={hideSecondary}>
+              <TableCell className={hideAssignee}>
                 <TruncatedText className="max-w-40">
                   {t.assignedResourceName ?? "—"}
                 </TruncatedText>
