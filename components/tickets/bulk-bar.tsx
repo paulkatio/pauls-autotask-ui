@@ -590,7 +590,7 @@ export function BulkBar({
 
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
           <Select items={statusItems} value="" onValueChange={(v) => pickStatus(String(v))}>
-            <SelectTrigger size="sm" className="h-10 w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-36">
+            <SelectTrigger size="sm" className="w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-36">
               <SelectValue placeholder="Status ändern" />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-52">
@@ -605,7 +605,7 @@ export function BulkBar({
           </Select>
 
           <Select items={priorityItems} value="" onValueChange={(v) => pickPriority(String(v))}>
-            <SelectTrigger size="sm" className="h-10 w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-36">
+            <SelectTrigger size="sm" className="w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-36">
               <SelectValue placeholder="Priorität ändern" />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-44">
@@ -620,7 +620,7 @@ export function BulkBar({
           </Select>
 
           <Select items={queueItems} value="" onValueChange={(v) => pickQueue(String(v))}>
-            <SelectTrigger size="sm" className="h-10 w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-36">
+            <SelectTrigger size="sm" className="w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-36">
               <SelectValue placeholder="Queue ändern" />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-52">
@@ -648,7 +648,7 @@ export function BulkBar({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-10 flex-1 sm:h-7 sm:flex-none"
+                  className="h-11 flex-1 sm:h-7 sm:flex-none"
                   disabled={busyRoles}
                 />
               }
@@ -698,7 +698,7 @@ export function BulkBar({
           <Button
             variant="outline"
             size="sm"
-            className="h-10 flex-1 sm:h-7 sm:flex-none"
+            className="h-11 flex-1 sm:h-7 sm:flex-none"
             disabled={busyRoles}
             onClick={assignToMe}
           >
@@ -709,7 +709,7 @@ export function BulkBar({
           <Button
             variant="outline"
             size="sm"
-            className="h-10 flex-1 sm:h-7 sm:flex-none"
+            className="h-11 flex-1 sm:h-7 sm:flex-none"
             disabled={!sameCompany}
             title={
               sameCompany
@@ -725,7 +725,7 @@ export function BulkBar({
           <Button
             variant="ghost"
             size="sm"
-            className="h-10 flex-1 sm:h-7 sm:flex-none"
+            className="h-11 flex-1 sm:h-7 sm:flex-none"
             onClick={onClearSelection}
           >
             <XIcon />

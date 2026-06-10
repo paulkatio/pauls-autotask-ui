@@ -359,7 +359,7 @@ export function TicketsList({
   // wird gefüllt hervorgehoben, inaktiv neutral/outline. Ab sm normaler Select-Look
   // (Desktop unverändert).
   const chipBase =
-    "h-10 max-w-full shrink-0 rounded-full border px-4 text-sm sm:h-7 sm:rounded-md sm:border-input sm:bg-transparent sm:px-2.5 sm:text-[0.8rem] sm:font-normal sm:text-foreground";
+    "max-w-full shrink-0 rounded-full border px-4 text-sm sm:h-7 sm:rounded-md sm:border-input sm:bg-transparent sm:px-2.5 sm:text-[0.8rem] sm:font-normal sm:text-foreground";
   const chipState = (active: boolean) =>
     active
       ? "border-transparent bg-secondary font-medium text-secondary-foreground"
@@ -390,7 +390,7 @@ export function TicketsList({
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 placeholder="Nummer oder Titel suchen …"
-                className="h-10 pl-9 sm:h-9"
+                className="h-11 pl-9 sm:h-7"
                 aria-label="Tickets suchen"
               />
             </div>
@@ -618,7 +618,7 @@ export function TicketsList({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 flex-1 sm:h-7 sm:flex-none"
+                className="h-11 flex-1 sm:h-7 sm:flex-none"
                 disabled={!data.prevCursor}
                 onClick={() => data.prevCursor && goToCursor(data.prevCursor)}
               >
@@ -627,7 +627,7 @@ export function TicketsList({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 flex-1 sm:h-7 sm:flex-none"
+                className="h-11 flex-1 sm:h-7 sm:flex-none"
                 disabled={!data.nextCursor}
                 onClick={() => data.nextCursor && goToCursor(data.nextCursor)}
               >

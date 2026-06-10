@@ -75,7 +75,7 @@ export function OpenTickets({
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
-            className="h-10 sm:h-7"
+            className="h-11 sm:h-7"
             variant={assigned === "all" ? "secondary" : "outline"}
             onClick={() => selectAssigned("all")}
             disabled={loading}
@@ -84,7 +84,7 @@ export function OpenTickets({
           </Button>
           <Button
             size="sm"
-            className="h-10 sm:h-7"
+            className="h-11 sm:h-7"
             variant={assigned === "unassigned" ? "secondary" : "outline"}
             onClick={() => selectAssigned("unassigned")}
             disabled={loading}
@@ -128,7 +128,7 @@ export function OpenTickets({
       <Button
         variant="outline"
         nativeButton={false}
-        className="h-10 w-full sm:h-9 sm:w-auto sm:self-end"
+        className="h-11 w-full sm:h-9 sm:w-auto sm:self-end"
         render={
           <Link
             href={

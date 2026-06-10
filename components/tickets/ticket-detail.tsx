@@ -178,7 +178,7 @@ function ExpandableText({ text }: { text: string }) {
         {text}
       </p>
       {isLong && (
-        <Button variant="ghost" size="sm" onClick={() => setExpanded((e) => !e)}>
+        <Button variant="ghost" size="sm" className="h-11 sm:h-7" onClick={() => setExpanded((e) => !e)}>
           {expanded ? "Weniger anzeigen" : "Mehr anzeigen"}
         </Button>
       )}
@@ -627,6 +627,7 @@ function ActivitySection({
             <Button
               variant="ghost"
               size="sm"
+              className="h-11 sm:h-7"
               onClick={() =>
                 setOpenSet(allOpen ? new Set() : new Set(sorted.map((n) => n.id)))
               }
@@ -636,7 +637,7 @@ function ActivitySection({
           )}
         </div>
         {!noteOpen && (
-          <Button variant="outline" size="sm" onClick={() => setNoteOpen(true)}>
+          <Button variant="outline" size="sm" className="h-11 sm:h-7" onClick={() => setNoteOpen(true)}>
             <MessageSquarePlusIcon />
             Neue Notiz
           </Button>
@@ -686,7 +687,7 @@ function ActivityItem({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-2 text-left"
+        className="-my-1 flex min-h-11 w-full items-center gap-2 py-1.5 text-left sm:my-0 sm:min-h-0 sm:py-0"
         aria-expanded={open}
       >
         <ChevronDownIcon

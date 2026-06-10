@@ -19,7 +19,7 @@ export function HeaderLogo() {
     <Link
       href="/"
       aria-label="Übersicht"
-      className="-ml-1 flex items-center md:hidden"
+      className="-ml-1 flex size-11 items-center justify-center md:hidden"
     >
       <Image
         src={autotaskLogo}

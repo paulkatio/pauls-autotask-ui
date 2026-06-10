@@ -40,7 +40,7 @@ export function HeaderBack() {
     <Button
       variant="ghost"
       size="icon"
-      className="size-10 md:hidden"
+      className="size-11 md:hidden"
       aria-label="Zurück"
       onClick={goBack}
     >

@@ -66,6 +66,7 @@ export function AttachmentUpload({ ticketId }: { ticketId: number }) {
       <Button
         variant="outline"
         size="sm"
+        className="h-11 sm:h-7"
         disabled={busy}
         onClick={() => inputRef.current?.click()}
       >

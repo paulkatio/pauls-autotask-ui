@@ -452,10 +452,10 @@ export function TimeEntryDialog({
           </ResponsiveDialogBody>
 
           <ResponsiveDialogFooter>
-            <ResponsiveDialogClose render={<Button type="button" variant="outline" />}>
+            <ResponsiveDialogClose render={<Button type="button" variant="outline" className="h-11 sm:h-9" />}>
               Abbrechen
             </ResponsiveDialogClose>
-            <Button type="submit" disabled={saving || hours == null || !billingCodeId}>
+            <Button type="submit" className="h-11 sm:h-9" disabled={saving || hours == null || !billingCodeId}>
               {saving ? "Speichern …" : "Speichern"}
             </Button>
           </ResponsiveDialogFooter>

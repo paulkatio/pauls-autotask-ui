@@ -99,7 +99,7 @@ export function ResultColumn({
           type="button"
           onClick={onLoadMore}
           disabled={loadingMore}
-          className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring mt-1 rounded-lg px-2 py-1.5 text-sm font-medium outline-none focus-visible:ring-2 disabled:opacity-50"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring mt-1 min-h-11 rounded-lg px-2 py-1.5 text-sm font-medium outline-none focus-visible:ring-2 disabled:opacity-50 sm:min-h-0"
         >
           {loadingMore ? "Lädt …" : "Mehr laden"}
         </button>

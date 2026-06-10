@@ -63,7 +63,7 @@ export default async function AppLayout({
               </span>
               {/* Mobil: Sidebar-Trigger rechts (öffnet die Leiste von rechts, passend
                   zum „Mehr"-Tab unten rechts). Desktop nutzt den linken Trigger. */}
-              <SidebarTrigger className="size-10 md:hidden" />
+              <SidebarTrigger className="size-11 md:hidden" />
             </div>
           </div>
         </header>

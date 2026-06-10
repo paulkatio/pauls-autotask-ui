@@ -207,7 +207,7 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Vor- oder Nachname suchen …"
-            className="h-10 pl-9 sm:h-9"
+            className="h-11 pl-9 sm:h-9"
             aria-label="Kontakte suchen"
           />
         </div>

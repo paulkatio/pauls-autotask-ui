@@ -22,6 +22,7 @@ export function RangeToggle({ range }: { range: TimeRange }) {
       <Button
         variant={range === "today" ? "default" : "ghost"}
         size="sm"
+        className="h-11 sm:h-7"
         onClick={() => set("today")}
       >
         Heute
@@ -29,6 +30,7 @@ export function RangeToggle({ range }: { range: TimeRange }) {
       <Button
         variant={range === "week" ? "default" : "ghost"}
         size="sm"
+        className="h-11 sm:h-7"
         onClick={() => set("week")}
       >
         Diese Woche

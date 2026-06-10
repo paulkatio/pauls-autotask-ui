@@ -233,7 +233,7 @@ export function CompaniesTable({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Firma oder Ort suchen …"
-            className="h-10 pl-9 sm:h-9"
+            className="h-11 pl-9 sm:h-9"
             aria-label="Firmen filtern"
           />
         </div>
@@ -244,7 +244,7 @@ export function CompaniesTable({
         >
           <SelectTrigger
             size="sm"
-            className="h-10 w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-40"
+            className="w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-40"
             aria-label="Kundenart"
           >
             <SelectValue />

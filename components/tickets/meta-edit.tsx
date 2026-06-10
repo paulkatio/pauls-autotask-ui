@@ -190,6 +190,7 @@ export function DescriptionEdit({
               <Button
                 variant="ghost"
                 size="sm"
+                className="h-11 sm:h-7"
                 onClick={() => setExpanded((e) => !e)}
               >
                 {expanded ? "Weniger anzeigen" : "Mehr anzeigen"}

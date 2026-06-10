@@ -87,11 +87,12 @@ export function NoteForm({
         </Alert>
       )}
       <div className="flex gap-2">
-        <Button size="sm" onClick={submit} disabled={saving || !text.trim()}>
+        <Button size="sm" className="h-11 sm:h-7" onClick={submit} disabled={saving || !text.trim()}>
           {saving ? "Speichern …" : "Speichern"}
         </Button>
         <Button
           size="sm"
+          className="h-11 sm:h-7"
           variant="outline"
           onClick={onClose}
           disabled={saving}

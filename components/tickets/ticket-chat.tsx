@@ -474,6 +474,7 @@ export function TicketChat({
               type="button"
               variant="ghost"
               size="icon"
+              className="size-11 sm:size-8"
               onClick={() => fileInputRef.current?.click()}
               aria-label="Datei anhängen"
               disabled={sending || files.length >= MAX_FILES}
@@ -483,6 +484,7 @@ export function TicketChat({
             <Button
               type="submit"
               size="sm"
+              className="h-11 sm:h-7"
               disabled={sending || (!text.trim() && files.length === 0)}
             >
               Senden &amp; mailen
