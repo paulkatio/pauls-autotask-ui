@@ -383,7 +383,7 @@ export function TicketsList({
           {showToolbar && (
             <div
               className={cn(
-                "col-start-1 row-start-1 flex flex-wrap items-center gap-2",
+                "col-start-1 row-start-1 flex flex-wrap content-start items-center gap-2 self-start",
                 hasSelection && "invisible",
               )}
             >

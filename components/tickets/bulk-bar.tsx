@@ -588,9 +588,11 @@ export function BulkBar({
           {count} {count === 1 ? "Ticket" : "Tickets"} ausgewählt
         </span>
 
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+        {/* Mobil: Selects in EINER horizontal scrollbaren Zeile (statt 2-spaltigem
+            Raster) – hält die Leiste flach, damit der reservierte Slot klein bleibt. */}
+        <div className="flex gap-2 overflow-x-auto sm:flex-wrap sm:items-center sm:overflow-visible">
           <Select items={statusItems} value="" onValueChange={(v) => pickStatus(String(v))}>
-            <SelectTrigger size="sm" className="w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-36">
+            <SelectTrigger size="sm" className="w-40 shrink-0 sm:h-7 sm:w-auto sm:min-w-36">
               <SelectValue placeholder="Status ändern" />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-52">
@@ -605,7 +607,7 @@ export function BulkBar({
           </Select>
 
           <Select items={priorityItems} value="" onValueChange={(v) => pickPriority(String(v))}>
-            <SelectTrigger size="sm" className="w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-36">
+            <SelectTrigger size="sm" className="w-40 shrink-0 sm:h-7 sm:w-auto sm:min-w-36">
               <SelectValue placeholder="Priorität ändern" />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-44">
@@ -620,7 +622,7 @@ export function BulkBar({
           </Select>
 
           <Select items={queueItems} value="" onValueChange={(v) => pickQueue(String(v))}>
-            <SelectTrigger size="sm" className="w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-36">
+            <SelectTrigger size="sm" className="w-40 shrink-0 sm:h-7 sm:w-auto sm:min-w-36">
               <SelectValue placeholder="Queue ändern" />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-52">
@@ -635,7 +637,8 @@ export function BulkBar({
           </Select>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Mobil: Aktions-Buttons ebenfalls eine scrollbare Zeile. */}
+        <div className="flex items-center gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible">
           <Popover
             open={assignOpen}
             onOpenChange={(o) => {
@@ -648,7 +651,7 @@ export function BulkBar({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-11 flex-1 sm:h-7 sm:flex-none"
+                  className="h-11 shrink-0 sm:h-7 sm:flex-none"
                   disabled={busyRoles}
                 />
               }
