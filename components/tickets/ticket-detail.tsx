@@ -332,8 +332,8 @@ export function TicketDetailView({
 
       <Card>
         <CardContent>
-          <Tabs defaultValue="zeiten" className="gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2">
+          <Tabs defaultValue="zeiten" className="gap-6">
+            <div className="flex flex-col gap-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
               <TabsList variant="line">
                 <TabsTrigger value="zeiten" className="min-h-11 sm:min-h-0">
                   Zeiten
