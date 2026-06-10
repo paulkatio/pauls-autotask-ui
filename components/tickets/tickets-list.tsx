@@ -379,7 +379,9 @@ export function TicketsList({
           gestapelt). Die jeweils inaktive bleibt unsichtbar im Layout stehen ->
           die Slot-Höhe ist konstant, beim Markieren springt nichts. */}
       {(showToolbar || selectableActive) && (
-        <div className="grid">
+        // grid-cols-1 = minmax(0,1fr): deckelt die Spalte auf die Containerbreite,
+        // sonst wüchse sie auf die max-content-Breite der scrollbaren Bulk-Leiste.
+        <div className="grid grid-cols-1">
           {showToolbar && (
             <div
               className={cn(
