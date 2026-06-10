@@ -124,7 +124,7 @@ export function ResultGrid({
       className={cn(
         "bg-border grid grid-cols-1 gap-px sm:grid-cols-2 xl:grid-cols-4",
         dense
-          ? "max-h-96 overflow-y-auto"
+          ? "max-h-[60dvh] overflow-y-auto sm:max-h-96"
           : "overflow-hidden rounded-lg border",
         className,
       )}

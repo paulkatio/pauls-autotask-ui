@@ -11,13 +11,12 @@ import {
 import { getSession } from "@/lib/auth";
 import {
   getDashboardKpis,
-  getRecentlyEdited,
-  getRecentEditedCounts,
   getTicketsPerResource,
 } from "@/lib/autotask/entities/dashboard";
+import { getTicketsPage } from "@/lib/autotask/entities/ticket-list";
 import { CountBarChart } from "@/components/dashboard/count-bar-chart";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
-import { AutotaskError } from "@/lib/autotask/client";
+import { AutotaskError, type AutotaskFilter } from "@/lib/autotask/client";
 import {
   Card,
   CardAction,
@@ -27,7 +26,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { RecentlyEdited } from "@/components/dashboard/recently-edited";
+import { OpenTickets } from "@/components/dashboard/open-tickets";
 import { PageHeader } from "@/components/page-header";
 
 export const dynamic = "force-dynamic";
@@ -81,15 +80,21 @@ export default async function DashboardPage() {
   if (!session) return null;
   const rid = session.autotaskResourceId;
 
+  // Erste Seite der offenen Tickets (team-weit, Status != Abgeschlossen=5) für den
+  // initialen Server-Render; Filter („nur nicht zugewiesene") und Paging übernimmt
+  // danach der Client-Abschnitt (OpenTickets) ohne Seiten-Neuladen.
+  const openFilter: AutotaskFilter[] = [
+    { op: "noteq", field: "status", value: 5 },
+  ];
+
   const picklists = await getTicketPicklists();
 
   // Datenabruf vom Rendern trennen: Fehler werden zu einem Sentinel, das JSX entsteht
   // AUSSERHALB von try/catch (React-19-Error-Boundary-Regel, kein JSX im try).
   const data = await Promise.all([
     getDashboardKpis(rid),
-    getRecentlyEdited(),
-    getRecentEditedCounts(),
     getTicketsPerResource(),
+    getTicketsPage(openFilter, { withAssigned: true }),
   ]).catch((e) =>
     e instanceof AutotaskError && e.status === 429
       ? ("rate-limited" as const)
@@ -110,7 +115,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const [kpis, recent, recentCounts, perResource] = data;
+  const [kpis, perResource, openTickets] = data;
 
   return (
     <div className="flex flex-col gap-6">
@@ -151,11 +156,7 @@ export default async function DashboardPage() {
 
       <CountBarChart title="Tickets pro Mitarbeiter" data={perResource} />
 
-      <RecentlyEdited
-        rows={recent}
-        counts={recentCounts}
-        picklists={picklists}
-      />
+      <OpenTickets picklists={picklists} initial={openTickets} />
     </div>
   );
 }

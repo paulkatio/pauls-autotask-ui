@@ -53,7 +53,7 @@ import { cn } from "@/lib/utils";
 import type { TicketPicklists } from "@/lib/autotask/types";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import { recordHistory } from "@/lib/history";
-import { openTicketPopup } from "@/lib/open-popup";
+import { useRecordNav } from "@/hooks/use-record-nav";
 
 // Bulk-Aktionen für die ausgewählten Tickets. KEIN neuer Schreibpfad: pro Ticket
 // das bestehende PATCH /api/tickets/[id] (Whitelist). Ausführung mit Limiter
@@ -227,6 +227,7 @@ export function BulkBar({
   onApplied: () => void;
 }) {
   const count = selected.length;
+  const { openTicket } = useRecordNav();
 
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [roleStep, setRoleStep] = React.useState<{
@@ -558,7 +559,7 @@ export function BulkBar({
     if (mergeTargetId == null) return;
     const id = mergeTargetId;
     closeMerge();
-    openTicketPopup(id);
+    openTicket(id);
   }
 
   const statusItems = picklists.status.map((s) => ({
@@ -582,13 +583,14 @@ export function BulkBar({
       {/* Inline-Leiste: ersetzt die Filterzeile an Ort und Stelle. Die Höhe des
           Slots wird in TicketsList konstant gehalten (Filter + Leiste gestapelt),
           damit beim Markieren nichts springt. */}
-      <div className="flex w-full flex-wrap items-center gap-2">
+      <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <span className="text-sm font-medium whitespace-nowrap">
           {count} {count === 1 ? "Ticket" : "Tickets"} ausgewählt
         </span>
 
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
           <Select items={statusItems} value="" onValueChange={(v) => pickStatus(String(v))}>
-            <SelectTrigger size="sm" className="w-auto min-w-36">
+            <SelectTrigger size="sm" className="h-10 w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-36">
               <SelectValue placeholder="Status ändern" />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-52">
@@ -603,7 +605,7 @@ export function BulkBar({
           </Select>
 
           <Select items={priorityItems} value="" onValueChange={(v) => pickPriority(String(v))}>
-            <SelectTrigger size="sm" className="w-auto min-w-36">
+            <SelectTrigger size="sm" className="h-10 w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-36">
               <SelectValue placeholder="Priorität ändern" />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-44">
@@ -618,7 +620,7 @@ export function BulkBar({
           </Select>
 
           <Select items={queueItems} value="" onValueChange={(v) => pickQueue(String(v))}>
-            <SelectTrigger size="sm" className="w-auto min-w-36">
+            <SelectTrigger size="sm" className="h-10 w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-36">
               <SelectValue placeholder="Queue ändern" />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-52">
@@ -631,7 +633,9 @@ export function BulkBar({
               </SelectGroup>
             </SelectContent>
           </Select>
+        </div>
 
+        <div className="flex flex-wrap items-center gap-2">
           <Popover
             open={assignOpen}
             onOpenChange={(o) => {
@@ -640,7 +644,14 @@ export function BulkBar({
             }}
           >
             <PopoverTrigger
-              render={<Button variant="outline" size="sm" disabled={busyRoles} />}
+              render={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 flex-1 sm:h-7 sm:flex-none"
+                  disabled={busyRoles}
+                />
+              }
             >
               Zuweisen
               <ChevronsUpDownIcon className="text-muted-foreground" />
@@ -687,6 +698,7 @@ export function BulkBar({
           <Button
             variant="outline"
             size="sm"
+            className="h-10 flex-1 sm:h-7 sm:flex-none"
             disabled={busyRoles}
             onClick={assignToMe}
           >
@@ -697,6 +709,7 @@ export function BulkBar({
           <Button
             variant="outline"
             size="sm"
+            className="h-10 flex-1 sm:h-7 sm:flex-none"
             disabled={!sameCompany}
             title={
               sameCompany
@@ -709,10 +722,16 @@ export function BulkBar({
             Zusammenführen
           </Button>
 
-          <Button variant="ghost" size="sm" onClick={onClearSelection}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-10 flex-1 sm:h-7 sm:flex-none"
+            onClick={onClearSelection}
+          >
             <XIcon />
             Auswahl aufheben
           </Button>
+        </div>
       </div>
 
       <AlertDialog

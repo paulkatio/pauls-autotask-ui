@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import {
+  Building2Icon,
   ChevronDownIcon,
+  ClockIcon,
   DownloadIcon,
   FileIcon,
   MailIcon,
@@ -10,6 +12,8 @@ import {
   MessageSquarePlusIcon,
   PhoneIcon,
   SmartphoneIcon,
+  UserCheckIcon,
+  UserIcon,
 } from "lucide-react";
 
 import {
@@ -52,7 +56,8 @@ import {
   CompanyChange,
   DescriptionEdit,
 } from "@/components/tickets/meta-edit";
-import { labelOf } from "@/lib/autotask/mappers";
+import { labelOf, priorityVariant } from "@/lib/autotask/mappers";
+import { StatusBadge } from "@/components/status-indicator";
 import { directionOf } from "@/lib/autotask/conversation";
 import { formatHours } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -328,7 +333,7 @@ export function TicketDetailView({
       <Card>
         <CardContent>
           <Tabs defaultValue="zeiten" className="gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <TabsList variant="line">
                 <TabsTrigger value="zeiten">Zeiten</TabsTrigger>
                 <TabsTrigger value="anhaenge">
@@ -492,8 +497,8 @@ export function TicketDetailView({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Kopf: „Nummer – Titel" fett, direkt daneben „Erstellt …". Nichts redundant. */}
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      {/* Desktop-Kopf: „Nummer – Titel" fett, daneben „Erstellt …". */}
+      <div className="hidden flex-wrap items-baseline gap-x-3 gap-y-1 md:flex">
         <h1 className="text-2xl font-semibold tracking-tight text-balance break-words">
           <span className="tabular-nums">{ticket.ticketNumber}</span>
           {ticket.title ? ` – ${ticket.title}` : ""}
@@ -501,6 +506,67 @@ export function TicketDetailView({
         <span className="text-muted-foreground text-sm whitespace-nowrap">
           Erstellt {fmtDate(ticket.createDate, true)}
         </span>
+      </div>
+
+      {/* Mobiler Case-Header (md:hidden): App-artiger Summary statt Label/Wert-Tabelle.
+          Reihenfolge mit Luft: Titelblock → Statuschips → Kontextgruppe.
+          Nur semantische Tokens; Desktop hat den Kontext in den Schienen. */}
+      <div className="flex flex-col gap-4 md:hidden">
+        {/* Titelblock: Nummer als Eyebrow, Titel dominant aber straff. */}
+        <div className="flex flex-col gap-0.5">
+          <span className="text-muted-foreground text-xs font-medium tabular-nums">
+            {ticket.ticketNumber}
+          </span>
+          <h1 className="text-xl leading-snug font-semibold tracking-tight break-words">
+            {ticket.title ?? "—"}
+          </h1>
+        </div>
+
+        {/* Statuszeile: Priorität + Status als Chips. */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant={priorityVariant(ticket.priority)}>
+            {labelOf(picklists.priority, ticket.priority)}
+          </Badge>
+          <StatusBadge
+            status={ticket.status}
+            label={labelOf(picklists.status, ticket.status)}
+          />
+        </div>
+
+        {/* Kontextgruppe: Firma primär, Kontakt · Verantwortlich sekundär, Erstellt muted. */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Building2Icon className="text-muted-foreground size-4 shrink-0" />
+            <span className="min-w-0 break-words">{company?.name ?? "—"}</span>
+          </div>
+          {(contact?.name || detail.assignedResourceName) && (
+            <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+              {contact?.name && (
+                <span className="flex items-center gap-1.5">
+                  <UserIcon className="size-3.5 shrink-0" />
+                  <span className="min-w-0 break-words">{contact.name}</span>
+                </span>
+              )}
+              {contact?.name && detail.assignedResourceName && (
+                <span aria-hidden>·</span>
+              )}
+              {detail.assignedResourceName && (
+                <span className="flex items-center gap-1.5">
+                  <UserCheckIcon className="size-3.5 shrink-0" />
+                  <span className="min-w-0 break-words">
+                    {detail.assignedResourceName}
+                  </span>
+                </span>
+              )}
+            </div>
+          )}
+          <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+            <ClockIcon className="size-3.5 shrink-0" />
+            <span className="tabular-nums">
+              Erstellt {fmtDate(ticket.createDate, true)}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* 3 Spalten ab xl; ab lg zwei Spalten + Kontext darunter; darunter gestapelt

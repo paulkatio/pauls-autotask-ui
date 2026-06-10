@@ -41,7 +41,7 @@ interface NavTarget {
 }
 
 const NAV: NavTarget[] = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboardIcon },
+  { title: "Übersicht", url: "/", icon: LayoutDashboardIcon },
   { title: "Meine Tickets", url: "/tickets/my", icon: TicketIcon },
   { title: "Teamtickets", url: "/tickets/team", icon: UsersIcon },
   { title: "Firmen", url: "/companies", icon: Building2Icon },
@@ -215,7 +215,7 @@ export function CommandPalette() {
     >
       <DialogContent
         showCloseButton={false}
-        className="top-1/4 w-full translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-2xl lg:max-w-4xl xl:max-w-6xl"
+        className="flex max-h-[90dvh] w-full flex-col gap-0 overflow-hidden p-0 sm:top-1/4 sm:translate-y-0 sm:max-w-2xl lg:max-w-4xl xl:max-w-6xl"
       >
         <DialogHeader className="sr-only">
           <DialogTitle>Suche</DialogTitle>

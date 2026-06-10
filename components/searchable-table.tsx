@@ -99,7 +99,7 @@ export function SearchableTable<T extends { id: number | string }>({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder={searchPlaceholder}
-            className="pl-9"
+            className="h-10 pl-9 sm:h-9"
             aria-label={searchPlaceholder}
           />
         </div>

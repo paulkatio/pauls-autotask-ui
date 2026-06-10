@@ -8,6 +8,30 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 ## [Unreleased]
 
 ### Changed
+- **Mobile/PWA als vollwertige App (statt „Desktop klein"):**
+  - **In-App-Navigation:** Tippen auf Ticket/Firma öffnet mobil/PWA IN der App
+    (`hooks/use-record-nav.ts` + `lib/standalone.ts`) statt per `window.open` einen
+    neuen Browser-Tab; Desktop behält die Autotask-artigen Pop-out-Fenster.
+  - **Bottom-Navigation** (`components/mobile-bottom-nav.tsx`, nur mobil):
+    Übersicht · Meine · Team · Suche · Mehr. Mobiler Header umgebaut: Logo links
+    (`header-logo.tsx`), Zurück-Button auf Detailseiten (`header-back.tsx`),
+    Hamburger rechts; Sidebar fährt mobil von **rechts** ein.
+  - **Safe-Areas / Tastatur:** `viewport-fit=cover`, `interactiveWidget=resizes-content`,
+    `env(safe-area-inset-*)` an Header/Bottom-Nav/Sheets, `dvh` statt `vh`,
+    Tap-Highlight aus, `overscroll` nur in der installierten PWA.
+  - **Bottom-Sheets statt zentrierter Dialoge** auf Mobile
+    (`components/ui/responsive-dialog.tsx`, base-ui `Sheet` – kein vaul): Neues Ticket,
+    Zeit erfassen. Dialog/AlertDialog mit `max-h-[90dvh]`. Chat-Composer als echtes
+    Flex-Layout (Eingabe tastatursicher unten).
+  - **Mobile Filterleiste als Chips** (Ticketlisten): Pillen mit Umbruch, aktiver
+    Filter hervorgehoben; Touch-Ziele ≥40 px. Desktop-Toolbar unverändert.
+  - **Ticketdetail – mobiler Case-Header:** kompakter „Ticket Summary" (Eyebrow-Nummer,
+    Titel, Status/Priorität als Chips, Firma/Kontakt/Verantwortlich/Erstellt als ruhige
+    Kontextzeilen) vor den ausklappbaren Schienen; Desktop unverändert.
+  - **Command-Palette** mobil zentriert + höhenbegrenzt.
+- **Meine/Teamtickets ohne Paginierung:** zeigen jetzt **alle** offenen Tickets in einer
+  langen Liste (`getTicketsAll`, Cap 500 mit Hinweis), kein Zurück/Weiter mehr.
+- **„Dashboard" → „Übersicht"** (Bottom-Nav, Sidebar, Suche, Seitentitel) – deutsches Label.
 - **Produktiv-Cutover:** Backend von der Sandbox auf den Autotask-**Produktiv-Mandanten**
   umgestellt (Zone DE1, eigener API-User → Thread-Budget von n8n entkoppelt).
 - **Chat-Kundenmail ist jetzt opt-in:** Schalter „Per E-Mail an Kunden senden" (Default
@@ -19,12 +43,13 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
   (`components/tickets/ticket-card.tsx`) für alle mobilen Ticketlisten – Aufbau immer
   Titel → „Firma · Nummer" → Status/Priorität/Queue/Bearbeiter → Kontextdatum. Varianten
   `worklist` (Meine/Team/secondary/ball/Kundenakte → „Fällig …") und `activity`
-  (Dashboard → „Aktualisiert …", bei neuem Ticket „Erstellt …"). `TicketsList` und
-  `RecentlyEdited` nutzen dieselbe Karte; Firmen/Kontakte teilen die Karten-Sprache.
-- **Dashboard-Sektion „Letzte Aktivität"** (vormals „Bearbeitete Tickets", mehrdeutig):
-  zuletzt aktive Tickets systemweit. Drei große KPI-Kacheln ersetzt durch eine dezente
-  Stat-Zeile „X heute aktiv · Y in 7 Tagen"; Datum kontextbewusst (neues Ticket →
-  Erstelldatum statt „aktualisiert heute").
+  (Dashboard → „Aktualisiert …", bei neuem Ticket „Erstellt …"). `TicketsList` und die
+  Listen teilen dieselbe Karte; Firmen/Kontakte teilen die Karten-Sprache.
+- **Dashboard-Sektion „Offene Tickets"** (ersetzt „Letzte Aktivität"): zeigt offene
+  Tickets team-weit im selben Listen-Look wie „Teamtickets" (Karten mobil, Tabelle ab xl),
+  mit Schnellfilter „Alle offenen / Nur nicht zugewiesene" (clientseitig, kein
+  Seiten-Neuladen) und einem Button „Alle offenen Tickets anzeigen". Die alte
+  `RecentlyEdited`-Komponente entfällt.
 
 ### Security
 - **Auth fail-closed:** in Produktion muss `AUTH_MODE` explizit `entra`/`mock` sein – kein

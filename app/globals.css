@@ -142,8 +142,21 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Kein grauer Tap-Flash beim Antippen (Karten/Buttons) auf Mobilgeräten. */
+    -webkit-tap-highlight-color: transparent;
   }
   html {
     @apply font-sans;
+    /* Kein automatisches Hochskalieren der Schrift beim Drehen (iOS). */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  /* Nur in der installierten PWA: kein Gummiband-/Pull-to-Refresh am App-Rand –
+     das fühlt sich app-artig an. Im normalen Browser-Tab bleibt Pull-to-Refresh
+     bewusst erhalten (Paul-Vorgabe). */
+  @media (display-mode: standalone) {
+    body {
+      overscroll-behavior-y: none;
+    }
   }
 }

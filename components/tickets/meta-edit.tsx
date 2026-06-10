@@ -890,7 +890,7 @@ export function RefCombobox({
           <span className="truncate">{label ?? placeholder}</span>
           <ChevronsUpDownIcon className="text-muted-foreground" />
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-0">
+        <PopoverContent className="w-(--anchor-width) min-w-64 p-0">
           <Command>
             <CommandInput placeholder="Suchen …" />
             <CommandList>

@@ -207,12 +207,12 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Vor- oder Nachname suchen …"
-            className="pl-9"
+            className="h-10 pl-9 sm:h-9"
             aria-label="Kontakte suchen"
           />
         </div>
         <CompanyFilterPicker company={company} onChange={setCompany} />
-        <span className="text-muted-foreground text-sm whitespace-nowrap">
+        <span className="text-muted-foreground w-full text-sm whitespace-nowrap sm:ml-auto sm:w-auto">
           {loading ? "Suchen …" : `${sorted.length} Kontakte`}
         </span>
         {customized && (
@@ -369,7 +369,7 @@ function CompanyFilterPicker({
           <Button
             variant="outline"
             size="sm"
-            className="w-full justify-between font-normal sm:w-56"
+            className="h-10 w-full justify-between font-normal sm:h-7 sm:w-56"
             aria-label="Nach Firma filtern"
           />
         }

@@ -100,9 +100,9 @@ export function TimeTracking({ ticketId }: { ticketId: number }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* Umrahmte Zeitanzeige (auf h-8 mit den Tasten ausgerichtet) */}
-      <span className="text-muted-foreground flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-sm tabular-nums">
+    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+      {/* Umrahmte Zeitanzeige (mobil h-10 zu den größeren Touch-Tasten, ab sm h-8) */}
+      <span className="text-muted-foreground flex h-10 items-center gap-1.5 rounded-md border px-2.5 text-sm tabular-nums sm:h-8">
         <TimerIcon className="size-4" />
         {fmtElapsed(elapsedMs)}
       </span>
@@ -110,12 +110,13 @@ export function TimeTracking({ ticketId }: { ticketId: number }) {
       <Button
         variant="outline"
         size="icon"
+        className="size-10 sm:size-8"
         onClick={toggle}
         aria-label={running ? "Stoppuhr pausieren" : "Stoppuhr starten"}
       >
         {running ? <PauseIcon /> : <PlayIcon />}
       </Button>
-      <Button onClick={openDialog}>
+      <Button onClick={openDialog} className="h-10 flex-1 sm:h-9 sm:flex-none">
         <ClockIcon />
         Zeit erfassen
       </Button>

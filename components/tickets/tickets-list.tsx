@@ -41,7 +41,7 @@ import { StatusBadge } from "@/components/status-indicator";
 import { TicketCard } from "@/components/tickets/ticket-card";
 import type { Ticket, TicketPicklists } from "@/lib/autotask/types";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
-import { openTicketPopup } from "@/lib/open-popup";
+import { useRecordNav } from "@/hooks/use-record-nav";
 
 // Gemeinsame, parametrisierbare Ticket-Liste für "Meine Tickets" (B07) und
 // "Teamtickets" (B12). Datenquelle/Filter kommen serverseitig; die Spalten
@@ -102,6 +102,7 @@ export function TicketsList({
   myResourceId,
 }: Props) {
   const router = useRouter();
+  const { openTicket } = useRecordNav();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -354,6 +355,20 @@ export function TicketsList({
   const colMap = Object.fromEntries(dataColumns.map((c) => [c.id, c]));
   const orderedCols = colOrder.map((id) => colMap[id]).filter(Boolean);
 
+  // Mobile-Filterchips (Pillen, horizontal scrollbar). Aktiver = nicht-Default-Filter
+  // wird gefüllt hervorgehoben, inaktiv neutral/outline. Ab sm normaler Select-Look
+  // (Desktop unverändert).
+  const chipBase =
+    "h-10 max-w-full shrink-0 rounded-full border px-4 text-sm sm:h-7 sm:rounded-md sm:border-input sm:bg-transparent sm:px-2.5 sm:text-[0.8rem] sm:font-normal sm:text-foreground";
+  const chipState = (active: boolean) =>
+    active
+      ? "border-transparent bg-secondary font-medium text-secondary-foreground"
+      : "border-input text-foreground";
+  const statusActive = (filters.status || "open") !== "open";
+  const priorityActive = (filters.priority || "all") !== "all";
+  const queueActive = (filters.queue || "all") !== "all";
+  const assignedActive = (filters.assigned || "all") !== "all";
+
   return (
     <div className="flex flex-col gap-4">
       {/* Filterzeile und Bulk-Leiste teilen sich EINE Grid-Zelle (übereinander
@@ -375,20 +390,23 @@ export function TicketsList({
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 placeholder="Nummer oder Titel suchen …"
-                className="pl-9"
+                className="h-10 pl-9 sm:h-9"
                 aria-label="Tickets suchen"
               />
             </div>
           )}
 
           {showFilters && (
-            <>
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:items-center">
               <Select
                 items={statusItems}
                 value={filters.status || "open"}
                 onValueChange={(v) => updateFilter("status", String(v))}
               >
-                <SelectTrigger size="sm" className="w-auto min-w-40">
+                <SelectTrigger
+                  size="sm"
+                  className={cn(chipBase, chipState(statusActive), "sm:min-w-40")}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="w-auto min-w-56">
@@ -407,7 +425,10 @@ export function TicketsList({
                 value={filters.priority || "all"}
                 onValueChange={(v) => updateFilter("priority", String(v))}
               >
-                <SelectTrigger size="sm" className="w-auto min-w-44">
+                <SelectTrigger
+                  size="sm"
+                  className={cn(chipBase, chipState(priorityActive), "sm:min-w-44")}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="w-auto min-w-44">
@@ -426,7 +447,10 @@ export function TicketsList({
                 value={filters.queue || "all"}
                 onValueChange={(v) => updateFilter("queue", String(v))}
               >
-                <SelectTrigger size="sm" className="w-auto min-w-48">
+                <SelectTrigger
+                  size="sm"
+                  className={cn(chipBase, chipState(queueActive), "sm:min-w-48")}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="w-auto min-w-52">
@@ -446,7 +470,10 @@ export function TicketsList({
                   value={filters.assigned || "all"}
                   onValueChange={(v) => updateFilter("assigned", String(v))}
                 >
-                  <SelectTrigger size="sm" className="w-auto min-w-56">
+                  <SelectTrigger
+                    size="sm"
+                    className={cn(chipBase, chipState(assignedActive), "sm:min-w-56")}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="w-auto min-w-64">
@@ -460,7 +487,7 @@ export function TicketsList({
                   </SelectContent>
                 </Select>
               )}
-            </>
+            </div>
           )}
               {colCustomized && (
                 <Button
@@ -563,7 +590,7 @@ export function TicketsList({
                   <TableRow
                     key={t.id}
                     className="cursor-pointer"
-                    onClick={() => openTicketPopup(t.id)}
+                    onClick={() => openTicket(t.id)}
                   >
                     {selectableActive && (
                       <TableCell
@@ -587,10 +614,11 @@ export function TicketsList({
           </div>
 
           {pagerVisible && (
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-between gap-2 sm:justify-end">
               <Button
                 variant="outline"
                 size="sm"
+                className="h-10 flex-1 sm:h-7 sm:flex-none"
                 disabled={!data.prevCursor}
                 onClick={() => data.prevCursor && goToCursor(data.prevCursor)}
               >
@@ -599,6 +627,7 @@ export function TicketsList({
               <Button
                 variant="outline"
                 size="sm"
+                className="h-10 flex-1 sm:h-7 sm:flex-none"
                 disabled={!data.nextCursor}
                 onClick={() => data.nextCursor && goToCursor(data.nextCursor)}
               >

@@ -4,7 +4,6 @@ import * as React from "react";
 import { AlertCircleIcon, MailIcon, PaperclipIcon, XIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
@@ -259,7 +258,7 @@ export function TicketChat({
   }
 
   return (
-    <Card className="h-full">
+    <Card className="flex flex-col max-h-[75dvh] xl:h-full xl:max-h-none">
       <CardHeader className="border-b">
         <div className="flex items-baseline justify-between gap-2">
           <CardTitle>Chat</CardTitle>
@@ -272,7 +271,7 @@ export function TicketChat({
       </CardHeader>
       <CardContent
         className={cn(
-          "relative flex h-full flex-col gap-3",
+          "relative flex min-h-0 flex-1 flex-col gap-3",
           dragOver &&
             "outline-primary -outline-offset-8 outline-2 outline-dashed",
         )}
@@ -303,6 +302,7 @@ export function TicketChat({
           </Alert>
         )}
 
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pr-1">
         {messages === null ? (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-12 w-3/4" />
@@ -319,7 +319,6 @@ export function TicketChat({
             </EmptyHeader>
           </Empty>
         ) : (
-          <ScrollArea className="h-128 pr-3">
             <div className="flex flex-col gap-3">
               {messages.map((m) => {
                 const outbound = m.direction === "outbound";
@@ -411,8 +410,8 @@ export function TicketChat({
                 );
               })}
             </div>
-          </ScrollArea>
         )}
+        </div>
 
         {sendError && (
           <Alert variant="destructive">
@@ -427,7 +426,10 @@ export function TicketChat({
           </Alert>
         )}
 
-        <form onSubmit={attemptSend} className="mt-auto flex flex-col gap-2">
+        <form
+          onSubmit={attemptSend}
+          className="mt-auto flex shrink-0 flex-col gap-2 pb-[env(safe-area-inset-bottom)]"
+        >
           {files.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {files.map((f, i) => (

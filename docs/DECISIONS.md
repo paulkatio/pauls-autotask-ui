@@ -1855,4 +1855,47 @@ Mehr-Instanz/Hot-Reload: zeitweise ein zweiter Dev-Server (Audit-Mock) neben dem
 viele HMR-Generationen während ticket-lastiger Loads. Deckt sich mit dem Skalierungs-Hinweis
 vom 2026-06-08 (Limiter prozess-lokal). Einzel-Prod-Instanz löst es praktisch nicht aus.
 
+### [2026-06-10] Mobile/PWA als vollwertige App (Desktop unverändert)
+
+**Problem.** Als installierte PWA (`display: standalone`) riss ein Tipp auf Ticket/Firma
+über `window.open` (Pop-out, `lib/open-popup.ts`) einen **neuen Browser-Tab** auf → App-
+Kontext verloren. Allgemein wirkte Mobile wie „Desktop klein gemacht".
+
+**Entscheidungen:**
+- **Gerätebewusste Navigation (Runtime, nicht layout-deterministisch).** Neuer
+  `hooks/use-record-nav.ts` + `lib/standalone.ts`: mobil/standalone → `router.push`
+  (In-App, Zurück-Geste), Desktop → weiterhin Pop-out. Prädikat bewusst konservativ:
+  Standalone **immer** in-App; `innerWidth < 768` in-App; `pointer: coarse` **nur** mit
+  Breite `< 1024` (sonst bekämen Touch-Laptops im Desktop-Browser fälschlich In-App-Nav).
+  Begründung Runtime statt CSS-Breakpoint: eine installierte PWA auf Desktop-Breite würde
+  sonst (Tabellen-Zweig) wieder einen Tab aufreißen. Die In-App-Detailrouten existierten
+  bereits (`/tickets/[id]`, `/companies/[id]`).
+- **Bottom-Sheets aus base-ui `Sheet`, NICHT vaul.** shadcn-Style ist base-nova
+  (`@base-ui/react`); der offizielle vaul-`Drawer` (Radix) wäre eine zweite Primitive-
+  Familie. `components/ui/responsive-dialog.tsx` schaltet per `useIsMobile()` zwischen
+  Dialog (Desktop) und `Sheet side="bottom"` (Mobile). Dialog/AlertDialog-Basis bekam
+  `max-h-[90dvh] overflow-y-auto`.
+- **Shell/Navigation mobil:** Bottom-Nav (`components/mobile-bottom-nav.tsx`), Header mit
+  Logo links / Zurück auf Detailseiten / Hamburger rechts; Sidebar-Sheet **von rechts**
+  (`mobileSide`-Prop in `ui/sidebar.tsx`, passend zum „Mehr"-Tab rechts). Safe-Areas via
+  `viewport-fit=cover` + `env(...)`; `interactiveWidget=resizes-content` für den
+  tastatursicheren Chat-Composer (echtes Flex-Layout statt fixer Höhe); `overscroll` nur
+  in der installierten PWA (Pull-to-Refresh im Browser bleibt erhalten).
+- **Mobile Filterleiste als Chips** (Pillen, Umbruch, aktiver Filter gefüllt; Touch ≥40 px);
+  Desktop-Toolbar unverändert (ab `sm` normale Selects).
+- **Meine/Teamtickets ohne Paginierung.** Neues `getTicketsAll` (`ticket-list.ts`) nutzt
+  `tickets.query({autoPage, maxItems})` mit **Cap 500** → in der Praxis EIN Query
+  (`MaxRecords 500`) + gebündelte Namensauflösung; `capped`-Hinweis bei Überschreiten.
+  Bewusst gegen Cursor-Paging getauscht (Paul: eine lange Liste, kein Zurück/Weiter).
+- **Dashboard „Offene Tickets"** (ersetzt „Letzte Aktivität"/`RecentlyEdited`): gleiche
+  `TicketsList`-Optik; Schnellfilter „Alle / nur nicht zugewiesene" + Paging laufen
+  **clientseitig** über neue Lese-API `GET /api/tickets/open` — KEINE URL-Änderung, damit
+  die Seite nicht neu lädt (kein `loading.tsx`-Flash) und nicht nach oben springt.
+- **Label „Dashboard" → „Übersicht"** (englisches Wort wurde von mobilen Browsern
+  auto-übersetzt zu „Armaturenbrett").
+
+**Hinweis Build/Lint:** Build + TS grün. Bestehende Lint-Baseline (react-hooks/
+set-state-in-effect u. a.) unverändert — keine neuen Verstöße durch diese Arbeit.
+**Offen:** echter Gerätetest (iPhone/Android, installierte PWA) steht noch aus.
+
 <!-- Neue Entscheidungen hier anhängen -->

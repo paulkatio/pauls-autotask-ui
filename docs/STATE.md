@@ -11,10 +11,26 @@ verlinkten Dateien.
 - **Fachlicher Bauplan:** [`BLUEPRINT.md`](BLUEPRINT.md). **Repo-Karte:** [`ARCHITECTURE.md`](ARCHITECTURE.md).
 - **Deployment + Env:** [`../DEPLOY.md`](../DEPLOY.md).
 
-Stand: 2026-06-09. **Produktiv-Cutover erfolgt:** läuft gegen den **Autotask-Produktiv-
+Stand: 2026-06-10. **Produktiv-Cutover erfolgt:** läuft gegen den **Autotask-Produktiv-
 Mandanten** (Zone DE1, `webservices18`, eigener API-User „AutoTask UI" → Thread-Budget von
 n8n entkoppelt). **Entra-ID-Login live** (`AUTH_MODE=entra`, B16a). Profilbild aus Microsoft
 Graph (B16b).
+
+**2026-06-10 (Mobile/PWA-Überarbeitung, branch `feat/mobile-pwa-native`, noch nicht
+gemerged):** Die mobile Ansicht/PWA funktioniert jetzt wie eine **echte App**, Desktop
+unverändert. **In-App-Navigation** (`hooks/use-record-nav.ts` + `lib/standalone.ts`):
+Ticket/Firma öffnet mobil/PWA IN der App (kein neuer Browser-Tab); Desktop behält die
+Pop-out-Fenster. **Bottom-Navigation** (`components/mobile-bottom-nav.tsx`: Übersicht ·
+Meine · Team · Suche · Mehr); mobiler Header mit Logo links, Zurück auf Detailseiten,
+Hamburger rechts, **Sidebar von rechts**. **Safe-Areas** (`viewport-fit=cover`,
+`env(...)`-Insets, `dvh`, `interactiveWidget=resizes-content`). **Bottom-Sheets** für
+Formulare (`components/ui/responsive-dialog.tsx`, base-ui `Sheet`, kein vaul);
+Chat-Composer tastatursicher. **Mobile Filter als Chips**, Touch-Ziele ≥40 px.
+**Ticketdetail** mit mobilem „Ticket Summary"-Case-Header. **Meine/Teamtickets ohne
+Paginierung** (`getTicketsAll`, Cap 500) – alle offenen in einer Liste. **Dashboard-Sektion
+„Offene Tickets"** (ersetzt „Letzte Aktivität", `RecentlyEdited` entfernt) im Teamlisten-Look
++ Schnellfilter + „Alle offenen anzeigen". Label **„Dashboard" → „Übersicht"**. Details:
+DECISIONS „[2026-06-10]".
 
 **2026-06-09 (UI-/Workflow-Ausbau, branch `fix/responsive-tables-ticket-popup`, noch nicht
 gemerged):** Chat ist jetzt ein **reines Kundenfenster** (Intern/Kunde-Switch raus, jede

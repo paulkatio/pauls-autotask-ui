@@ -32,15 +32,16 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@/components/ui/responsive-dialog";
 import type { Picklist, TicketPicklists } from "@/lib/autotask/types";
 import type { RefOption } from "@/lib/autotask/entities/contacts";
 import { NEW_TICKET_DEFAULT_QUEUE } from "@/lib/autotask/new-ticket";
@@ -335,7 +336,7 @@ export function NewTicketDialog({
   ];
 
   return (
-    <Dialog
+    <ResponsiveDialog
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
@@ -347,19 +348,19 @@ export function NewTicketDialog({
         }
       }}
     >
-      <DialogTrigger render={<Button size="sm" />}>
+      <ResponsiveDialogTrigger render={<Button size="sm" />}>
         <PlusIcon />
         {triggerLabel ?? "Neues Ticket"}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Neues Ticket</DialogTitle>
-          <DialogDescription>
+      </ResponsiveDialogTrigger>
+      <ResponsiveDialogContent className="sm:max-w-lg">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>Neues Ticket</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             Firma und Titel sind Pflicht. Weitere Felder sind optional.
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
-        <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto px-1">
+        <ResponsiveDialogBody className="flex flex-col gap-4">
           {/* Firma (Pflicht) */}
           <div className="flex flex-col gap-2">
             <FieldLabel htmlFor="nt-company">Firma</FieldLabel>
@@ -613,17 +614,17 @@ export function NewTicketDialog({
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-        </div>
+        </ResponsiveDialogBody>
 
-        <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline" />}>
+        <ResponsiveDialogFooter>
+          <ResponsiveDialogClose render={<Button type="button" variant="outline" />}>
             Abbrechen
-          </DialogClose>
+          </ResponsiveDialogClose>
           <Button onClick={submit} disabled={!canSubmit}>
             {saving ? "Anlegen …" : "Ticket anlegen"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

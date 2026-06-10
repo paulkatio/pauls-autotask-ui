@@ -45,7 +45,7 @@ import {
   COMPANY_TYPE_ORDER,
 } from "@/lib/autotask/company-types";
 import type { CompanyRow } from "@/lib/autotask/entities/company-list";
-import { openCompanyPopup } from "@/lib/open-popup";
+import { useRecordNav } from "@/hooks/use-record-nav";
 
 type SortKey = "name" | "city" | "companyType" | "phone" | "openTickets";
 type SortDir = "asc" | "desc";
@@ -62,6 +62,7 @@ export function CompaniesTable({
   companiesCapped: boolean;
   openCapped: boolean;
 }) {
+  const { openCompany } = useRecordNav();
   const [q, setQ] = React.useState("");
   const [typeFilter, setTypeFilter] = React.useState(
     String(COMPANY_TYPE_CUSTOMER),
@@ -232,7 +233,7 @@ export function CompaniesTable({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Firma oder Ort suchen …"
-            className="pl-9"
+            className="h-10 pl-9 sm:h-9"
             aria-label="Firmen filtern"
           />
         </div>
@@ -241,7 +242,11 @@ export function CompaniesTable({
           value={typeFilter}
           onValueChange={(v) => setTypeFilter(String(v))}
         >
-          <SelectTrigger size="sm" className="w-auto min-w-40" aria-label="Kundenart">
+          <SelectTrigger
+            size="sm"
+            className="h-10 w-full min-w-0 sm:h-7 sm:w-auto sm:min-w-40"
+            aria-label="Kundenart"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -254,7 +259,7 @@ export function CompaniesTable({
             </SelectGroup>
           </SelectContent>
         </Select>
-        <span className="text-muted-foreground text-sm whitespace-nowrap">
+        <span className="text-muted-foreground w-full text-sm whitespace-nowrap sm:ml-auto sm:w-auto">
           {filtered.length} von {rows.length}
         </span>
         {customized && (
@@ -301,12 +306,12 @@ export function CompaniesTable({
               key={c.id}
               role="button"
               tabIndex={0}
-              onClick={() => openCompanyPopup(c.id)}
+              onClick={() => openCompany(c.id)}
               onKeyDown={(e) => {
                 if (e.target !== e.currentTarget) return;
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  openCompanyPopup(c.id);
+                  openCompany(c.id);
                 }
               }}
               className="hover:bg-muted/50 active:bg-muted flex flex-col gap-1.5 rounded-lg border p-3 transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -352,7 +357,7 @@ export function CompaniesTable({
                 <TableRow
                   key={c.id}
                   className="cursor-pointer"
-                  onClick={() => openCompanyPopup(c.id)}
+                  onClick={() => openCompany(c.id)}
                 >
                   {orderedCols.map((col) => (
                     <TableCell key={col.id} className={col.cellClassName}>

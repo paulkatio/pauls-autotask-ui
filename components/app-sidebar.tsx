@@ -37,7 +37,7 @@ import {
 // aktuell sehen alle Nutzer dieselbe Ansicht, alle Links sichtbar. `SessionUser.roles`
 // bleibt als Weiche im Datenmodell, wird hier aber (noch) nicht ausgewertet.
 const navItems: NavItem[] = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboardIcon },
+  { title: "Übersicht", url: "/", icon: LayoutDashboardIcon },
   { title: "Meine Tickets", url: "/tickets/my", icon: TicketIcon },
   { title: "Teamtickets", url: "/tickets/team", icon: UsersIcon },
   { title: "Firmen", url: "/companies", icon: Building2Icon },
@@ -54,7 +54,7 @@ export function AppSidebar({
   orgName: string
 } & React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" mobileSide="right" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

@@ -2,7 +2,7 @@ import { AlertCircleIcon } from "lucide-react";
 
 import { getSession } from "@/lib/auth";
 import {
-  getTicketsPage,
+  getTicketsAll,
   ticketSearchFilter,
 } from "@/lib/autotask/entities/ticket-list";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
@@ -21,7 +21,6 @@ interface SearchParams {
   queue?: string;
   due?: string; // KPI-Prefilter vom Dashboard: overdue | today | sla
   q?: string; // Textsuche (Nummer/Titel)
-  cursor?: string;
 }
 
 // SLA-gefährdet identisch zur Dashboard-KPI (B13) – verfeinern in B15.
@@ -94,7 +93,8 @@ export default async function MyTicketsPage({
   ]);
 
   try {
-    const data = await getTicketsPage(filter, { cursorUrl: sp.cursor });
+    // Alle dir zugewiesenen Tickets in EINER Liste (keine Paginierung).
+    const data = await getTicketsAll(filter);
 
     return (
       <div className="flex flex-col gap-6">
@@ -104,7 +104,7 @@ export default async function MyTicketsPage({
           actions={<NewTicketDialog picklists={picklists} />}
         />
         <TicketsList
-          data={data}
+          data={{ items: data.items, nextCursor: null, prevCursor: null }}
           picklists={picklists}
           filters={{
             status,
@@ -114,8 +114,14 @@ export default async function MyTicketsPage({
           selectable
           resources={assignableResources}
           myResourceId={session.autotaskResourceId}
+          showPager={false}
           emptyDescription="Für die aktuelle Auswahl sind dir keine Tickets zugewiesen."
         />
+        {data.capped && (
+          <p className="text-muted-foreground text-xs">
+            Sehr viele Tickets – es werden die ersten {data.total} angezeigt.
+          </p>
+        )}
       </div>
     );
   } catch (e) {

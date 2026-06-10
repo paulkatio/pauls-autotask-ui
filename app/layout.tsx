@@ -39,6 +39,12 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: light)", color: "#fdfcfb" },
     { media: "(prefers-color-scheme: dark)", color: "#13100e" },
   ],
+  // viewport-fit=cover aktiviert env(safe-area-inset-*) auf Geräten mit Notch/
+  // Home-Indikator (iPhone). Header (oben) und Bottom-Nav (unten) nutzen die Insets.
+  viewportFit: "cover",
+  // Mobile Tastatur verkleinert den Layout-Viewport, statt ihn nur zu überlagern →
+  // der Chat-Composer am unteren Rand bleibt sichtbar (siehe ticket-chat.tsx).
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

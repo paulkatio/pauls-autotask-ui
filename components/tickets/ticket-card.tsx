@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusBadge } from "@/components/status-indicator";
 import { labelOf, priorityVariant } from "@/lib/autotask/mappers";
-import { openTicketPopup } from "@/lib/open-popup";
+import { useRecordNav } from "@/hooks/use-record-nav";
 import type { TicketPicklists } from "@/lib/autotask/types";
 import type { TicketRow } from "@/components/tickets/tickets-list";
 
@@ -96,6 +96,7 @@ export function TicketCard({
   selected?: boolean;
   onToggleSelect?: (checked: boolean) => void;
 }) {
+  const { openTicket } = useRecordNav();
   const showCompany = columns.company !== false && !!t.companyName;
   const showQueue = !!columns.queue;
   const showAssignee =
@@ -124,14 +125,14 @@ export function TicketCard({
     <div
       role="button"
       tabIndex={0}
-      onClick={() => openTicketPopup(t.id)}
+      onClick={() => openTicket(t.id)}
       onKeyDown={(e) => {
         // Nur reagieren, wenn die Karte selbst fokussiert ist – nicht, wenn das
         // Keydown von einem Kind (z. B. der Auswahl-Checkbox) hochbubbelt.
         if (e.target !== e.currentTarget) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          openTicketPopup(t.id);
+          openTicket(t.id);
         }
       }}
       className="hover:bg-muted/50 active:bg-muted focus-visible:border-ring focus-visible:ring-ring/50 flex items-start gap-3 rounded-lg border p-3 transition-colors outline-none focus-visible:ring-3"

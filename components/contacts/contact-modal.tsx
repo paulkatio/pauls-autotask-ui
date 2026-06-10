@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { subscribeOpenContact } from "@/lib/open-contact";
-import { openCompanyPopup } from "@/lib/open-popup";
+import { useRecordNav } from "@/hooks/use-record-nav";
 
 interface ContactDetail {
   id: number;
@@ -35,6 +35,7 @@ interface ContactDetail {
 // INNERHALB des Fensters, NICHT als eigenes Browser-Fenster wie Ticket/Firma).
 // Genau einmal im Layout gemountet; hört auf openContactModal(id) und lädt nach.
 export function ContactModal() {
+  const { openCompany } = useRecordNav();
   const [id, setId] = React.useState<number | null>(null);
   const [data, setData] = React.useState<ContactDetail | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -100,9 +101,14 @@ export function ContactModal() {
                 variant="outline"
                 size="sm"
                 className="w-full justify-start font-normal"
-                onClick={() =>
-                  data.companyID != null && openCompanyPopup(data.companyID)
-                }
+                onClick={() => {
+                  if (data.companyID == null) return;
+                  const cid = data.companyID;
+                  // Overlay schließen, bevor in-App zur Firma navigiert wird
+                  // (im Desktop-Popup-Fall öffnet sich ohnehin ein neues Fenster).
+                  setId(null);
+                  openCompany(cid);
+                }}
               >
                 <Building2Icon className="text-muted-foreground" />
                 <span className="truncate">

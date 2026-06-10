@@ -17,7 +17,7 @@ export type NavItem = {
   icon: LucideIcon
 }
 
-function isActiveRoute(pathname: string, url: string) {
+export function isActiveRoute(pathname: string, url: string) {
   // "/" nur exakt aktiv; verschachtelte Routen auch bei Unterpfaden.
   return url === "/" ? pathname === "/" : pathname.startsWith(url)
 }

@@ -20,7 +20,9 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4",
+        // Aktion (z. B. „Neues Ticket") sitzt auch mobil rechts neben dem Titel,
+        // statt als Block zwischen Titel und Suche zu stehen.
+        "flex flex-row items-start justify-between gap-2 sm:gap-4",
         className,
       )}
     >

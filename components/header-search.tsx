@@ -37,17 +37,8 @@ export function HeaderSearch() {
           {isMac ? "⌘" : "Strg"} + K
         </kbd>
       </Button>
-
-      {/* Mobile: Such-Icon */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={openPalette}
-        className="md:hidden"
-        aria-label="Suche öffnen"
-      >
-        <SearchIcon />
-      </Button>
+      {/* Mobil kein Such-Icon im Header mehr – die Suche sitzt unten in der
+          Bottom-Navigation (Tab „Suche"). */}
     </>
   );
 }

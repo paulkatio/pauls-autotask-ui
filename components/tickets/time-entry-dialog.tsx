@@ -22,15 +22,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@/components/ui/responsive-dialog";
 import { StatusDot } from "@/components/status-indicator";
 
 interface WorkType {
@@ -264,22 +265,23 @@ export function TimeEntryDialog({
   }));
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
       {showTrigger && (
-        <DialogTrigger render={<Button />}>
+        <ResponsiveDialogTrigger render={<Button />}>
           <ClockIcon />
           Zeit erfassen
-        </DialogTrigger>
+        </ResponsiveDialogTrigger>
       )}
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Zeit erfassen</DialogTitle>
-          <DialogDescription>
+      <ResponsiveDialogContent className="sm:max-w-xl">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>Zeit erfassen</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             Zeiteintrag für dieses Ticket anlegen.
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <ResponsiveDialogBody className="flex flex-col gap-4">
           {/* Wichtigstes Feld – ganz oben und größer. */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="te-notes" className="text-base">
@@ -447,17 +449,18 @@ export function TimeEntryDialog({
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+          </ResponsiveDialogBody>
 
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+          <ResponsiveDialogFooter>
+            <ResponsiveDialogClose render={<Button type="button" variant="outline" />}>
               Abbrechen
-            </DialogClose>
+            </ResponsiveDialogClose>
             <Button type="submit" disabled={saving || hours == null || !billingCodeId}>
               {saving ? "Speichern …" : "Speichern"}
             </Button>
-          </DialogFooter>
+          </ResponsiveDialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

@@ -76,3 +76,55 @@ export async function getTicketsPage(
 
   return { items, nextCursor: page.nextPageUrl, prevCursor: page.prevPageUrl };
 }
+
+export interface TicketListAll {
+  items: TicketListRow[];
+  total: number;
+  capped: boolean;
+}
+
+// Sicherheitsobergrenze: alle offenen Tickets in EINER langen Liste (kein Paging),
+// aber gedeckelt, damit die Liste nicht unbegrenzt wächst (Autotask-Last/Render).
+const TICKETS_ALL_CAP = 500;
+
+// ALLE zur Filterbedingung passenden Tickets (keine Paginierung) – für „Meine
+// Tickets" und „Teamtickets". Autotask liefert bis 500 pro Query; autoPage holt
+// weitere Seiten bis zum Cap. `capped` zeigt an, dass die Obergrenze erreicht wurde.
+export async function getTicketsAll(
+  filter: AutotaskFilter[],
+  opts: { withAssigned?: boolean; maxItems?: number } = {},
+): Promise<TicketListAll> {
+  const cap = opts.maxItems ?? TICKETS_ALL_CAP;
+  const rows = await tickets.query(filter, { autoPage: true, maxItems: cap });
+
+  const companyIds = rows
+    .map((t) => t.companyID)
+    .filter((n): n is number => typeof n === "number");
+  const resourceIds = opts.withAssigned
+    ? rows
+        .map((t) => t.assignedResourceID)
+        .filter((n): n is number => typeof n === "number")
+    : [];
+
+  const [companyNames, resourceNames] = await Promise.all([
+    companies.namesByIds(companyIds),
+    opts.withAssigned
+      ? resources.namesByIds(resourceIds)
+      : Promise.resolve(new Map<number, string>()),
+  ]);
+
+  const items: TicketListRow[] = rows.map((t) => ({
+    ...t,
+    companyName: t.companyID != null ? (companyNames.get(t.companyID) ?? null) : null,
+    ...(opts.withAssigned
+      ? {
+          assignedResourceName:
+            t.assignedResourceID != null
+              ? (resourceNames.get(t.assignedResourceID) ?? null)
+              : null,
+        }
+      : {}),
+  }));
+
+  return { items, total: items.length, capped: items.length >= cap };
+}

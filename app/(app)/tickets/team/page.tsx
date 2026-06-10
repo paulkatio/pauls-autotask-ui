@@ -2,7 +2,7 @@ import { AlertCircleIcon } from "lucide-react";
 
 import { getSession } from "@/lib/auth";
 import {
-  getTicketsPage,
+  getTicketsAll,
   ticketSearchFilter,
 } from "@/lib/autotask/entities/ticket-list";
 import {
@@ -25,7 +25,6 @@ interface SearchParams {
   assigned?: string;
   resource?: string; // Klick auf einen Balken im Dashboard-Chart
   q?: string; // Textsuche (Nummer/Titel)
-  cursor?: string;
 }
 
 export default async function TeamTicketsPage({
@@ -93,10 +92,8 @@ export default async function TeamTicketsPage({
   ]);
 
   try {
-    const data = await getTicketsPage(filter, {
-      cursorUrl: sp.cursor,
-      withAssigned: true,
-    });
+    // Alle offenen Teamtickets in EINER Liste (keine Paginierung).
+    const data = await getTicketsAll(filter, { withAssigned: true });
 
     return (
       <div className="flex flex-col gap-6">
@@ -106,7 +103,7 @@ export default async function TeamTicketsPage({
           actions={<NewTicketDialog picklists={picklists} />}
         />
         <TicketsList
-          data={data}
+          data={{ items: data.items, nextCursor: null, prevCursor: null }}
           picklists={picklists}
           filters={{
             status,
@@ -119,8 +116,14 @@ export default async function TeamTicketsPage({
           selectable
           resources={assignableResources}
           myResourceId={session.autotaskResourceId}
+          showPager={false}
           emptyDescription="Für die aktuelle Auswahl gibt es keine Teamtickets."
         />
+        {data.capped && (
+          <p className="text-muted-foreground text-xs">
+            Sehr viele Tickets – es werden die ersten {data.total} angezeigt.
+          </p>
+        )}
       </div>
     );
   } catch (e) {
