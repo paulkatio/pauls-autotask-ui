@@ -140,6 +140,7 @@ export function DescriptionEdit({
             <Button
               variant="outline"
               size="sm"
+              className="h-11 sm:h-7"
               onClick={() => setEditing(true)}
             >
               <PencilIcon />
@@ -159,7 +160,7 @@ export function DescriptionEdit({
             />
             <FieldError message={error} />
             <div className="flex gap-2">
-              <Button size="sm" onClick={save} disabled={saving}>
+              <Button size="sm" className="h-11 sm:h-7" onClick={save} disabled={saving}>
                 {saving ? "Speichern …" : "Speichern"}
               </Button>
               <Button
@@ -883,7 +884,7 @@ export function RefCombobox({
             <Button
               variant="outline"
               size="sm"
-              className="w-full justify-between font-normal"
+              className="h-11 w-full justify-between font-normal sm:h-7"
               disabled={saving}
             />
           }
@@ -999,7 +1000,7 @@ export function CompanyChange({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="h-11 sm:h-7" />}>
         Firma ändern
       </DialogTrigger>
       <DialogContent>

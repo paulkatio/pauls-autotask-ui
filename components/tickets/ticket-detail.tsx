@@ -149,7 +149,7 @@ function Rail({
     >
       <CollapsibleTrigger
         render={
-          <Button variant="outline" className="w-full justify-between lg:hidden" />
+          <Button variant="outline" className="h-11 w-full justify-between lg:hidden" />
         }
       >
         {title}
@@ -333,10 +333,12 @@ export function TicketDetailView({
       <Card>
         <CardContent>
           <Tabs defaultValue="zeiten" className="gap-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2">
               <TabsList variant="line">
-                <TabsTrigger value="zeiten">Zeiten</TabsTrigger>
-                <TabsTrigger value="anhaenge">
+                <TabsTrigger value="zeiten" className="min-h-11 sm:min-h-0">
+                  Zeiten
+                </TabsTrigger>
+                <TabsTrigger value="anhaenge" className="min-h-11 sm:min-h-0">
                   Anhänge ({detail.attachments.length})
                 </TabsTrigger>
               </TabsList>
@@ -687,7 +689,7 @@ function ActivityItem({
       <button
         type="button"
         onClick={onToggle}
-        className="-my-1 flex min-h-11 w-full items-center gap-2 py-1.5 text-left sm:my-0 sm:min-h-0 sm:py-0"
+        className="-my-1 flex min-h-11 w-full flex-wrap items-center gap-x-2 gap-y-0.5 py-1.5 text-left sm:my-0 sm:min-h-0 sm:flex-nowrap sm:py-0"
         aria-expanded={open}
       >
         <ChevronDownIcon
@@ -697,18 +699,18 @@ function ActivityItem({
           )}
         />
         {isReply ? (
-          <Badge className="min-w-0 max-w-[40vw] shrink truncate">Kundenantwort</Badge>
+          <Badge className="min-w-0 shrink truncate sm:shrink-0">Kundenantwort</Badge>
         ) : (
-          <Badge variant="secondary" className="min-w-0 max-w-[40vw] shrink truncate">
+          <Badge variant="secondary" className="min-w-0 shrink truncate sm:shrink-0">
             {labelOf(notePicklists.noteType, note.noteType)}
           </Badge>
         )}
         {note.title && (
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+          <span className="order-3 min-w-0 basis-full truncate text-sm font-medium sm:order-2 sm:basis-auto sm:flex-1">
             {note.title}
           </span>
         )}
-        <span className="text-muted-foreground ml-auto shrink-0 text-xs tabular-nums">
+        <span className="text-muted-foreground order-2 ml-auto shrink-0 text-xs tabular-nums sm:order-3">
           {fmtDate(note.createDateTime, true)}
         </span>
       </button>
