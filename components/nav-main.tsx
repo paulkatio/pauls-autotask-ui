@@ -9,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 export type NavItem = {
@@ -24,6 +25,7 @@ export function isActiveRoute(pathname: string, url: string) {
 
 export function NavMain({ items }: { items: NavItem[] }) {
   const pathname = usePathname()
+  const { setOpenMobile } = useSidebar()
 
   return (
     <SidebarGroup>
@@ -41,6 +43,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
               // Komfortable Touch-Ziele: etwas höher (h-10) + größeres Icon + mehr
               // Abstand. Im eingeklappten Icon-Modus erzwingt sidebar.tsx weiter 8er-Quadrate.
               className="h-10 gap-3 transition-colors data-active:bg-primary/10 data-active:hover:bg-primary/15 [&>svg]:size-5 data-active:[&>svg]:text-primary"
+              onClick={() => setOpenMobile(false)}
               render={<Link href={item.url} />}
             >
               <item.icon />

@@ -99,6 +99,8 @@ export function TicketChat({
   const [files, setFiles] = React.useState<File[]>([]);
   const [dragOver, setDragOver] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  // Scroll-Container der Nachrichtenliste – für Auto-Scroll ans Ende (neueste unten).
+  const scrollRef = React.useRef<HTMLDivElement>(null);
 
   function addFiles(incoming: FileList | File[]) {
     const arr = Array.from(incoming);
@@ -152,6 +154,12 @@ export function TicketChat({
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [load]);
+
+  // Immer zur neuesten Nachricht (unten) springen: bei Erst-Laden, Polling und Senden.
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
   // Form-Submit: Versand geht immer an den Kunden → vor jedem Senden bestätigen lassen.
   function attemptSend(e: React.FormEvent) {
@@ -302,7 +310,10 @@ export function TicketChat({
           </Alert>
         )}
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pr-1">
+        <div
+          ref={scrollRef}
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pr-1"
+        >
         {messages === null ? (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-12 w-3/4" />

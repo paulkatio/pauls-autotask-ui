@@ -46,7 +46,7 @@ export function MobileBottomNav() {
   return (
     <nav
       aria-label="Hauptnavigation"
-      className="bg-background/80 supports-[backdrop-filter]:bg-background/65 fixed inset-x-0 bottom-0 z-40 flex border-t pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+      className="bg-background fixed inset-x-0 bottom-0 z-40 flex border-t pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {TABS.map((tab) => {
         if (tab.kind === "link") {
