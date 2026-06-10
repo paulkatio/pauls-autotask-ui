@@ -66,6 +66,7 @@ interface Props {
   assignmentFilter?: boolean; // Team: "Alle / nur nicht zugewiesene"
   showFilters?: boolean; // Fokuslisten (Dashboard) blenden die Filterleiste aus
   showPager?: boolean; // und das Paging
+  mobileLimit?: number; // Dashboard: Karten-Stack mobil deckeln (Tabelle bleibt komplett)
   searchMode?: SearchMode;
   emptyDescription?: string;
   // Mehrfachauswahl + Bulk-Aktionen (an in Meine/Team/Kundenakte/Kontakt-Tabs,
@@ -95,6 +96,7 @@ export function TicketsList({
   assignmentFilter = false,
   showFilters = true,
   showPager = true,
+  mobileLimit,
   searchMode = "server",
   emptyDescription = "Für die aktuelle Auswahl gibt es keine Tickets.",
   selectable = false,
@@ -544,8 +546,8 @@ export function TicketsList({
           {/* Mobile-First: unter xl je Ticket eine Karte (kein Querscrollen). Ab xl
               die volle Tabelle mit umsortierbaren Spalten. Die Karte ist die
               gemeinsame TicketCard (Variante "worklist" → "Fällig …"). */}
-          <div className="flex flex-col gap-2 xl:hidden">
-            {items.map((t) => (
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:hidden">
+            {(mobileLimit ? items.slice(0, mobileLimit) : items).map((t) => (
               <TicketCard
                 key={t.id}
                 ticket={t}
@@ -558,6 +560,11 @@ export function TicketsList({
               />
             ))}
           </div>
+          {mobileLimit && items.length > mobileLimit && (
+            <p className="text-muted-foreground text-center text-xs xl:hidden">
+              + {items.length - mobileLimit} weitere …
+            </p>
+          )}
 
           <div className="hidden overflow-x-auto rounded-lg border xl:block">
             <Table className="min-w-3xl">

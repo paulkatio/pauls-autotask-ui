@@ -98,7 +98,7 @@ export function TicketCard({
 }) {
   const { openTicket } = useRecordNav();
   const showCompany = columns.company !== false && !!t.companyName;
-  const showQueue = !!columns.queue;
+  const showQueue = !!columns.queue && t.queueID != null;
   const showAssignee =
     !!t.assignedResourceName && (variant === "activity" || !!columns.assigned);
 
@@ -117,9 +117,9 @@ export function TicketCard({
     ? `${resolved.label} ${resolved.relative ? relTime(resolved.iso) : formatDate(resolved.iso)}`
     : null;
 
-  const meta = [showCompany ? t.companyName : null, t.ticketNumber]
-    .filter(Boolean)
-    .join(" · ");
+  // Firma + Nummer getrennt: die Nummer ist der eindeutige Identifikator und darf
+  // nie abgeschnitten werden. Nur die Firma trunkiert bei Platzmangel.
+  const companyLabel = showCompany ? t.companyName : null;
 
   return (
     <div
@@ -148,9 +148,11 @@ export function TicketCard({
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <span className="text-sm font-medium break-words">{t.title ?? "—"}</span>
-        {meta && (
-          <span className="text-muted-foreground truncate text-xs">{meta}</span>
-        )}
+        <span className="text-muted-foreground flex min-w-0 items-center gap-1 text-xs">
+          {companyLabel && <span className="truncate">{companyLabel}</span>}
+          {companyLabel && <span aria-hidden>·</span>}
+          <span className="shrink-0 tabular-nums">{t.ticketNumber}</span>
+        </span>
         <div className="flex flex-wrap items-center gap-1.5">
           <StatusBadge
             status={t.status}

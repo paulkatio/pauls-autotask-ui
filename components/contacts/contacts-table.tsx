@@ -246,7 +246,7 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
         <>
         {/* Mobile/Tablet: bis xl je Kontakt eine Karte (Tabelle würde sonst bis ~1280
             rechts klippen). */}
-        <div className="flex flex-col gap-2 xl:hidden">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:hidden">
           {sorted.map((c) => (
             <div
               key={c.id}

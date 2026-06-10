@@ -41,6 +41,46 @@ export function ZeitenTable({ rows }: { rows: ZeitenRow[] }) {
         `${r.ticketNumber ?? ""} ${r.ticketTitle ?? ""} ${r.workTypeName ?? ""}`
       }
       searchPlaceholder="Ticket oder Tätigkeit suchen …"
+      mobileCard={(r) => (
+        <>
+          <div className="flex items-baseline justify-between gap-2">
+            {r.ticketID != null ? (
+              <Link
+                href={`/tickets/${r.ticketID}`}
+                className="min-w-0 text-sm font-medium break-words hover:underline"
+              >
+                {r.ticketTitle ?? r.ticketNumber ?? `Ticket ${r.ticketID}`}
+              </Link>
+            ) : (
+              <span className="text-sm font-medium break-words">
+                {r.ticketTitle ?? "—"}
+              </span>
+            )}
+            <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+              {fmtDate(r.dateWorked)}
+            </span>
+          </div>
+          {r.ticketNumber && (
+            <span className="text-muted-foreground text-xs tabular-nums">
+              {r.ticketNumber}
+            </span>
+          )}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {r.workTypeName ? (
+              <Badge variant="secondary">{r.workTypeName}</Badge>
+            ) : (
+              <span className="text-muted-foreground text-sm">—</span>
+            )}
+            <span className="text-sm tabular-nums">
+              {formatHours(r.hoursWorked)}
+              <span className="text-muted-foreground">
+                {" "}
+                · abr. {formatHours(r.hoursToBill)}
+              </span>
+            </span>
+          </div>
+        </>
+      )}
       emptyIcon={<ClockIcon />}
       emptyTitle="Keine Zeiten"
       emptyDescription="Keine Zeiteinträge im gewählten Zeitraum."

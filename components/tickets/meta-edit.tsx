@@ -180,7 +180,7 @@ export function DescriptionEdit({
           <div className="flex flex-col items-start gap-2">
             <p
               className={cn(
-                "text-sm break-words whitespace-pre-wrap",
+                "max-w-prose text-sm break-words whitespace-pre-wrap",
                 isLong && !expanded && "line-clamp-[14]",
               )}
             >

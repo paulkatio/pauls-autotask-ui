@@ -300,7 +300,7 @@ export function CompaniesTable({
         <>
         {/* Mobile/Tablet: bis xl je Firma eine Karte (Tabelle würde sonst bis ~1280
             rechts klippen – echte Tabellenbreite > verfügbarer Content). */}
-        <div className="flex flex-col gap-2 xl:hidden">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:hidden">
           {filtered.map((c) => (
             <div
               key={c.id}

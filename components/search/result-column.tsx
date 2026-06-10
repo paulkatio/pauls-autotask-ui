@@ -73,7 +73,7 @@ export function ResultColumn({
       ) : items.length === 0 ? (
         <p className="text-muted-foreground px-2 py-1.5 text-sm">Keine Treffer</p>
       ) : (
-        <ul className="flex flex-col">
+        <ul className="flex max-h-[45vh] flex-col overflow-y-auto sm:max-h-none sm:overflow-visible">
           {items.map((it) => (
             <li key={it.key}>
               {onSelect ? (

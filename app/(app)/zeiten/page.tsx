@@ -9,12 +9,6 @@ import { RangeToggle } from "@/components/time/range-toggle";
 import { ZeitenTable } from "@/components/time/zeiten-table";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Empty,
   EmptyDescription,
   EmptyHeader,
@@ -22,19 +16,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 export const dynamic = "force-dynamic";
-
-function SumCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-2xl font-semibold tabular-nums">
-          {formatHours(value)}
-        </CardTitle>
-      </CardHeader>
-    </Card>
-  );
-}
 
 export default async function ZeitenPage({
   searchParams,
@@ -58,10 +39,27 @@ export default async function ZeitenPage({
           actions={<RangeToggle range={range} />}
         />
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <SumCard label="Gesamt" value={data.totals.worked} />
-          <SumCard label="Abrechenbar" value={data.totals.billable} />
-          <SumCard label="Nicht abrechenbar" value={data.totals.nonBillable} />
+        {/* Dezente Stat-Zeile statt KPI-Kacheln (konsistent mit dem Dashboard;
+            spart auf dem Smartphone ~60% der ersten Bildschirmhöhe). */}
+        <div className="text-muted-foreground flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+          <span>
+            Gesamt{" "}
+            <span className="text-foreground font-semibold tabular-nums">
+              {formatHours(data.totals.worked)}
+            </span>
+          </span>
+          <span>
+            Abrechenbar{" "}
+            <span className="text-foreground font-semibold tabular-nums">
+              {formatHours(data.totals.billable)}
+            </span>
+          </span>
+          <span>
+            Nicht abrechenbar{" "}
+            <span className="text-foreground font-semibold tabular-nums">
+              {formatHours(data.totals.nonBillable)}
+            </span>
+          </span>
         </div>
 
         {data.entries.length === 0 ? (

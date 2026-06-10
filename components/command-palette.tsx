@@ -215,7 +215,7 @@ export function CommandPalette() {
     >
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[90dvh] w-full flex-col gap-0 overflow-hidden p-0 sm:top-1/4 sm:translate-y-0 sm:max-w-2xl lg:max-w-4xl xl:max-w-6xl"
+        className="top-[8%] translate-y-0 flex max-h-[90dvh] w-full flex-col gap-0 overflow-hidden p-0 sm:top-1/4 sm:translate-y-0 sm:max-w-2xl lg:max-w-4xl xl:max-w-6xl"
       >
         <DialogHeader className="sr-only">
           <DialogTitle>Suche</DialogTitle>

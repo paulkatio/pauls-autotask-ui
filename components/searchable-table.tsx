@@ -130,7 +130,7 @@ export function SearchableTable<T extends { id: number | string }>({
         <>
         {/* Mobile/Tablet: bis xl je Zeile eine Karte (Tabelle würde sonst bis ~1280
             rechts klippen). */}
-        <div className="flex flex-col gap-2 xl:hidden">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:hidden">
           {filtered.map((row) => (
             <div
               key={String(row.id)}

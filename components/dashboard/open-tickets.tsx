@@ -114,6 +114,7 @@ export function OpenTickets({
           columns={{ queue: true, assigned: true }}
           showFilters={false}
           showPager={false}
+          mobileLimit={8}
           searchMode="off"
           emptyDescription={
             assigned === "unassigned"

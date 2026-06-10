@@ -32,5 +32,5 @@ export function isStandaloneOrMobile(): boolean {
   const coarse =
     typeof window.matchMedia === "function" &&
     window.matchMedia("(pointer: coarse)").matches;
-  return coarse && width < 1024;
+  return coarse && width <= 1024;
 }
