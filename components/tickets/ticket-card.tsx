@@ -99,7 +99,6 @@ export function TicketCard({
 }) {
   const { openTicket } = useRecordNav();
   const showCompany = columns.company !== false && !!t.companyName;
-  const showQueue = !!columns.queue && t.queueID != null;
   const showAssignee =
     !!t.assignedResourceName && (variant === "activity" || !!columns.assigned);
 
@@ -163,9 +162,6 @@ export function TicketCard({
             priority={t.priority}
             label={labelOf(picklists.priority, t.priority)}
           />
-          {showQueue && (
-            <Badge variant="outline">{labelOf(picklists.queue, t.queueID)}</Badge>
-          )}
           {showAssignee && (
             <Badge variant="outline">{t.assignedResourceName}</Badge>
           )}

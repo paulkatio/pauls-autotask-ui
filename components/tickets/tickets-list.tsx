@@ -67,6 +67,7 @@ interface Props {
   showFilters?: boolean; // Fokuslisten (Dashboard) blenden die Filterleiste aus
   showPager?: boolean; // und das Paging
   mobileLimit?: number; // Dashboard: Karten-Stack mobil deckeln (Tabelle bleibt komplett)
+  mobileOverflowHint?: boolean; // „+ N weitere …" unter dem gedeckelten Stack (Default an)
   searchMode?: SearchMode;
   emptyDescription?: string;
   // Mehrfachauswahl + Bulk-Aktionen (an in Meine/Team/Kundenakte/Kontakt-Tabs,
@@ -97,6 +98,7 @@ export function TicketsList({
   showFilters = true,
   showPager = true,
   mobileLimit,
+  mobileOverflowHint = true,
   searchMode = "server",
   emptyDescription = "Für die aktuelle Auswahl gibt es keine Tickets.",
   selectable = false,
@@ -194,8 +196,8 @@ export function TicketsList({
     ...picklists.queue.map((q) => ({ label: q.label, value: String(q.value) })),
   ];
   const assignmentItems = [
-    { label: "Alle (auch nicht zugewiesene)", value: "all" },
-    { label: "Nur nicht zugewiesene", value: "unassigned" },
+    { label: "Alle Tickets", value: "all" },
+    { label: "Nicht zugewiesene", value: "unassigned" },
   ];
 
   // Paging ausblenden, wenn ein Clientfilter aktiv ist (Cursor bezieht sich auf den
@@ -367,12 +369,9 @@ export function TicketsList({
   // 3 Chips → 1×3 (je ein Drittel, `flex-1`). 4 Chips (mit Zuweisungsfilter) →
   // 2×2-Raster (je halbe Breite, umbrechend), sonst werden sie abgeschnitten.
   // Ab sm wieder inhaltsbreite Chips (`flex-none`).
-  const chipBase = cn(
-    assignmentFilter
-      ? "basis-[calc(50%-0.25rem)] grow sm:basis-auto sm:grow-0"
-      : "flex-1",
-    "min-w-0 max-w-full rounded-full border px-4 text-sm sm:h-7 sm:flex-none sm:rounded-md sm:border-input sm:bg-transparent sm:px-2.5 sm:text-[0.8rem] sm:font-normal sm:text-foreground",
-  );
+  // Filter-Selects liegen jetzt in einem gleichmaessigen Grid (2 Spalten mobil,
+  // 3 bzw. 4 Spalten ab sm) statt frei umbrechender Pills -> einheitliche Groesse
+  // auf jeder Breite. chipState faerbt aktive (nicht-Default-)Filter dezent ein.
   const chipState = (active: boolean) =>
     active
       ? "border-transparent bg-secondary font-medium text-secondary-foreground"
@@ -394,25 +393,32 @@ export function TicketsList({
           {showToolbar && (
             <div
               className={cn(
-                "col-start-1 row-start-1 flex flex-wrap content-start items-center gap-2 self-start",
+                "col-start-1 row-start-1 flex flex-col gap-2 self-start",
                 hasSelection && "invisible",
               )}
             >
           {searchMode !== "off" && (
-            <div className="relative w-full min-w-48 flex-1 sm:max-w-xs">
+            <div className="relative w-full sm:max-w-xs">
               <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 placeholder="Nummer oder Titel suchen …"
-                className="h-11 pl-9 sm:h-7"
+                className="h-11 pl-9 sm:h-9"
                 aria-label="Tickets suchen"
               />
             </div>
           )}
 
           {showFilters && (
-            <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:items-center">
+            <div
+              className={cn(
+                "grid w-full gap-2",
+                assignmentFilter
+                  ? "grid-cols-2 sm:grid-cols-4"
+                  : "grid-cols-3",
+              )}
+            >
               <Select
                 items={statusItems}
                 value={filters.status || "open"}
@@ -420,7 +426,7 @@ export function TicketsList({
               >
                 <SelectTrigger
                   size="sm"
-                  className={cn(chipBase, chipState(statusActive), "sm:min-w-40")}
+                  className={cn("h-11 w-full min-w-0 sm:h-9", chipState(statusActive))}
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -442,7 +448,7 @@ export function TicketsList({
               >
                 <SelectTrigger
                   size="sm"
-                  className={cn(chipBase, chipState(priorityActive), "sm:min-w-44")}
+                  className={cn("h-11 w-full min-w-0 sm:h-9", chipState(priorityActive))}
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -464,7 +470,7 @@ export function TicketsList({
               >
                 <SelectTrigger
                   size="sm"
-                  className={cn(chipBase, chipState(queueActive), "sm:min-w-48")}
+                  className={cn("h-11 w-full min-w-0 sm:h-9", chipState(queueActive))}
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -487,7 +493,7 @@ export function TicketsList({
                 >
                   <SelectTrigger
                     size="sm"
-                    className={cn(chipBase, chipState(assignedActive), "sm:min-w-56")}
+                    className={cn("h-11 w-full min-w-0 sm:h-9", chipState(assignedActive))}
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -557,7 +563,7 @@ export function TicketsList({
           {/* Mobile-First: unter xl je Ticket eine Karte (kein Querscrollen). Ab xl
               die volle Tabelle mit umsortierbaren Spalten. Die Karte ist die
               gemeinsame TicketCard (Variante "worklist" → "Fällig …"). */}
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:hidden">
+          <div className="grid grid-cols-1 gap-2 lg:hidden">
             {(mobileLimit ? items.slice(0, mobileLimit) : items).map((t) => (
               <TicketCard
                 key={t.id}
@@ -571,14 +577,14 @@ export function TicketsList({
               />
             ))}
           </div>
-          {mobileLimit && items.length > mobileLimit && (
-            <p className="text-muted-foreground text-center text-xs xl:hidden">
+          {mobileOverflowHint && mobileLimit && items.length > mobileLimit && (
+            <p className="text-muted-foreground text-center text-xs lg:hidden">
               + {items.length - mobileLimit} weitere …
             </p>
           )}
 
-          <div className="hidden overflow-x-auto rounded-lg border xl:block">
-            <Table className="min-w-3xl">
+          <div className="hidden overflow-x-auto rounded-lg border lg:block">
+            <Table className="min-w-2xl">
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   {selectableActive && (

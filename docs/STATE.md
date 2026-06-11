@@ -11,10 +11,23 @@ verlinkten Dateien.
 - **Fachlicher Bauplan:** [`BLUEPRINT.md`](BLUEPRINT.md). **Repo-Karte:** [`ARCHITECTURE.md`](ARCHITECTURE.md).
 - **Deployment + Env:** [`../DEPLOY.md`](../DEPLOY.md).
 
-Stand: 2026-06-10. **Produktiv-Cutover erfolgt:** läuft gegen den **Autotask-Produktiv-
+Stand: 2026-06-11. **Produktiv-Cutover erfolgt:** läuft gegen den **Autotask-Produktiv-
 Mandanten** (Zone DE1, `webservices18`, eigener API-User „AutoTask UI" → Thread-Budget von
 n8n entkoppelt). **Entra-ID-Login live** (`AUTH_MODE=entra`, B16a). Profilbild aus Microsoft
 Graph (B16b).
+
+**2026-06-11 (Projekte, zusätzliche Mitarbeiter, KPI-Redesign, globaler Thread-Limiter):**
+**Projekte** als neuer Menüpunkt + Seite `/projekte` (Meine/Alle-Umschalter + Suche; „Meine" =
+selbst **geleitet** ODER eigene **Projektaufgabe**; `lib/autotask/entities/projects.ts`);
+Dashboard-Kachel „Zusätzlicher Mitarbeiter" → **„Meine Projekte"**. **Zusätzliche Mitarbeiter**
+im Ticketdetail (`TicketSecondaryResources`, anzeigen/hinzufügen/entfernen; an 56313 live
+verifiziert). **KPI-Kacheln neu** (Container-Queries → auf jeder Größe gleich hoch). **Ticketlisten:**
+einspaltige Karten, volle Tabelle ab `lg`, Filter als gleichmäßiges Grid. **„Meine offenen
+Tickets"** inkl. zusätzlicher Mitarbeiter; eigener Bereich auf `/tickets/my`; `/tickets/secondary`
+entfernt. **Thread-Threshold behoben:** Dashboard-Fan-out (N Ticket-Counts → 1 Abfrage),
+Tickets-Concurrency 1/Instanz, längere Caches **und ein globaler, instanzenübergreifender
+Limiter über Upstash Redis** (`lib/autotask/global-limiter.ts`, aktiv via `UPSTASH_REDIS_REST_*`,
+sonst In-Process-Fallback). Details: DECISIONS „[2026-06-11]".
 
 **2026-06-10 (Mobile/PWA-Überarbeitung, branch `feat/mobile-pwa-native`, noch nicht
 gemerged):** Die mobile Ansicht/PWA funktioniert jetzt wie eine **echte App**, Desktop
@@ -115,8 +128,14 @@ app/api/**/route.ts  ───────────────►  lib/autot
     paginierte `/search`-Seite.
   - `count(entity, filter)` – `POST {entity}/query/count` → Anzahl ohne Datensätze.
   - `get/create/update`, `fieldInfo`.
-- **Concurrency-Limiter** (`limiter.ts`): **max. 2 gleichzeitige Requests PRO Entität**
-  (Autotask erlaubt 3/Tabelle, defensiv auf 2). Pro-Entität-Semaphore mit Warteschlange.
+- **Concurrency-Limiter** (`limiter.ts`): pro Entität max. 2 gleichzeitige Requests,
+  **`Tickets` auf 1** (Per-Key-Limit). Dieser Limiter ist **pro Prozess** → auf Vercel
+  summieren sich Instanzen über das 3er-Limit. Darum zusätzlich ein **globaler, verteilter
+  Semaphore** über Upstash Redis (`global-limiter.ts`, Redis-ZSET + Lua, TTL-Sicherung): hält
+  pro Objekt-Endpoint **global ≤ 2** über ALLE Instanzen (Autotask-Limit = 3/Objekt je
+  Integration). Aktiv via `UPSTASH_REDIS_REST_URL/_TOKEN`; ohne diese exakt der In-Process-
+  Limiter (Fallback, kein Bruch). Live an der Upstash-DB verifiziert (6 parallele Tasks → nie
+  > 2 gleichzeitig).
 - **429-Backoff** (`backoff.ts`): exponentiell `500ms · 2^n`, 4 Versuche (Autotask sendet
   keine Rate-Limit-Header → blind, konservativ).
 - **Entity-Wrapper** (`lib/autotask/entities/*`): dünne, getypte Loader je Entität
@@ -159,8 +178,8 @@ interface SessionUser {
 
 ## 5. Feature-Inventar (was ist da + wie)
 
-**Dashboard `/`** — 4 KPI-Kacheln (Meine offenen / Pool / Zusätzlicher Mitarbeiter / Ball
-liegt bei mir; Count-Endpoint, 60 s gecacht, klickbar in Drill-down-Listen) + Balkendiagramm
+**Dashboard `/`** — 4 KPI-Kacheln (Meine Tickets [inkl. zusätzlicher Mitarbeiter] / Nicht
+zugewiesen / **Meine Projekte** / Ball liegt bei mir; Count-Endpoint, 60 s gecacht, klickbar in Drill-down-Listen) + Balkendiagramm
 „Tickets pro Mitarbeiter" (Klick filtert Teamtickets) + Sektion **„Letzte Aktivität"**
 (`recently-edited.tsx`): zuletzt aktive Tickets systemweit, dezente Stat-Zeile „X heute aktiv
 · Y in 7 Tagen" + 10 neueste als `TicketCard` (variant `activity`).
@@ -263,7 +282,8 @@ URL, Cache-bust bei Tausch).
 | **Merge-Cap** | `app/api/tickets/merge/route.ts` | max **10** Quelltickets pro Request |
 | **E2E-Schreibtest** | Env `E2E_SKIP_WRITE_TESTS`, `e2e/smoke.spec.ts` | lokal an; in CI setzen → Schreibtest übersprungen |
 | **Caps** | div. Entities | `COMPANIES_CAP 1000`, `OPEN_BY_COMPANY_CAP 5000`, `BALL_FETCH_CAP 500`, `SEARCH_PAGE 25`, Palette-Limit 8 |
-| **Cache (`unstable_cache`)** | picklists/KPIs/Counts 60 s; `assignable-resources` 300 s | selten ändernde Daten, rate-limit-schonend |
+| **Cache (`unstable_cache`)** | picklists 60 s; dashboard-kpis 180 s, tickets-per-resource 300 s, sidebar-counts 120 s; `assignable-resources` 300 s | rate-limit-schonend (Thread-Threshold) |
+| **Globaler Thread-Limiter** | `lib/autotask/global-limiter.ts` (Upstash Redis), Env `UPSTASH_REDIS_REST_URL/_TOKEN` | gesetzt → global ≤ 2/Objekt über alle Instanzen; leer → In-Process-Limiter |
 
 ---
 
@@ -285,6 +305,10 @@ explizit in `lib/auth/authjs.ts` verdrahtet — NICHT die Auth.js-Default-Namen)
 `ENTRA_EMAIL_LOOSE_MATCH` war ein Sandbox-Workaround → **in Prod weggelassen** (exakte Mails).
 
 **Für Chat-Kundenmail:** `RESEND_API_KEY` · `RESEND_FROM` · `AUTOTASK_INBOUND_MAILBOX`.
+
+**Optional (globaler Thread-Limiter):** `UPSTASH_REDIS_REST_URL` · `UPSTASH_REDIS_REST_TOKEN`
+(Upstash Redis). Gesetzt → ein instanzenübergreifender Semaphore hält das Autotask-3-Threads-
+Limit global ein; leer → In-Process-Limiter (Fallback, kein Bruch).
 
 Details + Redirect-URI + Docker/Vercel + Secret-Quoting: [`../DEPLOY.md`](../DEPLOY.md).
 
@@ -308,8 +332,8 @@ Branding aus `companyID 0`). `tsc` + `next build` + Docker-Build grün.
 3. **Anhänge (B17b)** · **Doppel-Mail-Workflow** wie oben.
 4. **Bewusst aufgeschoben:** kein globaler READ_ONLY-Riegel (abgelehnt) · Rollen-Gating
    (alle sehen alles, B12) · Anhang-Löschen (API erlaubt es nicht) · Webhook statt Chat-Polling ·
-   geteilter (Redis-)Limiter statt In-Memory (bei Mehr-Instanz-Last; aktuell unkritisch) ·
-   10k/h-Frühwarnung + Backoff-Jitter.
+   10k/h-Frühwarnung + Backoff-Jitter. (Der früher hier gelistete instanzenübergreifende
+   Redis-Limiter ist jetzt **umgesetzt**: Upstash-Semaphore in `lib/autotask/global-limiter.ts`.)
 
 Deployment selbst ist **vorbereitet** (deployment-agnostisch: Docker+Caddy **oder** Vercel,
 JWT-Session ohne DB, Route-Schutz server-seitig) – siehe `DEPLOY.md`.

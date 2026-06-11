@@ -10,7 +10,7 @@ export default function Loading() {
     <div className="flex flex-col gap-6">
       <PageHeaderSkeleton action />
       <FiltersSkeleton search />
-      <TableSkeleton columns={6} rows={8} breakpoint="xl" />
+      <TableSkeleton columns={6} rows={8} breakpoint="lg" />
     </div>
   );
 }

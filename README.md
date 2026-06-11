@@ -135,6 +135,8 @@ nie committet). Vorlage: [`.env.example`](.env.example).
 | `AUTOTASK_API_USERNAME` | immer | API-User |
 | `AUTOTASK_API_SECRET` | immer | API-Secret (Sonderzeichen → in `.env.local` in **einfache** Quotes) |
 | `AUTOTASK_INTEGRATION_CODE` | immer | Integration-Code |
+| `UPSTASH_REDIS_REST_URL` | optional | Upstash-Redis-REST-URL für den **globalen** Thread-Limiter (instanzenübergreifend, hält das Autotask-3-Threads-Limit auch bei mehreren Vercel-Instanzen ein). Ohne Wert: In-Process-Limiter. |
+| `UPSTASH_REDIS_REST_TOKEN` | optional | Upstash-Redis-REST-Token (zur o. g. URL). |
 | `AUTH_SECRET` | bei `entra` | `openssl rand -base64 32` (JWT-Signatur) |
 | `ENTRA_CLIENT_ID` | bei `entra` | Application (client) ID |
 | `ENTRA_CLIENT_SECRET` | bei `entra` | Client-Secret-Wert |

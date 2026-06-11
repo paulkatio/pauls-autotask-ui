@@ -3,6 +3,7 @@ import "server-only";
 import { createLimiter } from "@/lib/autotask/limiter";
 import { withRetry, RetryableError } from "@/lib/autotask/backoff";
 import { recordApiCall } from "@/lib/autotask/rate-monitor";
+import { globalLimiterEnabled, globalRun } from "@/lib/autotask/global-limiter";
 
 // Zentrale, server-only Brücke zur Autotask REST API (BFF, CLAUDE.md §5).
 // Generischer Kern: query / get / create / update. Entitätsspezifische Wrapper
@@ -15,7 +16,21 @@ import { recordApiCall } from "@/lib/autotask/rate-monitor";
 const MAX_CONCURRENCY_PER_ENTITY = 2; // Autotask: max 3/Tabelle; defensiv 2.
 const MAX_PAGES = 50; // harte Obergrenze beim Auto-Paging.
 
-const limiter = createLimiter(MAX_CONCURRENCY_PER_ENTITY);
+// „Tickets" ist die mit Abstand heißeste Tabelle (Dashboard-Counts, Listen, Badges)
+// und löst die „Thread Threshold Exceeded"-Alerts aus. Die App hat einen EIGENEN
+// API-User (nicht mit n8n geteilt) → die Alerts stammen aus der App-eigenen
+// Parallelität. Der Limiter ist PRO PROZESS; auf Vercel laufen mehrere Instanzen
+// gleichzeitig und summieren sich über das 3er-Limit. Darum Tickets pro Instanz auf
+// EINEN gleichzeitigen Request drosseln (andere Tabellen bleiben bei 2).
+const limiter = createLimiter(MAX_CONCURRENCY_PER_ENTITY, { Tickets: 1 });
+
+// Drosselung pro Aufruf: ZUERST der lokale Pre-Gate (pro Prozess, hält die Redis-Last
+// niedrig + ist der Fallback), DANN – falls Upstash konfiguriert – der globale
+// Semaphore, der instanzenübergreifend unter dem Autotask-3er-Limit bleibt. Ohne
+// Upstash bleibt es exakt beim lokalen Limiter.
+function gated<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  return limiter(key, () => (globalLimiterEnabled ? globalRun(key, fn) : fn()));
+}
 
 export type FilterOp =
   | "eq"
@@ -145,7 +160,7 @@ async function request<T = unknown>(
   key: string,
   body?: unknown,
 ): Promise<T> {
-  return limiter(key, () =>
+  return gated(key, () =>
     withRetry(async () => {
       // Jeder echte HTTP-Versuch (inkl. Retries) zählt aufs 10k/h-Tenant-Limit.
       recordApiCall();

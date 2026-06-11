@@ -1922,6 +1922,53 @@ beim nächsten `npm run test:e2e` verifizieren.
 
 <!-- Neue Entscheidungen hier anhängen -->
 
+## Globaler Thread-Limiter über Upstash Redis (2026-06-11)
+
+Das Autotask-Thread-Limit (3 gleichzeitige Requests pro Objekt-Endpoint je Integration) ist
+**global**, nicht pro Prozess (Autotask-Doku „API Thread Limiting"). Der In-Process-Limiter
+koordiniert auf Vercel nicht über Instanzen → daher die „Thread Threshold Exceeded"-Alerts.
+Lösung: ein **verteilter Concurrency-Semaphore** in Upstash Redis
+([global-limiter.ts](../lib/autotask/global-limiter.ts)).
+
+- **Algorithmus:** pro Objekt ein **Sorted Set** `at:sem:<Entity>` (Member = Token, Score =
+  Ablaufzeit). **Acquire** atomar per **Lua** (`EVAL`): abgelaufene Tokens entfernen → wenn
+  `< 2` belegt, eigenes Token mit TTL eintragen (Rückgabe 1), sonst 0; per Poll (80 ms) bis
+  20 s warten. **Release** = `ZREM`. TTL 15 s sichert gegen tote Instanzen (kein Deadlock).
+  Limit **2** (Marge unter 3).
+- **Verdrahtung** ([client.ts](../lib/autotask/client.ts)): `gated(key, fn) = limiter(key, () =>
+  globalLimiterEnabled ? globalRun(key, fn) : fn())` — lokaler Pre-Gate (hält Redis-Last klein)
+  + globaler Semaphore.
+- **Aktiv nur** mit `UPSTASH_REDIS_REST_URL` + `_TOKEN`; sonst exakt der In-Process-Limiter
+  (Fallback). Redis nicht erreichbar / Timeout → Aufruf wird durchgelassen (429-Backoff als
+  Netz), hängt nie.
+- **Live verifiziert** gegen die echte Upstash-DB: 2 Slots frei / 3. blockiert; Release gibt
+  frei; abgelaufene Slots werden geräumt; **6 parallele Tasks → max. 2 gleichzeitig**.
+- `@upstash/redis ^1.38.0`. Upstash-Produkt = **Redis** (nicht QStash/Vector). In der Vercel-UI
+  die Werte **ohne** Anführungszeichen eintragen (dort kein dotenv-Parsing).
+
+## Thread-Threshold-Alerts entschärft: Ticket-Last gesenkt (2026-06-11)
+
+„Thread Threshold Exceeded" (`queryCount` / `Ticket`, Limit 3 Threads/Tabelle/User).
+Die App hat einen EIGENEN API-User (`faypa3cmnnc54id@SSIG-IT.COM`, nicht mit n8n
+geteilt) → die Alerts stammen aus App-eigener Parallelität. Der Limiter ist PRO
+PROZESS; auf Vercel summieren sich mehrere Instanzen über die 3.
+
+Maßnahmen (Code):
+- **Per-Key-Concurrency:** `createLimiter` nimmt jetzt Per-Key-Limits;
+  [client.ts](../lib/autotask/client.ts) setzt `{ Tickets: 1 }` → jede Instanz belegt
+  höchstens 1 Ticket-Thread (andere Tabellen weiter 2).
+- **Größter Fan-out entfernt:** `getTicketsPerResource` zählte je aktiver Resource mit
+  einem eigenen `count("Tickets")` (N gleichzeitige Counts). Jetzt EINE seitenweise
+  Ticket-Query (nur `assignedResourceID`, maxItems 5000) + clientseitige Auszählung.
+- **Längere Caches:** dashboard-kpis 180 s, tickets-per-resource 300 s,
+  recent-edited 300 s, sidebar-ticket-counts 120 s (vorher je 60 s).
+
+Frage „gehen Calls verloren?": Nein. Bei Threshold/429 retryt
+[backoff.ts](../lib/autotask/backoff.ts) mit exponentiellem Backoff (4×); erst nach
+Aufbrauchen aller Versuche schlägt ein einzelner Load fehl (best-effort-Catch → leerer
+Zustand). Permanenter Dauerfix = eigener API-User mit höherem Limit oder ein global
+(instanzenübergreifend) koordinierender Limiter — Infrastruktur, nicht Code.
+
 ## Zusätzliche Mitarbeiter im Ticket: TicketSecondaryResources (verifiziert 2026-06-11)
 
 Live gegen Prod-API (App-Creds) am Test-Ticket **56313** geprüft (Add+List+Delete),

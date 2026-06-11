@@ -46,6 +46,16 @@ RESEND_FROM=...                # verifizierte Resend-Domain, z. B. Acme Service 
 AUTOTASK_INBOUND_MAILBOX=...   # Reply-To = Autotask-Eingangspostfach (Antwort-Threading)
 ```
 
+**Optional — globaler Thread-Limiter (Upstash Redis):**
+```
+UPSTASH_REDIS_REST_URL=https://<db>.upstash.io   # Vercel-UI: OHNE Anführungszeichen
+UPSTASH_REDIS_REST_TOKEN=...                      # OHNE Anführungszeichen
+```
+> Gesetzt → ein instanzenübergreifender Semaphore (`lib/autotask/global-limiter.ts`) hält das
+> Autotask-3-Threads-Limit pro Objekt-Endpoint **global** ein (wichtig bei mehreren Vercel-
+> Instanzen). Leer → In-Process-Limiter (Fallback). Upstash-Produkt: **Redis** (Vercel →
+> Storage/Marketplace → Upstash → Redis-DB setzt die zwei Vars automatisch).
+
 **Nur bei `AUTH_MODE=entra` zusätzlich** (der Provider wird in `lib/auth/authjs.ts`
 explizit aus den `ENTRA_*`-Namen konfiguriert, **nicht** aus den Auth.js-Defaults):
 ```

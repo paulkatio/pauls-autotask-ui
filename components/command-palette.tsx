@@ -217,7 +217,10 @@ export function CommandPalette() {
     >
       <DialogContent
         showCloseButton={false}
-        className="top-[8%] translate-y-0 flex max-h-[90dvh] w-full flex-col gap-0 overflow-hidden p-0 sm:top-1/4 sm:translate-y-0 sm:max-w-2xl lg:max-w-4xl xl:max-w-6xl"
+        // Mobil tiefer ansetzen (~30 % statt 8 %): das Suchfeld liegt damit im
+        // gut mit dem Daumen erreichbaren Bereich, bleibt aber über der
+        // eingeblendeten Tastatur. Ab sm wieder oben (Desktop-Spotlight unverändert).
+        className="top-[30%] translate-y-0 flex max-h-[70dvh] w-full flex-col gap-0 overflow-hidden p-0 sm:top-1/4 sm:max-h-[90dvh] sm:translate-y-0 sm:max-w-2xl lg:max-w-4xl xl:max-w-6xl"
       >
         <DialogHeader className="sr-only">
           <DialogTitle>Suche</DialogTitle>
@@ -231,6 +234,10 @@ export function CommandPalette() {
           <SearchIcon className="text-muted-foreground size-5 shrink-0" />
           <input
             ref={inputRef}
+            // autoFocus während des Mountens → Tastatur öffnet direkt mit (kein
+            // zweiter Tipp aufs Feld nötig). Der Effekt unten fokussiert zusätzlich
+            // als Fallback nach dem Öffnen.
+            autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {

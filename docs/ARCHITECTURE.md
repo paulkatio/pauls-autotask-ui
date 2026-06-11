@@ -23,8 +23,11 @@ app/api/**/route.ts  ──────────►  lib/autotask/entities/<e
 - **Server Components** (Listen, Detail, Dashboard, Zeiten) rufen die Entity-Loader
   direkt auf. **Client Components** (Inline-Edits, Dialoge, Stoppuhr, Palette) gehen
   über interne `/api`-Routen. Autotask-Creds verlassen nie den Server.
-- Concurrency-Limiter: max. 2 gleichzeitige Requests **pro Entität**; bei `429`
-  exponentielles Backoff. Auto-Paging über `pageDetails.nextPageUrl`.
+- Concurrency-Limiter: max. 2 gleichzeitige Requests **pro Entität** (`Tickets` = 1,
+  Per-Key-Limit), **pro Prozess**. Zusätzlich optional ein **globaler, verteilter Semaphore**
+  über Upstash Redis (`global-limiter.ts`) → hält pro Objekt-Endpoint **global ≤ 2** über alle
+  Vercel-Instanzen (Autotask-Limit 3/Objekt); ohne `UPSTASH_REDIS_REST_*` Fallback auf den
+  In-Process-Limiter. Bei `429` exponentielles Backoff. Auto-Paging über `pageDetails.nextPageUrl`.
 - Paging-Varianten: `queryPage` (server-seitiger Cursor, Next/Prev), `queryPageToken`
   (OPAKES Token = Pfad ohne Basis-URL → Cursor gelangt nie zum Browser; für `/search`),
   `count` (`{entity}/query/count`, Anzahl ohne Datensätze).
@@ -63,12 +66,14 @@ app/api/**/route.ts  ──────────►  lib/autotask/entities/<e
     `provider.ts` (Interface), `mock-provider.ts`, `entra-provider.ts`, `authjs.ts`,
     `index.ts` (wählt Provider via `AUTH_MODE`), `actions.ts`.
   - **`autotask/`** – `client.ts` (generischer Kern), `types.ts` (V5-Felder),
-    `limiter.ts`, `backoff.ts`, `mappers.ts` (ID→Label + Badge-Varianten),
+    `limiter.ts` (Per-Key-Concurrency), `global-limiter.ts` (verteilter Semaphore, Upstash),
+    `backoff.ts`, `mappers.ts` (ID→Label + Badge-Varianten),
     `conversation.ts` (Chat-noteTypes/UDF), `new-ticket.ts` (Default-Queue),
-    `attachments-shared.ts` (Größenlimit), `company-types.ts`, **`entities/<entity>.ts`**
-    (dünne Wrapper: tickets, ticket-detail, ticket-list, ticket-notes, ticket-chat,
-    time-entries, my-time, companies, company-list, contacts, contact-list, resources,
-    config-items, contracts, picklists, dashboard, search, attachments).
+    `links.ts`/`links-format.ts` (Autotask-Deeplinks), `attachments-shared.ts` (Größenlimit),
+    `company-types.ts`, **`entities/<entity>.ts`** (dünne Wrapper: tickets, ticket-detail,
+    ticket-list, ticket-notes, ticket-chat, ticket-checklist, ticket-secondary-resources,
+    ticket-counts, time-entries, my-time, companies, company-list, contacts, contact-list,
+    resources, config-items, contracts, projects, picklists, dashboard, search, attachments).
   - `format.ts`, `utils.ts`.
 - **`e2e/`** – Playwright-Smoke-Suite (`auth.setup.ts`, `smoke.spec.ts`).
 - **`scripts/`** – `verify-api.mjs` (read-only Verifikation gegen die konfigurierte

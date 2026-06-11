@@ -50,6 +50,22 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
   mit Schnellfilter „Alle offenen / Nur nicht zugewiesene" (clientseitig, kein
   Seiten-Neuladen) und einem Button „Alle offenen Tickets anzeigen". Die alte
   `RecentlyEdited`-Komponente entfällt.
+- **KPI-Kacheln vereinheitlicht (Container-Queries):** jede Kachel reagiert auf ihre EIGENE
+  Breite (`@container` / `@min-[13rem]`): schmal → Zahl oben/Text darunter, breiter → Zahl
+  links/Text rechts; Titel + Hinweis einzeilig → alle Kacheln exakt gleich hoch. Kürzere
+  Titel/Hinweise; „Nicht zugewiesen (Pool)" → „Nicht zugewiesen".
+- **Ticketlisten responsiv überarbeitet:** Karten jetzt **einspaltig** (kein 2-Spalten-Raster
+  mehr), volle **Tabelle ab `lg`** (statt xl) → Desktop bekommt früher die Tabelle.
+  **Filter als gleichmäßiges Grid** (3er-Reihe bzw. 2×2 bei 4 Filtern) statt frei umbrechender
+  Pillen; Skeletons synchron.
+- **„Meine offenen Tickets"** zählt jetzt **zusätzliche Mitarbeiter** mit (Sidebar/Heading/
+  Kachel konsistent); eigener Bereich „Als zusätzlicher Mitarbeiter" auf `/tickets/my`. Route
+  `/tickets/secondary` entfernt (darin aufgegangen). Command-Palette mobil tiefer + Auto-Fokus;
+  Queue-Badge aus der mobilen Ticketkarte entfernt.
+- **Ticket-Thread-Last gesenkt:** „Tickets pro Mitarbeiter" zählt aus EINER seitenweisen
+  Abfrage statt N `count("Tickets")`; Tickets-Tabelle pro Instanz auf 1 gedrosselt
+  (`createLimiter` mit Per-Key-Limits); Caches verlängert (KPIs 180 s, Chart 300 s,
+  Sidebar 120 s).
 
 ### Security
 - **Auth fail-closed:** in Produktion muss `AUTH_MODE` explizit `entra`/`mock` sein – kein
@@ -66,14 +82,35 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 - **Autotask-Thread-Keying:** Kind-Schreibpfade (`…/Notes`, `…/Attachments`) zählen jetzt
   aufs korrekte Objekt-Budget (`TicketNotes`/`TicketAttachments`) statt aufs Parent
   „Tickets" – behebt ein theoretisches 429-Szenario am `TicketNotes`-Endpoint.
+- **„Thread Threshold Exceeded" (queryCount/Ticket):** Ursache war der Per-Resource-Count-
+  Fan-out im Dashboard + der nur prozesslokale Limiter (Vercel = mehrere Instanzen). Behoben
+  durch Single-Query-Zählung, Tickets-Concurrency 1/Instanz und den globalen Upstash-Semaphore.
 
 ### Added
 - **10k/h-Frühwarn-Monitor** (`lib/autotask/rate-monitor.ts`): loggt bei 80 % des
   Autotask-Stundenlimits eine Warnung (Zähler pro Instanz, Betriebs-Hinweis, kein Riegel).
+- **Projekte:** neuer Menüpunkt **„Projekte"** (Sidebar, Command-Palette, Header-Titel) +
+  Seite `/projekte` (`components/projects/projects-list.tsx`) mit **Meine/Alle**-Umschalter
+  und Suche. „Meine Projekte" = Projekte, die ich **leite** (`projectLeadResourceID`) ODER in
+  denen mir eine **Projektaufgabe** (`Tasks.assignedResourceID`) zugewiesen ist
+  (`lib/autotask/entities/projects.ts`). Ersetzt die Dashboard-Kachel „Zusätzlicher
+  Mitarbeiter" durch **„Meine Projekte"**.
+- **Zusätzliche Mitarbeiter im Ticket** (`TicketSecondaryResources`): Feld im Ticketdetail
+  zum Anzeigen/Hinzufügen/Entfernen (`components/tickets/secondary-resources-edit.tsx`,
+  `lib/autotask/entities/ticket-secondary-resources.ts`; Add/List/Delete live an 56313
+  verifiziert). Der primäre Verantwortliche ist aus der Auswahl ausgeblendet (Autotask
+  verbietet primär = zusätzlich).
+- **Globaler, instanzenübergreifender Thread-Limiter (Upstash Redis):**
+  `lib/autotask/global-limiter.ts` – verteilter Semaphore (Redis-ZSET + Lua, TTL-Sicherung),
+  hält pro Objekt-Endpoint **global ≤ 2 gleichzeitige Requests** über ALLE Vercel-Instanzen
+  (Autotask-Limit = 3/Objekt je Integration). Aktiv via `UPSTASH_REDIS_REST_URL/_TOKEN`; ohne
+  diese Fallback auf den In-Process-Limiter. Behebt „Thread Threshold Exceeded".
 
 ### Docs
 - README/DEPLOY/STATE/DECISIONS auf Prod-Stand: Secret-Quoting (`.env.local` vs.
   `docker --env-file`), `/V1.0`-Pflicht, Docker Multi-Arch (buildx), Branding aus `companyID 0`.
+- STATE/DECISIONS/DEPLOY/README um **Projekte**, **zusätzliche Mitarbeiter** und den
+  **globalen Upstash-Thread-Limiter** (`UPSTASH_REDIS_REST_URL/_TOKEN`) ergänzt.
 
 ## [0.1.0] – 2026-06-08
 

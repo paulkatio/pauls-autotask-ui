@@ -129,6 +129,7 @@ export function OpenTickets({
           showFilters={false}
           showPager={false}
           mobileLimit={8}
+          mobileOverflowHint={false}
           searchMode="off"
           emptyDescription={
             assigned === "unassigned"
@@ -139,11 +140,12 @@ export function OpenTickets({
       </div>
 
       {/* Übersicht zeigt nur die erste Seite; statt Pager ein einzelner Sprung in die
-          volle Liste (respektiert den aktiven „nicht zugewiesen"-Filter). */}
+          volle Liste (respektiert den aktiven „nicht zugewiesen"-Filter). Mittig
+          (Desktop) statt rechtsbündig; Anzahl direkt im Button. */}
       <Button
         variant="outline"
         nativeButton={false}
-        className="h-11 w-full sm:h-9 sm:w-auto sm:self-end"
+        className="h-11 w-full sm:h-9 sm:w-auto sm:self-center"
         render={
           <Link
             href={
@@ -154,7 +156,11 @@ export function OpenTickets({
           />
         }
       >
-        Alle offenen Tickets anzeigen
+        {assigned === "unassigned"
+          ? "Alle nicht zugewiesenen anzeigen"
+          : count != null
+            ? `Alle ${count} offenen Tickets anzeigen`
+            : "Alle offenen Tickets anzeigen"}
       </Button>
     </section>
   );

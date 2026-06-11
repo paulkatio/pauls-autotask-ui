@@ -119,7 +119,7 @@ export function getDashboardKpis(resourceId: number): Promise<DashboardKpis> {
   return unstable_cache(
     () => computeDashboardKpis(resourceId),
     ["dashboard-kpis", String(resourceId)],
-    { revalidate: 60 },
+    { revalidate: 180 },
   )();
 }
 
@@ -175,35 +175,43 @@ export interface CountDatum {
 // Mitarbeiter, keine API-User) über den Count-Endpoint. Namen aufgelöst,
 // Null-Counts raus, absteigend, Top 15. Gecacht (60 s), KEIN Vollabruf.
 async function computeTicketsPerResource(): Promise<CountDatum[]> {
-  const resources = await autotask.query<{
-    id: number;
-    firstName?: string;
-    lastName?: string;
-  }>(
-    "Resources",
-    {
-      MaxRecords: 200,
-      IncludeFields: ["id", "firstName", "lastName"],
-      Filter: [
-        { op: "eq", field: "isActive", value: true },
-        { op: "eq", field: "licenseType", value: 1 },
-      ],
-    },
-    { autoPage: false },
-  );
-  const counts = await Promise.all(
-    resources.map((r) =>
-      autotask.count("Tickets", [
-        { op: "eq", field: "assignedResourceID", value: r.id },
-        OPEN,
-      ]),
+  // WICHTIG fürs Ticket-Thread-Limit: NICHT pro Resource ein count("Tickets")
+  // abfeuern (das waren N gleichzeitige Ticket-Counts). Stattdessen EINMAL die
+  // offenen Tickets seitenweise (sequentiell = 1 Thread) mit nur dem Zuweisungsfeld
+  // holen und clientseitig je Mitarbeiter zählen. Resources parallel (eigene Tabelle).
+  const [resources, openTickets] = await Promise.all([
+    autotask.query<{ id: number; firstName?: string; lastName?: string }>(
+      "Resources",
+      {
+        MaxRecords: 200,
+        IncludeFields: ["id", "firstName", "lastName"],
+        Filter: [
+          { op: "eq", field: "isActive", value: true },
+          { op: "eq", field: "licenseType", value: 1 },
+        ],
+      },
+      { autoPage: false },
     ),
-  );
+    autotask.query<{ assignedResourceID?: number | null }>(
+      "Tickets",
+      {
+        MaxRecords: 500,
+        IncludeFields: ["assignedResourceID"],
+        Filter: [OPEN],
+      },
+      { autoPage: true, maxItems: 5000 },
+    ),
+  ]);
+  const tally = new Map<number, number>();
+  for (const t of openTickets) {
+    const id = t.assignedResourceID;
+    if (typeof id === "number") tally.set(id, (tally.get(id) ?? 0) + 1);
+  }
   return resources
-    .map((r, i) => ({
+    .map((r) => ({
       id: r.id,
       label: `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim() || `#${r.id}`,
-      count: counts[i],
+      count: tally.get(r.id) ?? 0,
     }))
     .filter((d) => d.count > 0)
     .sort((a, b) => b.count - a.count)
@@ -212,7 +220,7 @@ async function computeTicketsPerResource(): Promise<CountDatum[]> {
 
 export function getTicketsPerResource(): Promise<CountDatum[]> {
   return unstable_cache(computeTicketsPerResource, ["tickets-per-resource"], {
-    revalidate: 60,
+    revalidate: 300,
   })();
 }
 
@@ -259,7 +267,7 @@ async function computeRecentEditedCounts(): Promise<RecentEditedCounts> {
 
 export function getRecentEditedCounts(): Promise<RecentEditedCounts> {
   return unstable_cache(computeRecentEditedCounts, ["recent-edited-counts"], {
-    revalidate: 60,
+    revalidate: 300,
   })();
 }
 

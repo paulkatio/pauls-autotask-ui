@@ -41,6 +41,6 @@ export function getSidebarTicketCounts(
   return unstable_cache(
     () => fetchCounts(resourceId),
     ["sidebar-ticket-counts", String(resourceId)],
-    { revalidate: 60 },
+    { revalidate: 120 },
   )();
 }

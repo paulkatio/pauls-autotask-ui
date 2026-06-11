@@ -33,27 +33,23 @@ export function FiltersSkeleton({
   filters?: number;
   search?: boolean;
 }) {
-  // Spiegelt die echte Filterzeile: Suche volle Breite (mobil), darunter die Chips –
-  // 3 Chips als 1×3, 4 Chips als 2×2 (je volle Zeilenbreite). Ab sm inhaltsbreit.
-  const chipFill =
-    filters >= 4
-      ? "basis-[calc(50%-0.25rem)] grow sm:basis-auto sm:grow-0 sm:flex-none"
-      : "flex-1 sm:flex-none";
+  // Spiegelt die echte Filterzeile: Suche eigene Reihe (volle Breite mobil, ab sm
+  // gedeckelt), darunter die Filter in EINEM gleichmaessigen Grid (2 Spalten mobil,
+  // 3 bzw. 4 Spalten ab sm) – einheitliche Groesse, identisch zur echten Liste.
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-2">
       {search && (
-        <Skeleton className="h-11 w-full min-w-48 flex-1 rounded-lg sm:h-7 sm:max-w-xs" />
+        <Skeleton className="h-11 w-full rounded-md sm:h-9 sm:max-w-xs" />
       )}
       {filters > 0 && (
-        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:items-center">
+        <div
+          className={cn(
+            "grid w-full gap-2",
+            filters >= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3",
+          )}
+        >
           {Array.from({ length: filters }).map((_, i) => (
-            <Skeleton
-              key={i}
-              className={cn(
-                chipFill,
-                "h-11 min-w-0 rounded-full sm:h-7 sm:w-36 sm:rounded-md",
-              )}
-            />
+            <Skeleton key={i} className="h-11 w-full rounded-md sm:h-9" />
           ))}
         </div>
       )}
@@ -158,11 +154,11 @@ export function KpiTilesSkeleton({
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="bg-card flex h-full flex-col gap-3 rounded-xl border p-6"
+          className="bg-card ring-foreground/10 flex h-full flex-col justify-center gap-1.5 rounded-xl px-4 py-5 ring-1"
         >
+          <Skeleton className="h-8 w-12" />
           <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-8 w-16" />
-          {hint && <Skeleton className="h-3 w-32" />}
+          {hint && <Skeleton className="h-3 w-28" />}
         </div>
       ))}
     </div>

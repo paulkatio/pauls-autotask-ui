@@ -18,14 +18,8 @@ import { getSidebarTicketCounts } from "@/lib/autotask/entities/ticket-counts";
 import { CountBarChart } from "@/components/dashboard/count-bar-chart";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
 import { AutotaskError, type AutotaskFilter } from "@/lib/autotask/client";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { OpenTickets } from "@/components/dashboard/open-tickets";
 import { NewTicketDialog } from "@/components/tickets/new-ticket-dialog";
@@ -53,28 +47,34 @@ function KpiCard({
       href={href}
       className="group block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <Card className="h-full transition-all group-hover:border-primary/40 group-hover:shadow-md motion-safe:group-hover:-translate-y-0.5">
-        <CardHeader>
-          <CardDescription>{title}</CardDescription>
-          <CardTitle className="text-3xl font-semibold tabular-nums">
+      {/* Container-Query-Kachel: reagiert auf die eigene KACHELbreite (nicht den
+          Viewport) -> einheitlich auf jeder Bildschirmgroesse.
+          - schmal (Handy, 2-spaltig): Zahl oben, Titel + Hinweis darunter
+          - ab ~13rem Kachelbreite (Tablet/Desktop): Zahl links, Text rechts ->
+            fuellt die Breite (kein Leerraum), bleibt aber flach.
+          Titel + Hinweis einzeilig (truncate) -> alle Kacheln exakt gleich hoch. */}
+      <Card className="@container relative h-full justify-center transition-all group-hover:shadow-md group-hover:ring-foreground/20 motion-safe:group-hover:-translate-y-0.5">
+        <Icon
+          aria-hidden
+          className={cn(
+            "absolute top-4 right-4 size-4 shrink-0 transition-colors",
+            accent
+              ? "text-destructive"
+              : "text-muted-foreground group-hover:text-primary",
+          )}
+        />
+        <div className="flex flex-col gap-1 px-4 @min-[13rem]:flex-row @min-[13rem]:items-center @min-[13rem]:gap-4">
+          <span className="text-3xl leading-none font-semibold tabular-nums @min-[13rem]:shrink-0">
             {value}
-          </CardTitle>
-          <CardAction>
-            <Icon
-              className={
-                accent
-                  ? "text-destructive"
-                  : "text-muted-foreground transition-colors group-hover:text-primary"
-              }
-            />
-          </CardAction>
-        </CardHeader>
-        {/* Erklär-Unterzeile – IMMER gerendert und einzeilig (line-clamp-1), damit
-            alle Kacheln auf jeder Breite exakt gleiche Struktur/Höhe haben. Fällt eine
-            Kachel mal ohne Text aus, hält ein geschütztes Leerzeichen die Höhe. */}
-        <CardContent className="text-muted-foreground line-clamp-1 text-xs">
-          {hint ?? " "}
-        </CardContent>
+          </span>
+          <div className="flex min-w-0 flex-col gap-0.5 pr-6 @min-[13rem]:flex-1">
+            <span className="truncate text-sm font-medium">{title}</span>
+            {/* Einzeiliger Hinweis; geschuetztes Leerzeichen haelt die Hoehe, falls leer. */}
+            <span className="text-muted-foreground truncate text-xs">
+              {hint ?? " "}
+            </span>
+          </div>
+        </div>
       </Card>
     </Link>
   );
@@ -134,14 +134,14 @@ export default async function DashboardPage() {
       />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard
-          title="Meine offenen Tickets"
+          title="Meine Tickets"
           value={kpis.myOpen + kpis.secondaryOpen}
           href="/tickets/my"
           icon={TicketIcon}
           hint={
             kpis.secondaryOpen > 0
-              ? `inkl. ${kpis.secondaryOpen} als zusätzlicher Mitarbeiter`
-              : "Dir zugewiesene offene Tickets"
+              ? `inkl. ${kpis.secondaryOpen} zusätzlich`
+              : "Dir zugewiesen, offen"
           }
         />
         <KpiCard
@@ -149,14 +149,14 @@ export default async function DashboardPage() {
           value={kpis.pool}
           href="/tickets/team?assigned=unassigned"
           icon={InboxIcon}
-          hint="Offen, noch niemandem zugewiesen"
+          hint="Wartet auf einen Bearbeiter"
         />
         <KpiCard
           title="Meine Projekte"
           value={kpis.myProjects}
           href="/projekte"
           icon={FolderKanbanIcon}
-          hint="Projekte, die du leitest oder bearbeitest"
+          hint="Geleitet oder bearbeitet"
         />
         <KpiCard
           title="Ball liegt bei mir"
@@ -164,11 +164,7 @@ export default async function DashboardPage() {
           href="/tickets/ball"
           icon={ReplyIcon}
           accent
-          hint={
-            kpis.ballApprox
-              ? "Kunde zuletzt aktiv (approximativ)"
-              : "Kunde hat zuletzt geantwortet"
-          }
+          hint={kpis.ballApprox ? "Kunde zuletzt aktiv (ca.)" : "Kunde hat geantwortet"}
         />
       </div>
 

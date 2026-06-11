@@ -11,7 +11,7 @@ export default function Loading() {
     <div className="flex flex-col gap-6">
       <PageHeaderSkeleton action />
       <FiltersSkeleton search filters={3} />
-      <TableSkeleton columns={6} rows={8} withCheckbox breakpoint="xl" />
+      <TableSkeleton columns={6} rows={8} withCheckbox breakpoint="lg" />
     </div>
   );
 }
