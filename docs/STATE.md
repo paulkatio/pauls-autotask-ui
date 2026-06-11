@@ -7,8 +7,6 @@ verlinkten Dateien.
 
 - **Regeln (verbindlich):** `../CLAUDE.md` – Verfassung des Projekts.
 - **Verifizierte API-Fakten + Entscheidungs-Historie:** [`DECISIONS.md`](DECISIONS.md) (groß, chronologisch).
-- **Aufgabenliste / Status je Item:** [`BACKLOG.md`](BACKLOG.md).
-- **Fachlicher Bauplan:** [`BLUEPRINT.md`](BLUEPRINT.md). **Repo-Karte:** [`ARCHITECTURE.md`](ARCHITECTURE.md).
 - **Deployment + Env:** [`../DEPLOY.md`](../DEPLOY.md).
 
 Stand: 2026-06-11. **Produktiv-Cutover erfolgt:** läuft gegen den **Autotask-Produktiv-
@@ -345,7 +343,7 @@ JWT-Session ohne DB, Route-Schutz server-seitig) – siehe `DEPLOY.md`.
 - **`CLAUDE.md` ist verbindlich.** UI nur aus shadcn + semantischen Tokens (kein freies
   `bg-blue-*`, kein arbitrary `[..]` außer in `components/ui/`), Deutsch + echte Umlaute,
   keine Emojis. Pro Slice: verifizieren → `npm run build` grün → Browser Hell/Dunkel/Mobile →
-  EIN kleiner Commit → `DECISIONS.md`/`BACKLOG.md` nachziehen.
+  EIN kleiner Commit → `DECISIONS.md` nachziehen.
 - **Nichts „fertig" behaupten ohne echten Test.** ⚠️ Backend ist **PRODUKTION** – Schreibtests
   treffen echte Kunden (kein Sandbox-Schutz mehr). Read-only-Smoke: `verify-api.mjs ping`.
   Schreiben nur bewusst, an einem dir gehörenden Ticket; Chat-Mail nur mit aktivem Schalter.
