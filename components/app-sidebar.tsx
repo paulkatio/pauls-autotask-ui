@@ -14,6 +14,7 @@ import {
   LayoutDashboardIcon,
   TicketIcon,
   UsersIcon,
+  FolderKanbanIcon,
   Building2Icon,
   ContactIcon,
   ClockIcon,
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
   { title: "Übersicht", url: "/", icon: LayoutDashboardIcon },
   { title: "Meine Tickets", url: "/tickets/my", icon: TicketIcon },
   { title: "Teamtickets", url: "/tickets/team", icon: UsersIcon },
+  { title: "Projekte", url: "/projekte", icon: FolderKanbanIcon },
   { title: "Firmen", url: "/companies", icon: Building2Icon },
   { title: "Kontakte", url: "/contacts", icon: ContactIcon },
   { title: "Meine Zeiten", url: "/zeiten", icon: ClockIcon },
@@ -48,11 +50,22 @@ const navItems: NavItem[] = [
 export function AppSidebar({
   user,
   orgName,
+  ticketCounts,
   ...props
 }: {
   user: SessionUser
   orgName: string
+  // Offene-Tickets-Zähler für die Badges (mir zugewiesen / Team). Optional –
+  // schlägt die Zählung fehl, bleibt die Sidebar einfach ohne Badge.
+  ticketCounts?: { mine: number; team: number }
 } & React.ComponentProps<typeof Sidebar>) {
+  const items: NavItem[] = navItems.map((it) =>
+    it.url === "/tickets/my"
+      ? { ...it, badge: ticketCounts?.mine }
+      : it.url === "/tickets/team"
+        ? { ...it, badge: ticketCounts?.team }
+        : it,
+  )
   return (
     <Sidebar collapsible="icon" mobileSide="right" {...props}>
       <SidebarHeader>
@@ -79,7 +92,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navItems} />
+        <NavMain items={items} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser

@@ -34,7 +34,9 @@ import {
   type ResourceOption,
 } from "@/lib/autotask/entities/resources";
 import { AutotaskError, type AutotaskFilter } from "@/lib/autotask/client";
+import { autotaskCompanyUrl } from "@/lib/autotask/links";
 import { NewTicketDialog } from "@/components/tickets/new-ticket-dialog";
+import { AutotaskOpenButton } from "@/components/autotask-open-button";
 import { CompanyTabs } from "@/components/companies/company-tabs";
 import {
   ContactsPanel,
@@ -144,7 +146,9 @@ export async function CompanyDetailContent({
       {showBackLink && (
         <Link
           href="/companies"
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
+          /* Mobile gibt es den Zurück-Button schon in der Kopfzeile (HeaderBack);
+             diesen Inline-Link daher nur auf Desktop zeigen – kein Doppel. */
+          className="text-muted-foreground hover:text-foreground hidden items-center gap-1 text-sm md:inline-flex"
         >
           <ChevronLeftIcon className="size-4" />
           Firmen
@@ -186,7 +190,22 @@ export async function CompanyDetailContent({
             </div>
           ) : null}
         </div>
-        <div className="shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Desktop: voller Knopf. Mobile-Icon nur im Pop-out (sonst liefert ihn
+              die App-Kopfzeile via HeaderAutotaskLink → kein Doppel). */}
+          <AutotaskOpenButton
+            href={autotaskCompanyUrl(companyId)}
+            label="In Autotask öffnen"
+            className="hidden md:inline-flex"
+          />
+          {basePath.startsWith("/popup") && (
+            <AutotaskOpenButton
+              href={autotaskCompanyUrl(companyId)}
+              label="Autotask"
+              /* gleiche Maße wie „Neues Ticket" (h-11 sm:h-7), da nebeneinander */
+              className="h-11 sm:h-7 md:hidden"
+            />
+          )}
           <NewTicketDialog
             picklists={picklists}
             prefillCompany={{

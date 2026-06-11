@@ -9,11 +9,17 @@ import { contracts } from "@/lib/autotask/entities/contracts";
 import { ticketNotes } from "@/lib/autotask/entities/ticket-notes";
 import { timeEntries } from "@/lib/autotask/entities/time-entries";
 import { attachments } from "@/lib/autotask/entities/attachments";
+import { ticketChecklist } from "@/lib/autotask/entities/ticket-checklist";
+import {
+  ticketSecondaryResources,
+  type SecondaryResourceRow,
+} from "@/lib/autotask/entities/ticket-secondary-resources";
 import type {
   Ticket,
   TicketNote,
   TimeEntry,
   TicketAttachment,
+  TicketChecklistItem,
 } from "@/lib/autotask/types";
 import type { RefOption } from "@/lib/autotask/entities/contacts";
 
@@ -72,10 +78,12 @@ export interface TicketDetail {
   device: TicketDevice | null;
   contractName: string | null;
   assignedResourceName: string | null;
+  secondaryResources: SecondaryResourceRow[];
   notes: TicketNote[];
   timeEntries: EnrichedTimeEntry[];
   timeTotals: TicketTimeTotals;
   attachments: TicketAttachment[];
+  checklist: TicketChecklistItem[];
   // Firmengefilterte Auswahllisten für die Referenz-Picker (B15c).
   refOptions: TicketRefOptions;
 }
@@ -109,6 +117,8 @@ export async function getTicketDetail(id: number): Promise<TicketDetail | null> 
     contractOptions,
     atts,
     workTypeList,
+    checklist,
+    secondaryResources,
   ] = await Promise.all([
     companyId != null
       ? companies.get(companyId).catch(() => null)
@@ -137,6 +147,11 @@ export async function getTicketDetail(id: number): Promise<TicketDetail | null> 
     // verifiziert 2026-06-03) -> Liste bleibt leer (sauberer Empty-State).
     attachments.byTicket(id).catch(() => []),
     timeEntries.workTypes().catch(() => []),
+    // Checkliste = Beiwerk: ein Fehler darf das Ticket nie kippen. Lese-Pfad
+    // (Top-Level + ticketID) ist verifiziert (2026-06-11), darum Catch ok.
+    ticketChecklist.byTicket(id).catch(() => []),
+    // Zusätzliche Mitarbeiter = Beiwerk -> Fehler darf das Ticket nie kippen.
+    ticketSecondaryResources.byTicket(id).catch(() => []),
   ]);
 
   // Mitarbeiternamen der Zeiteinträge in EINEM Request nachladen (kein N+1).
@@ -206,10 +221,12 @@ export async function getTicketDetail(id: number): Promise<TicketDetail | null> 
     assignedResourceName: resource
       ? fullName(resource.firstName, resource.lastName) || null
       : null,
+    secondaryResources,
     notes,
     timeEntries: enrichedTimes,
     timeTotals,
     attachments: atts,
+    checklist,
     refOptions: {
       contacts: contactOptions,
       devices: deviceOptions,

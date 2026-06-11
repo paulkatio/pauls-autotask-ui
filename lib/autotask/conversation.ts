@@ -52,3 +52,41 @@ export function directionOf(note: {
   if (isInboundEmailNote(note)) return "inbound";
   return "outbound";
 }
+
+// ----- Aktivität-Feed: Rauschen-Erkennung (B…, Paul) -----
+// Reine Automations-/KI-Resources, die Notizen schreiben (n8n KI-Kategorisierung,
+// Firmenzuordnung). BEWUSST NICHT die System-Resource 4 (Workflow) hier listen –
+// die ist auch der Mock-Admin; Workflow-Notizen sind über noteType 13 erfasst.
+// Verifiziert an Ticket 56313 (Notizen 30100124/30100126, creatorResourceID 29682944).
+export const AUTOMATION_RESOURCE_IDS: number[] = [29682944];
+
+const WORKFLOW_NOTE_TYPE = 13; // „Workflow-Regel ausgelöst"
+const SYSTEM_NOTIFICATION_PUBLISH = 4; // „Service Desk-Benachrichtigung"
+
+// Rauschen im Aktivität-Feed: Workflow-Regel-Notizen (noteType 13), reine
+// Automations-/KI-Notizen und System-Benachrichtigungen (publish 4 / Titel
+// „Service Desk-Benachrichtigung"). KONSERVATIV – im Zweifel KEIN Rauschen, damit
+// echte Menschen-Notizen nie verschwinden.
+export function isActivityNoise(note: {
+  noteType?: number;
+  publish?: number;
+  creatorResourceID?: number | null;
+  title?: string | null;
+}): boolean {
+  if (note.noteType === WORKFLOW_NOTE_TYPE) return true;
+  if (
+    note.creatorResourceID != null &&
+    AUTOMATION_RESOURCE_IDS.includes(note.creatorResourceID)
+  )
+    return true;
+  if (note.publish === SYSTEM_NOTIFICATION_PUBLISH) return true;
+  if ((note.title ?? "").startsWith("Service Desk-Benachrichtigung")) return true;
+  return false;
+}
+
+// Chat-Duplikat: Outbound-Chatnotiz (noteType 18) steht bereits im Chat-Panel und
+// gehört NICHT zusätzlich in den Aktivität-Feed. Inbound-Kundenantworten bleiben
+// im Feed (Pauls „nur Kundenantworten und SEHR relevante Sachen").
+export function isChatDuplicate(note: { noteType?: number }): boolean {
+  return note.noteType === CONVERSATION_NOTE_TYPES.outbound;
+}

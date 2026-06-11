@@ -20,7 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,7 +35,8 @@ import { TruncatedText } from "@/components/truncated-text";
 import { useColumnOrder } from "@/hooks/use-column-order";
 import { RotateCcwIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { labelOf, priorityVariant } from "@/lib/autotask/mappers";
+import { labelOf } from "@/lib/autotask/mappers";
+import { PriorityBadge } from "@/components/priority-indicator";
 import { StatusBadge } from "@/components/status-indicator";
 import { TicketCard } from "@/components/tickets/ticket-card";
 import type { Ticket, TicketPicklists } from "@/lib/autotask/types";
@@ -333,9 +333,10 @@ export function TicketsList({
       header: "Priorität",
       cell: (t) => (
         <TableCell>
-          <Badge variant={priorityVariant(t.priority)}>
-            {labelOf(picklists.priority, t.priority)}
-          </Badge>
+          <PriorityBadge
+            priority={t.priority}
+            label={labelOf(picklists.priority, t.priority)}
+          />
         </TableCell>
       ),
     },
@@ -362,8 +363,16 @@ export function TicketsList({
   // Mobile-Filterchips (Pillen, horizontal scrollbar). Aktiver = nicht-Default-Filter
   // wird gefüllt hervorgehoben, inaktiv neutral/outline. Ab sm normaler Select-Look
   // (Desktop unverändert).
-  const chipBase =
-    "max-w-full shrink-0 rounded-full border px-4 text-sm sm:h-7 sm:rounded-md sm:border-input sm:bg-transparent sm:px-2.5 sm:text-[0.8rem] sm:font-normal sm:text-foreground";
+  // Mobil füllen die Chips zu gleichen Teilen die volle Zeilenbreite (= Suchleiste).
+  // 3 Chips → 1×3 (je ein Drittel, `flex-1`). 4 Chips (mit Zuweisungsfilter) →
+  // 2×2-Raster (je halbe Breite, umbrechend), sonst werden sie abgeschnitten.
+  // Ab sm wieder inhaltsbreite Chips (`flex-none`).
+  const chipBase = cn(
+    assignmentFilter
+      ? "basis-[calc(50%-0.25rem)] grow sm:basis-auto sm:grow-0"
+      : "flex-1",
+    "min-w-0 max-w-full rounded-full border px-4 text-sm sm:h-7 sm:flex-none sm:rounded-md sm:border-input sm:bg-transparent sm:px-2.5 sm:text-[0.8rem] sm:font-normal sm:text-foreground",
+  );
   const chipState = (active: boolean) =>
     active
       ? "border-transparent bg-secondary font-medium text-secondary-foreground"

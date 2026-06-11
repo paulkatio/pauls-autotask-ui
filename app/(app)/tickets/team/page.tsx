@@ -10,6 +10,7 @@ import {
   getAssignableResources,
 } from "@/lib/autotask/entities/resources";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
+import { getSidebarTicketCounts } from "@/lib/autotask/entities/ticket-counts";
 import { AutotaskError, type AutotaskFilter } from "@/lib/autotask/client";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { TicketsList } from "@/components/tickets/tickets-list";
@@ -86,10 +87,15 @@ export default async function TeamTicketsPage({
     heading = "Nicht zugewiesene Tickets";
   }
 
-  const [picklists, assignableResources] = await Promise.all([
+  const [picklists, assignableResources, counts] = await Promise.all([
     getTicketPicklists(),
     getAssignableResources(),
+    getSidebarTicketCounts(session.autotaskResourceId).catch(() => null),
   ]);
+  // Badge = Anzahl aller offenen Tickets – nur in der Standard-Teamsicht sinnvoll
+  // (nicht bei Eingrenzung auf eine Person / nur nicht zugewiesene).
+  const teamBadge =
+    !scopedToResource && sp.assigned !== "unassigned" ? counts?.team : undefined;
 
   try {
     // Alle offenen Teamtickets in EINER Liste (keine Paginierung).
@@ -100,6 +106,7 @@ export default async function TeamTicketsPage({
         <PageHeader
           title={heading}
           description="Tickets im gesamten Team – filtern, dem Pool entnehmen und zuweisen."
+          badge={teamBadge}
           actions={<NewTicketDialog picklists={picklists} />}
         />
         <TicketsList

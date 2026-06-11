@@ -45,15 +45,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogDescription,
+} from "@/components/ui/responsive-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-indicator";
+import { PriorityBadge } from "@/components/priority-indicator";
 import { cn } from "@/lib/utils";
 import type { TicketPicklists } from "@/lib/autotask/types";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import { recordHistory } from "@/lib/history";
+import { sendAssignmentMail } from "@/lib/tickets/notify-client";
 import { useRecordNav } from "@/hooks/use-record-nav";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Bulk-Aktionen für die ausgewählten Tickets. KEIN neuer Schreibpfad: pro Ticket
 // das bestehende PATCH /api/tickets/[id] (Whitelist). Ausführung mit Limiter
@@ -61,6 +75,10 @@ import { useRecordNav } from "@/hooks/use-record-nav";
 // Aktion werden die alten Feldwerte geschnappschusst, damit die Aktion über
 // „Rückgängig" wieder zurückgesetzt werden kann (Undo der letzten Aktion).
 const MAX_PARALLEL = 3;
+
+// Abschluss-Status („Complete"): Wechsel hierauf verlangt eine Pflichtnotiz – wie im
+// Einzelticket (StatusEdit). Gilt auch im Bulk.
+const CLOSED_STATUS_ID = 5;
 
 // „Mir zuweisen" nutzt immer diese Rolle (keine Rollen-Abfrage), sofern die Resource
 // sie hält – sonst Fallback auf die einzige/erste Rolle.
@@ -89,14 +107,22 @@ interface Pending {
   body: Record<string, number>;
   fields: FieldKey[];
   verb: string;
+  // true, wenn die Aktion ein Abschluss ist (Status -> 5): dann ist eine Notiz Pflicht.
+  requiresNote?: boolean;
 }
 
 type Phase = "confirm" | "running" | "result";
+
+// "ok" = vollständig erfolgreich. "note-only" = beim Abschluss wurde die Notiz
+// gespeichert, aber das Status-Update schlug fehl (Notiz NICHT rücknehmbar).
+// "failed" = komplett fehlgeschlagen (kein Schreibvorgang wirksam).
+type RunState = "ok" | "note-only" | "failed";
 
 interface RunResult {
   id: number;
   ticketNumber: string;
   ok: boolean;
+  state: RunState;
   error?: string;
 }
 
@@ -140,7 +166,9 @@ async function patchTicket(
   const res = await fetch(`/api/tickets/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    // Bulk unterdrückt die serverseitige Einzel-Mail; die gebündelte Mail schickt
+    // die Leiste nach Abschluss selbst (eine Mail für alle betroffenen Tickets).
+    body: JSON.stringify({ ...body, _suppressAssignMail: true }),
   });
   const j = (await res.json().catch(() => ({}))) as { error?: string };
   if (!res.ok) throw new Error(j.error ?? `Fehler (${res.status}).`);
@@ -244,6 +272,16 @@ export function BulkBar({
   const [results, setResults] = React.useState<RunResult[]>([]);
   const [undoOps, setUndoOps] = React.useState<ReverseOp[]>([]);
 
+  // Pflichtnotiz beim Abschließen (Bulk).
+  const [closeNote, setCloseNote] = React.useState("");
+  const [noteError, setNoteError] = React.useState<string | null>(null);
+
+  // Mobile: alle Aktionen hinter EINEM „Aktionen"-Knopf in einem Bottom-Sheet,
+  // damit die Leiste nicht horizontal scrollt. Schwelle bewusst 640 (sm), passend
+  // zum Umschaltpunkt der Inline-Leiste (sm:-Klassen).
+  const isMobileBar = useIsMobile(640);
+  const [actionsOpen, setActionsOpen] = React.useState(false);
+
   // Zusammenführen (B26): nur aktiv, wenn alle Ausgewählten dieselbe Firma haben.
   const companyIds = new Set(selected.map((t) => t.companyID ?? null));
   const sameCompany =
@@ -294,10 +332,13 @@ export function BulkBar({
     setPhase("confirm");
     setDone(0);
     setResults([]);
+    setCloseNote("");
+    setNoteError(null);
+    setActionsOpen(false); // Mobile-Aktionssheet schließen, Bestätigung zeigen
     setDialogOpen(true);
   }
 
-  // Status / Priorität / Queue: direkte Bestätigung.
+  // Status / Priorität / Queue: direkte Bestätigung. Abschluss (Status 5) verlangt Notiz.
   function pickStatus(value: string) {
     const s = picklists.status.find((o) => String(o.value) === value);
     if (!s) return;
@@ -305,6 +346,7 @@ export function BulkBar({
       body: { status: s.value },
       fields: ["status"],
       verb: `auf „${s.label}" setzen`,
+      requiresNote: s.value === CLOSED_STATUS_ID,
     });
   }
   function pickPriority(value: string) {
@@ -408,21 +450,56 @@ export function BulkBar({
     }
   }
 
+  // Pflichtnotiz an EIN Ticket anlegen (intern, namens-geprefixt über die Route).
+  async function postCloseNote(ticketId: number, text: string): Promise<void> {
+    const r = await fetch(`/api/tickets/${ticketId}/note`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Abschluss", text }),
+    });
+    const j = (await r.json().catch(() => ({}))) as { error?: string };
+    if (!r.ok) throw new Error(j.error ?? "Notiz konnte nicht gespeichert werden.");
+  }
+
   async function run() {
     if (!pending) return;
     const p = pending;
+    const note = closeNote.trim();
+    if (p.requiresNote && !note) {
+      setNoteError("Bitte eine Abschluss-Notiz eingeben.");
+      return;
+    }
     setPhase("running");
     setDone(0);
     const acc: RunResult[] = [];
     await runPool(selected, MAX_PARALLEL, async (t) => {
       try {
-        await patchTicket(t.id, p.body);
-        acc.push({ id: t.id, ticketNumber: t.ticketNumber, ok: true });
+        if (p.requiresNote) {
+          // Notiz ZUERST: schlägt sie fehl, wird der Status NICHT geändert.
+          await postCloseNote(t.id, note);
+          try {
+            await patchTicket(t.id, p.body);
+            acc.push({ id: t.id, ticketNumber: t.ticketNumber, ok: true, state: "ok" });
+          } catch (e) {
+            // Notiz steht (nicht rücknehmbar), aber Status blieb -> eigener Zustand.
+            acc.push({
+              id: t.id,
+              ticketNumber: t.ticketNumber,
+              ok: false,
+              state: "note-only",
+              error: e instanceof Error ? e.message : "Status fehlgeschlagen.",
+            });
+          }
+        } else {
+          await patchTicket(t.id, p.body);
+          acc.push({ id: t.id, ticketNumber: t.ticketNumber, ok: true, state: "ok" });
+        }
       } catch (e) {
         acc.push({
           id: t.id,
           ticketNumber: t.ticketNumber,
           ok: false,
+          state: "failed",
           error: e instanceof Error ? e.message : "Fehler.",
         });
       } finally {
@@ -430,16 +507,17 @@ export function BulkBar({
       }
     });
 
-    // Undo-Operationen nur für die tatsächlich geänderten Tickets.
+    // Undo-Operationen nur für tatsächlich (status-)geänderte Tickets (state "ok").
+    // „note-only" hat keinen Status-Wechsel; die Notiz ist ohnehin nicht rücknehmbar.
     const reverse: ReverseOp[] = acc
-      .filter((r) => r.ok)
+      .filter((r) => r.state === "ok")
       .map((r) => {
         const t = selected.find((x) => x.id === r.id)!;
         return buildReverse(t, p.fields);
       })
       .filter((op) => Object.keys(op.body).length > 0);
 
-    const okCount = acc.filter((r) => r.ok).length;
+    const okCount = acc.filter((r) => r.state === "ok").length;
     const failedCount = acc.length - okCount;
     // In den globalen Verlauf eintragen (rückgängig über das Verlauf-Sheet im Header).
     if (reverse.length > 0) {
@@ -452,6 +530,23 @@ export function BulkBar({
     setResults(acc);
     setUndoOps(reverse);
     setPhase("result");
+
+    // Gebündelte Zuweisungs-Mail: nur bei Zuweisungs-Aktion, nur für erfolgreich
+    // gepatchte Tickets mit echtem Resource-Wechsel (alte != neue). Eine Mail an die
+    // neue Resource, die alle betroffenen Tickets listet (best effort).
+    if (p.fields.includes("assignedResourceID")) {
+      const newRes = p.body.assignedResourceID;
+      if (typeof newRes === "number") {
+        const changedIds = acc
+          .filter((r) => r.state === "ok")
+          .map((r) => r.id)
+          .filter((id) => {
+            const t = selected.find((x) => x.id === id);
+            return t != null && t.assignedResourceID !== newRes;
+          });
+        if (changedIds.length > 0) void sendAssignmentMail(newRes, changedIds);
+      }
+    }
 
     const action =
       reverse.length > 0
@@ -488,6 +583,7 @@ export function BulkBar({
   // --- Zusammenführen (B26, „Link & Close") ---
   function openMerge() {
     if (!sameCompany) return;
+    setActionsOpen(false);
     setMergeTargetId(null);
     setMergeSearch("");
     setCompanyTickets([]);
@@ -575,31 +671,45 @@ export function BulkBar({
     value: String(q.value),
   }));
 
-  const failedResults = results.filter((r) => !r.ok);
-  const okCount = results.length - failedResults.length;
+  const noteOnlyResults = results.filter((r) => r.state === "note-only");
+  const failedResults = results.filter((r) => r.state === "failed");
+  const okCount = results.filter((r) => r.state === "ok").length;
 
-  return (
-    <>
-      {/* Inline-Leiste: ersetzt die Filterzeile an Ort und Stelle. Die Höhe des
-          Slots wird in TicketsList konstant gehalten (Filter + Leiste gestapelt),
-          damit beim Markieren nichts springt. */}
-      <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <span className="text-sm font-medium whitespace-nowrap">
-          {count} {count === 1 ? "Ticket" : "Tickets"} ausgewählt
-        </span>
+  function clearAll() {
+    setActionsOpen(false);
+    onClearSelection();
+  }
 
-        {/* Mobil: Selects in EINER horizontal scrollbaren Zeile (statt 2-spaltigem
-            Raster) – hält die Leiste flach, damit der reservierte Slot klein bleibt. */}
-        <div className="flex gap-2 overflow-x-auto sm:flex-wrap sm:items-center sm:overflow-visible">
+  // Steuerungen (Selects + Aktions-Buttons) – einmal definiert, zweimal genutzt:
+  // `stacked` = vertikal volle Breite (Mobile-Bottom-Sheet), sonst Inline-Leiste.
+  function renderControls(stacked: boolean) {
+    const triggerCls = stacked
+      ? "h-11 w-full"
+      : "w-40 shrink-0 sm:h-7 sm:w-auto sm:min-w-36";
+    const selectsWrap = stacked
+      ? "flex flex-col gap-2"
+      : "flex gap-2 overflow-x-auto sm:flex-wrap sm:items-center sm:overflow-visible";
+    const btnWrap = stacked
+      ? "flex flex-col gap-2"
+      : "flex items-center gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible";
+    const btnCls = stacked
+      ? "h-11 w-full justify-start"
+      : "h-11 flex-1 sm:h-7 sm:flex-none";
+    const popBtnCls = stacked
+      ? "h-11 w-full justify-between"
+      : "h-11 shrink-0 sm:h-7 sm:flex-none";
+    return (
+      <>
+        <div className={selectsWrap}>
           <Select items={statusItems} value="" onValueChange={(v) => pickStatus(String(v))}>
-            <SelectTrigger size="sm" className="w-40 shrink-0 sm:h-7 sm:w-auto sm:min-w-36">
+            <SelectTrigger size="sm" className={triggerCls}>
               <SelectValue placeholder="Status ändern" />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-52">
               <SelectGroup>
                 {statusItems.map((i) => (
                   <SelectItem key={i.value} value={i.value}>
-                    {i.label}
+                    <StatusBadge status={Number(i.value)} label={i.label} />
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -607,14 +717,14 @@ export function BulkBar({
           </Select>
 
           <Select items={priorityItems} value="" onValueChange={(v) => pickPriority(String(v))}>
-            <SelectTrigger size="sm" className="w-40 shrink-0 sm:h-7 sm:w-auto sm:min-w-36">
+            <SelectTrigger size="sm" className={triggerCls}>
               <SelectValue placeholder="Priorität ändern" />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-44">
               <SelectGroup>
                 {priorityItems.map((i) => (
                   <SelectItem key={i.value} value={i.value}>
-                    {i.label}
+                    <PriorityBadge priority={Number(i.value)} label={i.label} />
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -622,7 +732,7 @@ export function BulkBar({
           </Select>
 
           <Select items={queueItems} value="" onValueChange={(v) => pickQueue(String(v))}>
-            <SelectTrigger size="sm" className="w-40 shrink-0 sm:h-7 sm:w-auto sm:min-w-36">
+            <SelectTrigger size="sm" className={triggerCls}>
               <SelectValue placeholder="Queue ändern" />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-52">
@@ -637,8 +747,7 @@ export function BulkBar({
           </Select>
         </div>
 
-        {/* Mobil: Aktions-Buttons ebenfalls eine scrollbare Zeile. */}
-        <div className="flex items-center gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible">
+        <div className={btnWrap}>
           <Popover
             open={assignOpen}
             onOpenChange={(o) => {
@@ -651,7 +760,7 @@ export function BulkBar({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-11 shrink-0 sm:h-7 sm:flex-none"
+                  className={popBtnCls}
                   disabled={busyRoles}
                 />
               }
@@ -701,7 +810,7 @@ export function BulkBar({
           <Button
             variant="outline"
             size="sm"
-            className="h-11 flex-1 sm:h-7 sm:flex-none"
+            className={btnCls}
             disabled={busyRoles}
             onClick={assignToMe}
           >
@@ -712,7 +821,7 @@ export function BulkBar({
           <Button
             variant="outline"
             size="sm"
-            className="h-11 flex-1 sm:h-7 sm:flex-none"
+            className={btnCls}
             disabled={!sameCompany}
             title={
               sameCompany
@@ -728,16 +837,69 @@ export function BulkBar({
           <Button
             variant="ghost"
             size="sm"
-            className="h-11 flex-1 sm:h-7 sm:flex-none"
-            onClick={onClearSelection}
+            className={btnCls}
+            onClick={clearAll}
           >
             <XIcon />
             Auswahl aufheben
           </Button>
         </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {/* Inline-Leiste (Desktop) ersetzt die Filterzeile an Ort und Stelle; Höhe des
+          Slots bleibt in TicketsList konstant, damit beim Markieren nichts springt.
+          Mobile: nur Zähler + EIN „Aktionen"-Knopf (Bottom-Sheet) – kein Scrollen. */}
+      <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <span className="text-sm font-medium whitespace-nowrap">
+          {count} {count === 1 ? "Ticket" : "Tickets"} ausgewählt
+        </span>
+
+        {isMobileBar ? (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-11 flex-1"
+              onClick={() => setActionsOpen(true)}
+            >
+              Aktionen
+              <ChevronsUpDownIcon className="text-muted-foreground" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-11 shrink-0"
+              onClick={clearAll}
+              aria-label="Auswahl aufheben"
+            >
+              <XIcon />
+            </Button>
+          </div>
+        ) : (
+          renderControls(false)
+        )}
       </div>
 
-      <AlertDialog
+      {/* Mobile: Aktionen im Bottom-Sheet, vertikal gestapelt, volle Breite. */}
+      <ResponsiveDialog open={actionsOpen} onOpenChange={setActionsOpen}>
+        <ResponsiveDialogContent className="flex flex-col">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>Aktionen</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
+              {count} {count === 1 ? "Ticket" : "Tickets"} ausgewählt.
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
+          <ResponsiveDialogBody className="flex flex-col gap-3 py-2">
+            {renderControls(true)}
+          </ResponsiveDialogBody>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
+
+      <ResponsiveDialog
         open={dialogOpen}
         onOpenChange={(o) => {
           // Während der Ausführung nicht schließbar.
@@ -751,96 +913,162 @@ export function BulkBar({
           }
         }}
       >
-        <AlertDialogContent>
+        <ResponsiveDialogContent className="flex flex-col">
           {phase === "confirm" && pending && (
             <>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Aktion bestätigen</AlertDialogTitle>
-                <AlertDialogDescription>
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle>Aktion bestätigen</ResponsiveDialogTitle>
+                <ResponsiveDialogDescription>
                   {count} {count === 1 ? "Ticket" : "Tickets"} {pending.verb}?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <ScrollArea className="max-h-40 rounded-md border">
-                <ul className="flex flex-col p-1">
-                  {selected.map((t) => (
-                    <li
-                      key={t.id}
-                      className="flex items-center gap-2 px-2 py-1 text-sm"
-                    >
-                      <span className="font-medium tabular-nums">
-                        {t.ticketNumber}
-                      </span>
-                      <span className="text-muted-foreground truncate">
-                        {t.title ?? ""}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </ScrollArea>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction onClick={run}>Ausführen</AlertDialogAction>
-              </AlertDialogFooter>
+                </ResponsiveDialogDescription>
+              </ResponsiveDialogHeader>
+              <ResponsiveDialogBody className="flex flex-col gap-3 py-1">
+                <ScrollArea className="max-h-40 rounded-md border">
+                  <ul className="flex flex-col p-1">
+                    {selected.map((t) => (
+                      <li
+                        key={t.id}
+                        className="flex items-center gap-2 px-2 py-1 text-sm"
+                      >
+                        <span className="font-medium tabular-nums">
+                          {t.ticketNumber}
+                        </span>
+                        <span className="text-muted-foreground truncate">
+                          {t.title ?? ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </ScrollArea>
+                {pending.requiresNote && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-sm font-medium">
+                      Abschluss-Notiz (Pflicht)
+                    </span>
+                    <Textarea
+                      value={closeNote}
+                      onChange={(e) => {
+                        setCloseNote(e.target.value);
+                        if (noteError) setNoteError(null);
+                      }}
+                      placeholder="Was wurde erledigt? (wird intern an jedem Ticket gespeichert)"
+                      rows={3}
+                      aria-label="Abschluss-Notiz"
+                    />
+                    {noteError && (
+                      <span className="text-destructive text-xs">{noteError}</span>
+                    )}
+                    <span className="text-muted-foreground text-xs">
+                      Wird intern (kundenunsichtbar) mit deinem Namen an jedem Ticket
+                      hinterlegt.
+                    </span>
+                  </div>
+                )}
+              </ResponsiveDialogBody>
+              <ResponsiveDialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDialogOpen(false);
+                    setPending(null);
+                  }}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  onClick={run}
+                  disabled={pending.requiresNote && !closeNote.trim()}
+                >
+                  Ausführen
+                </Button>
+              </ResponsiveDialogFooter>
             </>
           )}
 
           {phase === "running" && (
             <>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Wird ausgeführt …</AlertDialogTitle>
-                <AlertDialogDescription>
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle>Wird ausgeführt …</ResponsiveDialogTitle>
+                <ResponsiveDialogDescription>
                   {done}/{count} Tickets verarbeitet.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <Progress value={count ? (done / count) * 100 : 0} />
+                </ResponsiveDialogDescription>
+              </ResponsiveDialogHeader>
+              <ResponsiveDialogBody className="py-2">
+                <Progress value={count ? (done / count) * 100 : 0} />
+              </ResponsiveDialogBody>
             </>
           )}
 
           {phase === "result" && (
             <>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Ergebnis</AlertDialogTitle>
-                <AlertDialogDescription>
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle>Ergebnis</ResponsiveDialogTitle>
+                <ResponsiveDialogDescription>
                   {okCount} erfolgreich
+                  {noteOnlyResults.length > 0
+                    ? `, ${noteOnlyResults.length} nur Notiz`
+                    : ""}
                   {failedResults.length > 0
                     ? `, ${failedResults.length} fehlgeschlagen`
                     : ""}
                   .
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              {failedResults.length > 0 && (
-                <Alert variant="destructive">
-                  <AlertTitle>Fehlgeschlagene Tickets</AlertTitle>
-                  <AlertDescription>
-                    <ul className="flex flex-col gap-1">
-                      {failedResults.map((r) => (
-                        <li key={r.ticketNumber}>
-                          <span className="font-medium tabular-nums">
-                            {r.ticketNumber}
-                          </span>
-                          {": "}
-                          {r.error}
-                        </li>
-                      ))}
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-              )}
-              <AlertDialogFooter>
+                </ResponsiveDialogDescription>
+              </ResponsiveDialogHeader>
+              <ResponsiveDialogBody className="flex flex-col gap-3 py-1">
+                {noteOnlyResults.length > 0 && (
+                  <Alert>
+                    <AlertTitle>Notiz gespeichert, Status nicht geändert</AlertTitle>
+                    <AlertDescription>
+                      <p className="mb-1">
+                        Die Abschluss-Notiz wurde gespeichert (nicht rücknehmbar), der
+                        Status-Wechsel schlug aber fehl:
+                      </p>
+                      <ul className="flex flex-col gap-1">
+                        {noteOnlyResults.map((r) => (
+                          <li key={r.ticketNumber}>
+                            <span className="font-medium tabular-nums">
+                              {r.ticketNumber}
+                            </span>
+                            {": "}
+                            {r.error}
+                          </li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {failedResults.length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertTitle>Fehlgeschlagene Tickets</AlertTitle>
+                    <AlertDescription>
+                      <ul className="flex flex-col gap-1">
+                        {failedResults.map((r) => (
+                          <li key={r.ticketNumber}>
+                            <span className="font-medium tabular-nums">
+                              {r.ticketNumber}
+                            </span>
+                            {": "}
+                            {r.error}
+                          </li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </ResponsiveDialogBody>
+              <ResponsiveDialogFooter>
                 {undoOps.length > 0 && (
                   <Button variant="outline" onClick={undoFromDialog}>
                     <Undo2Icon />
-                    Rückgängig
+                    Rückgängig (nur Status)
                   </Button>
                 )}
-                <AlertDialogAction onClick={closeResult}>
-                  Schließen
-                </AlertDialogAction>
-              </AlertDialogFooter>
+                <Button onClick={closeResult}>Schließen</Button>
+              </ResponsiveDialogFooter>
             </>
           )}
-        </AlertDialogContent>
-      </AlertDialog>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
 
       {/* Zusammenführen (B26, „Link & Close") – eigener Dialog: Ziel wählen → bestätigen. */}
       <AlertDialog

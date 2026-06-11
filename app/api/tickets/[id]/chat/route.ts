@@ -61,6 +61,7 @@ export async function POST(
   // Notiz angelegt, aber KEINE Kunden-Mail versendet (Sicherheits-Audit: früher
   // war der Default „an" → jeder Klick mailte ungewollt an echte Kunden).
   let text = "";
+  let html = "";
   let notify = false;
   const files: { fileName: string; dataBase64: string }[] = [];
 
@@ -70,6 +71,8 @@ export async function POST(
     const form = await req.formData();
     const rawText = form.get("text");
     text = typeof rawText === "string" ? rawText.trim() : "";
+    const rawHtml = form.get("html");
+    html = typeof rawHtml === "string" ? rawHtml : "";
     notify = form.get("notify") === "true";
 
     const uploaded = form.getAll("files").filter((f): f is File => f instanceof File);
@@ -104,9 +107,11 @@ export async function POST(
   } else {
     const body = (await req.json().catch(() => null)) as {
       text?: unknown;
+      html?: unknown;
       notify?: unknown;
     } | null;
     text = typeof body?.text === "string" ? body.text.trim() : "";
+    html = typeof body?.html === "string" ? body.html : "";
     notify = body?.notify === true;
   }
 
@@ -118,7 +123,7 @@ export async function POST(
   }
 
   try {
-    const result = await sendTicketChatNote(num, text, notify, files);
+    const result = await sendTicketChatNote(num, text, notify, files, html);
     return NextResponse.json(result);
   } catch (e) {
     if (e instanceof AutotaskError) {

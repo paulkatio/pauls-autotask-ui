@@ -4,13 +4,21 @@ import "server-only";
 // Secrets bleiben serverseitig: RESEND_API_KEY/RESEND_FROM tauchen nie im
 // Client-Bundle oder in API-Antworten an den Browser auf.
 
+export interface MailAttachment {
+  filename: string;
+  content: string; // base64 (ohne data:-Präfix)
+  contentId?: string; // gesetzt = Inline-Bild, im HTML via cid:<contentId> referenziert
+  contentType?: string; // z. B. "image/png"
+}
+
 export interface SendMailArgs {
   to: string;
   subject: string;
   text: string;
   html?: string;
   // Resend-Anhänge: content = base64 (ohne data:-Präfix), filename = Anzeigename.
-  attachments?: { filename: string; content: string }[];
+  // Mit contentId = Inline-Bild (CID), rendert ohne externen Fetch (auch offline).
+  attachments?: MailAttachment[];
 }
 
 // Resend ist nur dann nutzbar, wenn Key + Absender gesetzt sind.
@@ -47,7 +55,16 @@ export async function sendMail({
       subject,
       text,
       ...(html ? { html } : {}),
-      ...(attachments?.length ? { attachments } : {}),
+      ...(attachments?.length
+        ? {
+            attachments: attachments.map((a) => ({
+              filename: a.filename,
+              content: a.content,
+              ...(a.contentId ? { content_id: a.contentId } : {}),
+              ...(a.contentType ? { content_type: a.contentType } : {}),
+            })),
+          }
+        : {}),
     }),
   });
 

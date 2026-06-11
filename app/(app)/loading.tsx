@@ -12,7 +12,7 @@ export default function Loading() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeaderSkeleton />
-      <KpiTilesSkeleton count={4} />
+      <KpiTilesSkeleton count={4} hint />
       <ChartCardSkeleton />
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">

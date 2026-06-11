@@ -52,7 +52,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const result = await mergeTickets(targetId, sourceIds);
+    const result = await mergeTickets(targetId, sourceIds, session.displayName);
     return NextResponse.json(result);
   } catch (e) {
     if (e instanceof AutotaskError) {

@@ -1,15 +1,16 @@
 "use client";
 
 import * as React from "react";
+import { toast } from "sonner";
 import {
   Building2Icon,
   ChevronDownIcon,
   ClockIcon,
   DownloadIcon,
   FileIcon,
+  ListChecksIcon,
   MailIcon,
   MapPinIcon,
-  MessageSquarePlusIcon,
   PhoneIcon,
   SmartphoneIcon,
   UserCheckIcon,
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import {
   Tabs,
@@ -44,8 +46,9 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { TicketChat } from "@/components/tickets/ticket-chat";
+import { AutotaskOpenButton } from "@/components/autotask-open-button";
+import { setHeaderTicketInfo } from "@/components/header-ticket-number";
 import { TimeTracking } from "@/components/tickets/time-tracking";
-import { NoteForm } from "@/components/tickets/note-form";
 import { AttachmentUpload } from "@/components/tickets/attachment-upload";
 import {
   TicketFieldSelect,
@@ -56,13 +59,23 @@ import {
   CompanyChange,
   DescriptionEdit,
 } from "@/components/tickets/meta-edit";
-import { labelOf, priorityVariant } from "@/lib/autotask/mappers";
+import { SecondaryResourcesEdit } from "@/components/tickets/secondary-resources-edit";
+import { labelOf } from "@/lib/autotask/mappers";
 import { StatusBadge } from "@/components/status-indicator";
-import { directionOf } from "@/lib/autotask/conversation";
+import { PriorityBadge } from "@/components/priority-indicator";
+import {
+  directionOf,
+  isActivityNoise,
+  isChatDuplicate,
+} from "@/lib/autotask/conversation";
 import { formatHours } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import type { TicketPicklists, TicketNote } from "@/lib/autotask/types";
+import type {
+  TicketPicklists,
+  TicketNote,
+  TicketChecklistItem,
+} from "@/lib/autotask/types";
 import type { NotePicklists } from "@/lib/autotask/entities/picklists";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import type {
@@ -153,7 +166,12 @@ function Rail({
         }
       >
         {title}
-        <ChevronDownIcon className="text-muted-foreground" />
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground transition-transform duration-200",
+            open && "rotate-180",
+          )}
+        />
       </CollapsibleTrigger>
       <CollapsibleContent className="flex flex-col gap-4">
         {children}
@@ -192,6 +210,10 @@ interface Props {
   notePicklists: NotePicklists;
   resourceOptions: ResourceOption[];
   me: { name: string; avatar: string };
+  autotaskUrl: string | null;
+  // Mobiler „In Autotask öffnen"-Knopf im Titelblock – nur im Pop-out (dort fehlt
+  // der globale Header); in der App liefert ihn die Kopfzeile (HeaderAutotaskLink).
+  showMobileAutotaskButton?: boolean;
 }
 
 export function TicketDetailView({
@@ -200,9 +222,32 @@ export function TicketDetailView({
   notePicklists,
   resourceOptions,
   me,
+  autotaskUrl,
+  showMobileAutotaskButton = false,
 }: Props) {
   const { ticket, company, contact, device, timeTotals } = detail;
   const overdue = isOverdue(ticket.dueDateTime, ticket.completedDate);
+
+  // Sobald der Titelbereich unter die sticky Kopfzeile gescrollt ist, Ticketnummer
+  // (Mobile) bzw. Nummer + Titel (Desktop) in der Header-Leiste einblenden.
+  const titleSentinelRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const el = titleSentinelRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const info = {
+      number: ticket.ticketNumber ?? `#${ticket.id}`,
+      title: ticket.title ?? null,
+    };
+    const obs = new IntersectionObserver(
+      ([entry]) => setHeaderTicketInfo(entry.isIntersecting ? null : info),
+      { rootMargin: "-72px 0px 0px 0px", threshold: 0 },
+    );
+    obs.observe(el);
+    return () => {
+      obs.disconnect();
+      setHeaderTicketInfo(null);
+    };
+  }, [ticket.ticketNumber, ticket.title, ticket.id]);
 
   // ===== LINKS: Meta-Schiene (Inline-Edits aus B15b/c) =====
   const leftRail = (
@@ -275,9 +320,19 @@ export function TicketDetailView({
           <Field label="Verantwortlicher Mitarbeiter">
             <AssignmentEdit
               ticketId={ticket.id}
+              ticketNumber={ticket.ticketNumber ?? `#${ticket.id}`}
               assignedResourceID={ticket.assignedResourceID}
+              assignedResourceRoleID={ticket.assignedResourceRoleID}
               assignedResourceName={detail.assignedResourceName}
               resources={resourceOptions}
+            />
+          </Field>
+          <Field label="Zusätzliche Mitarbeiter">
+            <SecondaryResourcesEdit
+              ticketId={ticket.id}
+              current={detail.secondaryResources}
+              resources={resourceOptions}
+              assignedResourceID={ticket.assignedResourceID}
             />
           </Field>
 
@@ -330,10 +385,21 @@ export function TicketDetailView({
         </Card>
       )}
 
+      {detail.checklist.length > 0 && (
+        <ChecklistCard ticketId={ticket.id} items={detail.checklist} />
+      )}
+
+      {/* Chat direkt unter der Beschreibung, ÜBER Zeiten/Aktivität (Paul). */}
+      <TicketChat ticketId={ticket.id} me={me} contactName={contact?.name ?? null} />
+
       <Card>
         <CardContent>
-          <Tabs defaultValue="zeiten" className="gap-6">
-            <div className="flex flex-col gap-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+          <Tabs defaultValue="zeiten" className="gap-4">
+            {/* Aktions-Header: Stoppuhr · Zeit erfassen · Neue Notiz. */}
+            <TimeTracking ticketId={ticket.id} />
+
+            {/* Leicht abgetrennt darunter die Tabs – gleicher Kasten. */}
+            <div className="flex flex-col gap-4 border-t pt-4">
               <TabsList variant="line">
                 <TabsTrigger value="zeiten" className="min-h-11 sm:min-h-0">
                   Zeiten
@@ -342,36 +408,29 @@ export function TicketDetailView({
                   Anhänge ({detail.attachments.length})
                 </TabsTrigger>
               </TabsList>
-              <TimeTracking ticketId={ticket.id} />
-            </div>
 
-            {/* Zeiten (Standard) + darunter Aktivität (Notizen) */}
-            <TabsContent value="zeiten">
-              <div className="flex flex-col gap-6">
+              <TabsContent value="zeiten">
                 <TimeEntriesList entries={detail.timeEntries} />
-                <Separator />
-                <ActivitySection
-                  ticketId={ticket.id}
-                  notes={detail.notes}
-                  notePicklists={notePicklists}
-                />
-              </div>
-            </TabsContent>
+              </TabsContent>
 
-            <TabsContent value="anhaenge">
-              <div className="flex flex-col gap-3">
-                <AttachmentUpload ticketId={ticket.id} />
-                <AttachmentsList ticketId={ticket.id} items={detail.attachments} />
-              </div>
-            </TabsContent>
+              <TabsContent value="anhaenge">
+                <div className="flex flex-col gap-3">
+                  <AttachmentUpload ticketId={ticket.id} />
+                  <AttachmentsList ticketId={ticket.id} items={detail.attachments} />
+                </div>
+              </TabsContent>
+            </div>
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Aktivität: eigener, standardmäßig eingeklappter Bereich – unabhängig von Zeiten. */}
+      <ActivitySection notes={detail.notes} notePicklists={notePicklists} />
     </main>
   );
 
-  // ===== RECHTS: kompakter Kontext + Chat-Sidebar (rein lesend, kein sticky
-  // wegen Chat-Höhe) =====
+  // ===== RECHTS: kompakter Kontext (Firma/Kontakt + Arbeitszeit). Der Chat sitzt
+  // jetzt im Mittel-Strang unter der Beschreibung. =====
   const rightRail = (
     <div className="flex w-full flex-col gap-4 xl:w-72 xl:shrink-0 2xl:w-80">
       {/* Firma + Ansprechpartner ZUERST, über dem Chat – damit beim Schreiben
@@ -416,8 +475,6 @@ export function TicketDetailView({
           </CardContent>
         </Card>
       )}
-
-      <TicketChat ticketId={ticket.id} me={me} contactName={contact?.name ?? null} />
 
       <Rail title="Kontext">
       <Card>
@@ -499,7 +556,7 @@ export function TicketDetailView({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Desktop-Kopf: „Nummer – Titel" fett, daneben „Erstellt …". */}
+      {/* Desktop-Kopf: „Nummer – Titel" fett, daneben „Erstellt …"; rechts „In Autotask öffnen". */}
       <div className="hidden flex-wrap items-baseline gap-x-3 gap-y-1 md:flex">
         <h1 className="text-2xl font-semibold tracking-tight text-balance break-words">
           <span className="tabular-nums">{ticket.ticketNumber}</span>
@@ -508,27 +565,41 @@ export function TicketDetailView({
         <span className="text-muted-foreground text-sm whitespace-nowrap">
           Erstellt {fmtDate(ticket.createDate, true)}
         </span>
+        <div className="ml-auto self-center">
+          <AutotaskOpenButton href={autotaskUrl} label="In Autotask öffnen" />
+        </div>
       </div>
 
       {/* Mobiler Case-Header (md:hidden): App-artiger Summary statt Label/Wert-Tabelle.
           Reihenfolge mit Luft: Titelblock → Statuschips → Kontextgruppe.
           Nur semantische Tokens; Desktop hat den Kontext in den Schienen. */}
       <div className="flex flex-col gap-4 md:hidden">
-        {/* Titelblock: Nummer als Eyebrow, Titel dominant aber straff. */}
-        <div className="flex flex-col gap-0.5">
-          <span className="text-muted-foreground text-xs font-medium tabular-nums">
-            {ticket.ticketNumber}
-          </span>
-          <h1 className="text-xl leading-snug font-semibold tracking-tight break-words">
-            {ticket.title ?? "—"}
-          </h1>
+        {/* Titelblock: Nummer als Eyebrow, Titel dominant aber straff; rechts der
+            Autotask-Icon-Link (Popup hat keinen globalen Header → hier eingebaut). */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-muted-foreground text-xs font-medium tabular-nums">
+              {ticket.ticketNumber}
+            </span>
+            <h1 className="text-xl leading-snug font-semibold tracking-tight break-words">
+              {ticket.title ?? "—"}
+            </h1>
+          </div>
+          {showMobileAutotaskButton && (
+            <AutotaskOpenButton
+              href={autotaskUrl}
+              label="Autotask"
+              className="h-9 shrink-0"
+            />
+          )}
         </div>
 
         {/* Statuszeile: Priorität + Status als Chips. */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <Badge variant={priorityVariant(ticket.priority)}>
-            {labelOf(picklists.priority, ticket.priority)}
-          </Badge>
+          <PriorityBadge
+            priority={ticket.priority}
+            label={labelOf(picklists.priority, ticket.priority)}
+          />
           <StatusBadge
             status={ticket.status}
             label={labelOf(picklists.status, ticket.status)}
@@ -571,6 +642,11 @@ export function TicketDetailView({
         </div>
       </div>
 
+      {/* Scroll-Sentinel: liegt direkt unter dem Titelbereich. Ist er aus dem Blick
+          (unter der sticky Kopfzeile), blendet die Header-Leiste die Ticketnummer ein.
+          Echte Höhe (h-px), sonst meldet der IntersectionObserver bei 0-Fläche unzuverlässig. */}
+      <div ref={titleSentinelRef} aria-hidden className="h-px w-full" />
+
       {/* 3 Spalten ab xl; ab lg zwei Spalten + Kontext darunter; darunter gestapelt
           (Feed bekommt bis lg die volle Breite, statt sich ab md mit der Meta-Schiene
           ~512 px zu teilen). Collapsible-Trigger der Rail ist lg:hidden, passend zur
@@ -585,140 +661,200 @@ export function TicketDetailView({
   );
 }
 
-// ----- Aktivität (Notizen) – unter den Zeiten. Header trägt den Auf-/Einklappen-
-// Button (neben "Aktivität") und die "Neue Notiz"-Aktion. -----
-function ActivitySection({
+// ----- Ticket-Checkliste („To-Dos") – interaktives Abbild der in Autotask
+// eingebauten Checkliste. Punkte abhakbar (optimistisch, PATCH über die Route;
+// Fehler wird zurückgerollt). Erledigte durchgestrichen. -----
+function ChecklistCard({
   ticketId,
-  notes,
-  notePicklists,
+  items,
 }: {
   ticketId: number;
-  notes: TicketNote[];
-  notePicklists: NotePicklists;
+  items: TicketChecklistItem[];
 }) {
-  const sorted = React.useMemo(
-    () =>
-      [...notes].sort(
-        (a, b) =>
-          (Date.parse(b.createDateTime ?? "") || 0) -
-          (Date.parse(a.createDateTime ?? "") || 0),
-      ),
-    [notes],
-  );
-  // Standardmäßig sind nur Kundenantworten (inbound) offen; der Rest eingeklappt.
-  const [openSet, setOpenSet] = React.useState<Set<number>>(
-    () => new Set(sorted.filter((n) => directionOf(n) === "inbound").map((n) => n.id)),
-  );
-  const allOpen = sorted.length > 0 && sorted.every((n) => openSet.has(n.id));
-  const [noteOpen, setNoteOpen] = React.useState(false);
-  function toggle(id: number) {
-    setOpenSet((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const [list, setList] = React.useState(items);
+  // Nach router.refresh() mit den frischen Server-Daten synchronisieren.
+  React.useEffect(() => setList(items), [items]);
+  const [busy, setBusy] = React.useState<ReadonlySet<number>>(new Set());
+  const done = list.filter((i) => i.isCompleted).length;
+
+  async function toggle(item: TicketChecklistItem, next: boolean) {
+    setBusy((b) => new Set(b).add(item.id));
+    setList((l) =>
+      l.map((x) => (x.id === item.id ? { ...x, isCompleted: next } : x)),
+    );
+    try {
+      const res = await fetch(`/api/tickets/${ticketId}/checklist/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isCompleted: next }),
+      });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error ?? "Speichern fehlgeschlagen.");
+      }
+    } catch (e) {
+      // Optimistische Änderung zurückrollen.
+      setList((l) =>
+        l.map((x) => (x.id === item.id ? { ...x, isCompleted: !next } : x)),
+      );
+      toast.error(
+        e instanceof Error ? e.message : "Checklisten-Punkt nicht gespeichert.",
+      );
+    } finally {
+      setBusy((b) => {
+        const n = new Set(b);
+        n.delete(item.id);
+        return n;
+      });
+    }
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <h3 className="text-sm font-semibold">Aktivität</h3>
-          {sorted.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-11 sm:h-7"
-              onClick={() =>
-                setOpenSet(allOpen ? new Set() : new Set(sorted.map((n) => n.id)))
-              }
-            >
-              {allOpen ? "Alle einklappen" : "Alle aufklappen"}
-            </Button>
+    <Card>
+      <CardHeader className="border-b">
+        <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+          <ListChecksIcon className="size-4 shrink-0" />
+          Checkliste
+          <span className="text-muted-foreground text-sm font-normal tabular-nums">
+            {done}/{list.length} erledigt
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="flex flex-col gap-1">
+          {list.map((i) => (
+            <li key={i.id}>
+              <label className="hover:bg-muted/50 flex cursor-pointer items-start gap-2 rounded-md p-1.5 text-sm">
+                <Checkbox
+                  checked={i.isCompleted}
+                  disabled={busy.has(i.id)}
+                  onCheckedChange={(v) => toggle(i, v === true)}
+                  aria-label={i.itemName ?? "Checklisten-Punkt"}
+                  className="mt-0.5"
+                />
+                <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span
+                    className={cn(
+                      "min-w-0 break-words",
+                      i.isCompleted && "text-muted-foreground line-through",
+                    )}
+                  >
+                    {i.itemName ?? "—"}
+                  </span>
+                  {i.isImportant && <Badge variant="outline">Wichtig</Badge>}
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ----- Aktivität: EIGENER Bereich (Card), unabhängig von den Zeiten. Standardmäßig
+// komplett EINGEKLAPPT (Mobile + Desktop). Aufklappen zeigt alle relevanten
+// Aktivitäten direkt vollständig – kein „Alle aufklappen"/„Alle anzeigen", kein
+// Auf-/Zuklappen einzelner Einträge. Rauschen + Chat-Duplikate bleiben gefiltert.
+// „Neue Notiz" sitzt bei „Zeit erfassen" (NewNoteButton). -----
+function ActivitySection({
+  notes,
+  notePicklists,
+}: {
+  notes: TicketNote[];
+  notePicklists: NotePicklists;
+}) {
+  const visible = React.useMemo(
+    () =>
+      [...notes]
+        .filter((n) => !isActivityNoise(n) && !isChatDuplicate(n))
+        .sort(
+          (a, b) =>
+            (Date.parse(b.createDateTime ?? "") || 0) -
+            (Date.parse(a.createDateTime ?? "") || 0),
+        ),
+    [notes],
+  );
+  const [open, setOpen] = React.useState(false);
+
+  // Exakt der Rail-Trigger-Look (h-11 Outline-Button) wie „Ticketinformationen"/
+  // „Kontext" – KEIN großer Card-Header. Inhalt klappt darunter aus.
+  return (
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className="flex flex-col gap-3"
+    >
+      <CollapsibleTrigger
+        render={
+          <Button variant="outline" className="h-11 w-full justify-between" />
+        }
+      >
+        <span className="flex items-center gap-2">
+          Aktivität
+          {visible.length > 0 && (
+            <span className="text-muted-foreground font-normal tabular-nums">
+              ({visible.length})
+            </span>
           )}
-        </div>
-        {!noteOpen && (
-          <Button variant="outline" size="sm" className="h-11 sm:h-7" onClick={() => setNoteOpen(true)}>
-            <MessageSquarePlusIcon />
-            Neue Notiz
-          </Button>
-        )}
-      </div>
-      {noteOpen && (
-        <NoteForm ticketId={ticketId} onClose={() => setNoteOpen(false)} />
-      )}
-      {sorted.length === 0 ? (
-        <p className="text-muted-foreground text-sm">Keine Notizen vorhanden.</p>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {sorted.map((note) => (
+        </span>
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground transition-transform duration-200",
+            open && "rotate-180",
+          )}
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="flex flex-col gap-3">
+        {visible.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            Keine relevanten Aktivitäten.
+          </p>
+        ) : (
+          visible.map((note) => (
             <ActivityItem
               key={note.id}
               note={note}
               notePicklists={notePicklists}
-              open={openSet.has(note.id)}
-              onToggle={() => toggle(note.id)}
             />
-          ))}
-        </div>
-      )}
-    </div>
+          ))
+        )}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
-// Eine Aktivität: standardmäßig EINGEKLAPPT (nur Typ + Titel + Datum), per Klick
-// aufklappbar. Ausnahme: Kundenantworten (inbound) sind das Signal → offen und mit
-// hervorgehobenem „Kundenantwort"-Badge. So verschwindet das RMM-/Workflow-/System-
-// Rauschen aus dem Blickfeld, ohne dass etwas verloren geht.
+// Eine Aktivität: vollständig dargestellt (Badge + Titel + Datum + Text). Kein
+// Auf-/Zuklappen mehr – der ganze Bereich klappt als Einheit. Sehr lange Texte
+// bleiben über „Mehr anzeigen" (ExpandableText) lesbar.
 function ActivityItem({
   note,
   notePicklists,
-  open,
-  onToggle,
 }: {
   note: TicketNote;
   notePicklists: NotePicklists;
-  open: boolean;
-  onToggle: () => void;
 }) {
   const isReply = directionOf(note) === "inbound";
-  const hasBody = Boolean(note.description);
   return (
-    <div className="flex flex-col gap-1 border-b pb-3">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="-my-1 flex min-h-11 w-full flex-wrap items-center gap-x-2 gap-y-0.5 py-1.5 text-left sm:my-0 sm:min-h-0 sm:flex-nowrap sm:py-0"
-        aria-expanded={open}
-      >
-        <ChevronDownIcon
-          className={cn(
-            "text-muted-foreground size-4 shrink-0 transition-transform",
-            !open && "-rotate-90",
-          )}
-        />
+    <div className="flex flex-col gap-1.5 border-b pb-3 last:border-b-0 last:pb-0">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
         {isReply ? (
-          <Badge className="min-w-0 shrink truncate sm:shrink-0">Kundenantwort</Badge>
+          <Badge className="shrink-0">Kundenantwort</Badge>
         ) : (
-          <Badge variant="secondary" className="min-w-0 shrink truncate sm:shrink-0">
+          <Badge variant="secondary" className="shrink-0">
             {labelOf(notePicklists.noteType, note.noteType)}
           </Badge>
         )}
         {note.title && (
-          <span className="order-3 min-w-0 basis-full truncate text-sm font-medium sm:order-2 sm:basis-auto sm:flex-1">
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">
             {note.title}
           </span>
         )}
-        <span className="text-muted-foreground order-2 ml-auto shrink-0 text-xs tabular-nums sm:order-3">
+        <span className="text-muted-foreground ml-auto shrink-0 text-xs tabular-nums">
           {fmtDate(note.createDateTime, true)}
         </span>
-      </button>
-      {open && hasBody && (
-        <div className="pl-6">
-          <ExpandableText text={note.description ?? ""} />
-        </div>
-      )}
+      </div>
+      {note.description && <ExpandableText text={note.description} />}
     </div>
   );
 }
@@ -748,7 +884,10 @@ function TimeEntriesList({ entries }: { entries: EnrichedTimeEntry[] }) {
         const from = fmtTime(e.startDateTime);
         const to = fmtTime(e.endDateTime);
         return (
-          <div key={e.id} className="flex flex-col gap-1 border-b pb-3">
+          <div
+            key={e.id}
+            className="flex flex-col gap-1 border-b pb-3 last:border-b-0 last:pb-0"
+          >
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium tabular-nums">
                 {formatHours(e.hoursWorked)}

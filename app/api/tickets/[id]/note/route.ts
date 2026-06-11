@@ -41,6 +41,7 @@ export async function POST(
     const itemId = await ticketNotes.createInternal(num, {
       title: title || undefined,
       description: text,
+      authorName: session.displayName,
     });
     return NextResponse.json({ itemId });
   } catch (e) {

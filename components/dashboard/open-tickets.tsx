@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { TicketsList, type TicketRow } from "@/components/tickets/tickets-list";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import type { TicketPicklists } from "@/lib/autotask/types";
@@ -24,9 +25,12 @@ type Assigned = "all" | "unassigned";
 export function OpenTickets({
   picklists,
   initial,
+  count,
 }: {
   picklists: TicketPicklists;
   initial: Page;
+  // Gesamtzahl offener Tickets (team-weit) für den Badge neben der Überschrift.
+  count?: number;
 }) {
   const [assigned, setAssigned] = React.useState<Assigned>("all");
   const [data, setData] = React.useState<Page>(initial);
@@ -71,7 +75,17 @@ export function OpenTickets({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold tracking-tight">Offene Tickets</h2>
+        <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+          Offene Tickets
+          {count != null && count > 0 && (
+            <Badge
+              variant="secondary"
+              className="bg-chart-2/15 text-chart-2 tabular-nums"
+            >
+              {count > 999 ? "999+" : count}
+            </Badge>
+          )}
+        </h2>
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"

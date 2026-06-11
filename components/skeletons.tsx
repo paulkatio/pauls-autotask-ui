@@ -33,14 +33,30 @@ export function FiltersSkeleton({
   filters?: number;
   search?: boolean;
 }) {
+  // Spiegelt die echte Filterzeile: Suche volle Breite (mobil), darunter die Chips –
+  // 3 Chips als 1×3, 4 Chips als 2×2 (je volle Zeilenbreite). Ab sm inhaltsbreit.
+  const chipFill =
+    filters >= 4
+      ? "basis-[calc(50%-0.25rem)] grow sm:basis-auto sm:grow-0 sm:flex-none"
+      : "flex-1 sm:flex-none";
   return (
     <div className="flex flex-wrap items-center gap-2">
       {search && (
-        <Skeleton className="h-9 w-full min-w-48 flex-1 rounded-lg sm:max-w-xs" />
+        <Skeleton className="h-11 w-full min-w-48 flex-1 rounded-lg sm:h-7 sm:max-w-xs" />
       )}
-      {Array.from({ length: filters }).map((_, i) => (
-        <Skeleton key={i} className="h-8 w-36 rounded-lg" />
-      ))}
+      {filters > 0 && (
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:items-center">
+          {Array.from({ length: filters }).map((_, i) => (
+            <Skeleton
+              key={i}
+              className={cn(
+                chipFill,
+                "h-11 min-w-0 rounded-full sm:h-7 sm:w-36 sm:rounded-md",
+              )}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -126,12 +142,16 @@ export function TableSkeleton({
 }
 
 // KPI-Kacheln im exakt gleichen Karten-Raster wie Dashboard/Kundenakte.
+// `hint` rendert die einzeilige Erklär-Unterzeile mit (Dashboard-Kacheln) – sonst
+// bleibt es bei Titel + Wert (Kundenakte/Zeiten ohne Unterzeile).
 export function KpiTilesSkeleton({
   count = 4,
   gridClassName = "grid grid-cols-2 gap-4 lg:grid-cols-4",
+  hint = false,
 }: {
   count?: number;
   gridClassName?: string;
+  hint?: boolean;
 }) {
   return (
     <div className={gridClassName}>
@@ -142,6 +162,7 @@ export function KpiTilesSkeleton({
         >
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-8 w-16" />
+          {hint && <Skeleton className="h-3 w-32" />}
         </div>
       ))}
     </div>

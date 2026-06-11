@@ -33,6 +33,29 @@ function shortName(value: string): string {
   return `${parts[0]} ${lastInitial}.`;
 }
 
+// Tooltip-Inhalt mit weicher Animation: beim Hover/Balkenwechsel faded + zoomt der
+// Inhalt sanft ein (key=Label -> Remount = erneutes animate-in). Die Position bleibt
+// instant am Cursor (kein „Einflug von links"). Recharts injiziert die Props.
+function AnimatedTooltipContent(
+  props: React.ComponentProps<typeof ChartTooltipContent>,
+) {
+  const label = (props as { label?: React.ReactNode }).label;
+  return (
+    <div
+      key={String(label ?? "")}
+      className="animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-1 duration-200 ease-out"
+    >
+      <ChartTooltipContent
+        {...props}
+        hideIndicator
+        formatter={(value) => (
+          <span className="text-foreground">{value} offene Tickets</span>
+        )}
+      />
+    </div>
+  );
+}
+
 export function CountBarChart({
   title,
   data,
@@ -164,14 +187,15 @@ export function CountBarChart({
               width={32}
             />
             <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  hideIndicator
-                  formatter={(value) => (
-                    <span className="text-foreground">{value} offene Tickets</span>
-                  )}
-                />
-              }
+              // Kein Recharts-„Einflug von links": NUR die Deckkraft wird überblendet
+              // (kein transform-Transition – sonst gleitet der Tooltip beim ersten
+              // Erscheinen aus der Ecke). So taucht er weich genau am Cursor auf.
+              // Recharts-Positionsanimation AUS + keine Transform-Transition: der
+              // Kasten erscheint immer hart am Cursor (kein Gleiten/„Einflug von
+              // links"). Nur die Deckkraft wird kurz überblendet.
+              isAnimationActive={false}
+              wrapperStyle={{ transition: "opacity 120ms ease-out" }}
+              content={<AnimatedTooltipContent />}
             />
             <Bar
               dataKey="count"

@@ -5,7 +5,8 @@ import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusBadge } from "@/components/status-indicator";
-import { labelOf, priorityVariant } from "@/lib/autotask/mappers";
+import { labelOf } from "@/lib/autotask/mappers";
+import { PriorityBadge } from "@/components/priority-indicator";
 import { useRecordNav } from "@/hooks/use-record-nav";
 import type { TicketPicklists } from "@/lib/autotask/types";
 import type { TicketRow } from "@/components/tickets/tickets-list";
@@ -158,9 +159,10 @@ export function TicketCard({
             status={t.status}
             label={labelOf(picklists.status, t.status)}
           />
-          <Badge variant={priorityVariant(t.priority)}>
-            {labelOf(picklists.priority, t.priority)}
-          </Badge>
+          <PriorityBadge
+            priority={t.priority}
+            label={labelOf(picklists.priority, t.priority)}
+          />
           {showQueue && (
             <Badge variant="outline">{labelOf(picklists.queue, t.queueID)}</Badge>
           )}

@@ -23,12 +23,18 @@ export interface HistoryEntry {
 const KEY = "ticket-history-v1";
 const EVENT = "ticket-history-changed";
 const CAP = 60;
+// Aufbewahrung: Einträge älter als 7 Tage werden nicht mehr angezeigt (Paul:
+// „der soll einfach nur für eine Woche gelten"). Beim nächsten Schreiben fallen
+// sie auch aus dem Speicher.
+const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function read(): HistoryEntry[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as HistoryEntry[]) : [];
+    const list = raw ? (JSON.parse(raw) as HistoryEntry[]) : [];
+    const cutoff = Date.now() - MAX_AGE_MS;
+    return list.filter((h) => typeof h.at === "number" && h.at >= cutoff);
   } catch {
     return [];
   }

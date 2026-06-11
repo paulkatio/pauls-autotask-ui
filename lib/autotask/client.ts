@@ -115,6 +115,8 @@ function authHeaders(): Record<string, string> {
 const CHILD_OBJECT_ENDPOINT: Record<string, string> = {
   "Tickets/Notes": "TicketNotes",
   "Tickets/Attachments": "TicketAttachments",
+  "Tickets/ChecklistItems": "TicketChecklistItems",
+  "Tickets/SecondaryResources": "TicketSecondaryResources",
 };
 
 // Schlüssel für den Concurrency-Limiter = der Autotask-Objekt-Endpoint, gegen den der
@@ -312,6 +314,12 @@ export const autotask = {
       data,
     );
     return res.itemId;
+  },
+
+  // DELETE {path} -> entfernt einen (Child-)Datensatz. `path` ist der volle Pfad
+  // inkl. ID (z. B. "Tickets/123/SecondaryResources/456"). Antwort wird ignoriert.
+  async del(path: string): Promise<void> {
+    await request<unknown>("DELETE", path, entityKey(path));
   },
 };
 

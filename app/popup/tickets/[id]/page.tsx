@@ -21,5 +21,5 @@ export default async function PopupTicketPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <TicketDetailContent id={Number(id)} />;
+  return <TicketDetailContent id={Number(id)} popout />;
 }

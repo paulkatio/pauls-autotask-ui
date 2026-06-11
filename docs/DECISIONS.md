@@ -1921,3 +1921,53 @@ DECISIONS/BACKLOG bleiben unverändert (Sandbox-Historie).
 beim nächsten `npm run test:e2e` verifizieren.
 
 <!-- Neue Entscheidungen hier anhängen -->
+
+## Zusätzliche Mitarbeiter im Ticket: TicketSecondaryResources (verifiziert 2026-06-11)
+
+Live gegen Prod-API (App-Creds) am Test-Ticket **56313** geprüft (Add+List+Delete),
+Wegwerf-Skript danach gelöscht.
+
+- **Felder** (`entityInformation/fields`): `id`, `resourceID`, `roleID`, `ticketID` –
+  **alle Pflicht**. `roleID` ist beim Anlegen also zwingend (nicht nur resourceID).
+- **Lesen:** Top-Level `POST TicketSecondaryResources/query` mit Filter
+  `ticketID = <id>` (wie im Dashboard). HTTP 200.
+- **Anlegen:** `POST Tickets/{id}/SecondaryResources` mit Body `{ resourceID, roleID }`
+  → HTTP 200, liefert `{ itemId }`. Limiter-Mapping
+  `"Tickets/SecondaryResources" → "TicketSecondaryResources"` ergänzt
+  ([client.ts](../lib/autotask/client.ts)).
+- **Entfernen:** `DELETE Tickets/{id}/SecondaryResources/{recordId}` → HTTP 200
+  (neue `autotask.del()`-Methode). Danach Liste leer (sauber).
+- **Business-Regel:** Der **primäre** Verantwortliche kann NICHT zusätzlich sein –
+  Autotask antwortet HTTP **500** „… is already the primary Resource." Daher blendet
+  die UI den primären Assignee aus der Hinzufügen-Auswahl aus.
+- **roleID-Beschaffung:** wie bei der Hauptzuweisung über `/api/resources/{id}/roles`
+  (`ResourceRoles`); genau eine Rolle → direkt, mehrere → zweites Select „Rolle wählen".
+- UI: Feld „Zusätzliche Mitarbeiter" in der Zuweisungs-Gruppe der Ticketdetailseite
+  ([secondary-resources-edit.tsx](../components/tickets/secondary-resources-edit.tsx)),
+  Anzeige vorhandener + Hinzufügen/Entfernen.
+
+## Projekte-Feature: Entität „Projects" + „Tasks" (verifiziert 2026-06-11)
+
+Verifiziert über eine **read-only `.env.local`-App-Client-Probe** (`node --env-file`,
+gegen die App-eigenen Prod-Creds — die maßgebliche Methode laut Regel oben; MCP nur
+zur Voranzeige). Wegwerf-Skript danach gelöscht.
+
+- **`Projects`-Felder** (via `entityInformation/fields`): u. a. `id`, `projectName`,
+  `projectNumber`, `status`, `companyID`, `projectLeadResourceID`,
+  `completedPercentage`, `startDateTime`, `endDateTime`, `lastActivityDateTime`.
+- **`Projects.status`-Picklist:** `0` Inaktiv, `1` Neu, `2` In Bearbeitung,
+  `3` Pausiert, `4` Projektänderung, `6` Warten auf Ersatzteile, `7` Warten auf
+  Kundenreaktion, **`5` Abgeschlossen**. „Offen" = `status != 5` (analog Tickets).
+- **`Tasks` (Projektaufgaben):** `POST Tasks/query` mit Filter
+  `assignedResourceID = <rid>` liefert **HTTP 200** und Feld **`projectID`** je Task.
+  → Entitätsname im REST-Client ist **`Tasks`** (nicht „ProjectTasks").
+- **`Projects` per `in id`** (`{op:"in", field:"id", value:[…]}`) **+ `noteq status 5`**:
+  HTTP 200. Belegbeispiel: Task-Projekte von Paul (Resource **29682926**) = `91`
+  (status 5 → gefiltert) und `98` (status 1 → bleibt).
+- **Definition „Meine Projekte"** (Paul-Vorgabe, beides nutzbar): Projekte, die ich
+  **leite** (`projectLeadResourceID = rid`) **ODER** in denen mir eine **Task**
+  zugewiesen ist; jeweils `status != 5`. „Alle" = alle offenen Team-Projekte.
+  Implementiert in [`lib/autotask/entities/projects.ts`](../lib/autotask/entities/projects.ts);
+  Dashboard-Kachel 3 („Zusätzlicher Mitarbeiter") → „Meine Projekte" (`/projekte`).
+  Die Sekundär-Tickets wandern in einen eigenen Bereich auf „Meine Tickets" und
+  zählen jetzt in `counts.mine` (Sidebar/Heading/Kachel 1) mit.

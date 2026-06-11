@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { autotask, type AutotaskFilter } from "@/lib/autotask/client";
 import { companies } from "@/lib/autotask/entities/companies";
 import { resources } from "@/lib/autotask/entities/resources";
+import { countMyOpenProjects } from "@/lib/autotask/entities/projects";
 import type { Ticket } from "@/lib/autotask/types";
 import {
   getTicketsPage,
@@ -33,9 +34,10 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 // Die vier neuen Dashboard-Kacheln (B15). Quellen in DECISIONS.md verifiziert.
 export interface DashboardKpis {
-  myOpen: number; // K1
-  pool: number; // K2
-  secondaryOpen: number; // K3
+  myOpen: number; // K1: mir zugewiesene offene Tickets
+  pool: number; // K2: nicht zugewiesen
+  secondaryOpen: number; // offene Tickets, in denen ich zusätzlicher Mitarbeiter bin
+  myProjects: number; // K3 (neu): meine offenen Projekte (Leiter oder eigene Tasks)
   ballInMyCourt: number; // K4
   ballApprox: boolean; // K4: true, wenn das Fetch-Cap erreicht wurde
 }
@@ -60,8 +62,9 @@ export async function getSecondaryTicketIds(resourceId: number): Promise<number[
   ];
 }
 
-// K3 Schritt 2: offene unter diesen IDs zählen – defensiv in Blöcken summiert.
-async function countSecondaryOpen(resourceId: number): Promise<number> {
+// Offene unter diesen IDs zählen – defensiv in Blöcken summiert. Exportiert, damit
+// der „Meine Tickets"-Zähler (Sidebar/Heading) die Sekundär-Tickets mitzählt.
+export async function countSecondaryOpen(resourceId: number): Promise<number> {
   const ids = await getSecondaryTicketIds(resourceId);
   if (ids.length === 0) return 0;
   const counts = await Promise.all(
@@ -92,16 +95,20 @@ async function computeBall(
 
 async function computeDashboardKpis(resourceId: number): Promise<DashboardKpis> {
   const me = ME(resourceId);
-  const [myOpen, pool, secondaryOpen, ball] = await Promise.all([
+  const [myOpen, pool, secondaryOpen, myProjects, ball] = await Promise.all([
     autotask.count("Tickets", [me, OPEN]),
     autotask.count("Tickets", [UNASSIGNED, OPEN]),
     countSecondaryOpen(resourceId),
+    // Best effort: ein Projects-/Tasks-Problem (neue Tabellen) darf NICHT die ganze
+    // Übersicht blanken – nur die Kachel „Meine Projekte" degradiert dann auf 0.
+    countMyOpenProjects(resourceId).catch(() => 0),
     computeBall(resourceId),
   ]);
   return {
     myOpen,
     pool,
     secondaryOpen,
+    myProjects,
     ballInMyCourt: ball.count,
     ballApprox: ball.approx,
   };

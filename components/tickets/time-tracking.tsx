@@ -5,6 +5,7 @@ import { ClockIcon, PauseIcon, PlayIcon, TimerIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { TimeEntryDialog } from "@/components/tickets/time-entry-dialog";
+import { NewNoteButton } from "@/components/tickets/new-note-button";
 
 // Lokale Helfer: Zeitstempel → "HH:MM" (lokal) bzw. "YYYY-MM-DD" (lokal).
 function hhmm(ts: number): string {
@@ -120,6 +121,8 @@ export function TimeTracking({ ticketId }: { ticketId: number }) {
         <ClockIcon />
         Zeit erfassen
       </Button>
+      {/* „Neue Notiz" direkt neben „Zeit erfassen" (Paul). */}
+      <NewNoteButton ticketId={ticketId} />
 
       {/* Vorbefüllter Zeit-erfassen-Dialog (kontrolliert). */}
       <TimeEntryDialog

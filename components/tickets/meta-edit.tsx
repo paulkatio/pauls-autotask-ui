@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { toastAssignMail, type AssignMailStatus } from "@/lib/tickets/notify-client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -64,14 +65,18 @@ const UNASSIGNED = "none";
 async function patchTicket(
   ticketId: number,
   data: Record<string, number | null>,
-): Promise<void> {
+): Promise<{ assignMail?: AssignMailStatus }> {
   const res = await fetch(`/api/tickets/${ticketId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  const j = (await res.json().catch(() => ({}))) as { error?: string };
+  const j = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    assignMail?: AssignMailStatus;
+  };
   if (!res.ok) throw new Error(j.error ?? "Speichern fehlgeschlagen.");
+  return j;
 }
 
 function FieldError({ message }: { message: string | null }) {
@@ -685,16 +690,45 @@ export function CategoryEdit({
 // Zuweisung: Resource wählen -> Rolle(n) laden -> beide zusammen senden.
 export function AssignmentEdit({
   ticketId,
+  ticketNumber,
   assignedResourceID,
+  assignedResourceRoleID,
   assignedResourceName,
   resources,
 }: {
   ticketId: number;
+  ticketNumber: string;
   assignedResourceID: number | null | undefined;
+  assignedResourceRoleID?: number | null;
   assignedResourceName?: string | null;
   resources: ResourceOption[];
 }) {
   const router = useRouter();
+
+  // Einzel-Zuweisung in den globalen Verlauf eintragen (rückgängig auf den alten
+  // Assignee). Resource + Rolle gehören gekoppelt – das Reverse setzt beide zurück.
+  function logAssign(
+    label: string,
+    oldRes: number | null,
+    oldRole: number | null,
+  ) {
+    recordHistory({
+      label: `${ticketNumber}: ${label}`,
+      reversible: true,
+      reverse: [
+        {
+          id: ticketId,
+          ticketNumber,
+          body: {
+            assignedResourceID: oldRes,
+            assignedResourceRoleID: oldRole,
+          },
+        },
+      ],
+    });
+  }
+  const nameOf = (id: number) =>
+    resources.find((r) => r.id === id)?.name ?? `#${id}`;
   const [res, setRes] = React.useState(
     assignedResourceID == null ? UNASSIGNED : String(assignedResourceID),
   );
@@ -739,6 +773,11 @@ export function AssignmentEdit({
           assignedResourceRoleID: null,
         });
         toast.success("Zuweisung entfernt.");
+        logAssign(
+          "Zuweisung entfernt",
+          assignedResourceID ?? null,
+          assignedResourceRoleID ?? null,
+        );
         router.refresh();
       } catch (e) {
         setRes(prev);
@@ -757,11 +796,18 @@ export function AssignmentEdit({
       if (rs.length === 0) {
         setError("Diese Resource hat keine Rolle – Zuweisung nicht möglich.");
       } else if (rs.length === 1) {
-        await patchTicket(ticketId, {
+        const r = await patchTicket(ticketId, {
           assignedResourceID: rid,
           assignedResourceRoleID: rs[0].roleID,
         });
         toast.success("Zugewiesen.");
+        // Mailstatus kommt aus der PATCH-Route (serverseitig ausgelöst).
+        toastAssignMail(r.assignMail);
+        logAssign(
+          `zugewiesen an ${nameOf(rid)}`,
+          assignedResourceID ?? null,
+          assignedResourceRoleID ?? null,
+        );
         router.refresh();
       } else {
         // Mehrere Rollen -> zweites Select anzeigen, noch nicht speichern.
@@ -780,11 +826,18 @@ export function AssignmentEdit({
     setSaving(true);
     setError(null);
     try {
-      await patchTicket(ticketId, {
+      const r = await patchTicket(ticketId, {
         assignedResourceID: pendingResource,
         assignedResourceRoleID: Number(next),
       });
       toast.success("Zugewiesen.");
+      // Mailstatus kommt aus der PATCH-Route (serverseitig ausgelöst).
+      toastAssignMail(r.assignMail);
+      logAssign(
+        `zugewiesen an ${nameOf(pendingResource)}`,
+        assignedResourceID ?? null,
+        assignedResourceRoleID ?? null,
+      );
       setRoles([]);
       setPendingResource(null);
       router.refresh();

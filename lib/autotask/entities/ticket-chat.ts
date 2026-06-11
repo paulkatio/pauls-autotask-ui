@@ -8,6 +8,7 @@ import { attachments as ticketAttachments } from "@/lib/autotask/entities/attach
 import { sendMail, isResendConfigured } from "@/lib/mail/resend";
 import { buildCustomerEmail } from "@/lib/mail/customer-email";
 import { getOrgName } from "@/lib/branding-server";
+import { sanitizeRichHtml, hasRichMarkup } from "@/lib/html/sanitize-rich";
 import {
   CONVERSATION_NOTE_TYPES,
   CONVERSATION_TYPE_IDS,
@@ -127,16 +128,22 @@ export async function sendTicketChatNote(
   text: string,
   notify: boolean,
   files: ChatAttachment[] = [],
+  rawHtml: string = "",
 ): Promise<SendChatResult> {
   return withTicketLock(ticketId, async () => {
-    // title ist beim Anlegen Pflicht – aus der ersten Zeile ableiten (gekürzt).
+    // Rich-Inhalt? -> sanitisiertes HTML als Notiz-Body + in die Kundenmail.
+    // Sonst Plaintext (Bestandsverhalten). Autotask speichert die description
+    // verbatim (verifiziert an 56313), unser Chat rendert sie wieder sanitisiert.
+    const sanitized = rawHtml.trim() ? sanitizeRichHtml(rawHtml) : "";
+    const useHtml = sanitized.length > 0 && hasRichMarkup(sanitized);
+    // title ist beim Anlegen Pflicht – aus der ersten Zeile des PLAINTEXTS ableiten.
     const firstLine = text.split("\n")[0].trim();
     const title =
       (firstLine.length > 120 ? firstLine.slice(0, 117) + "…" : firstLine) ||
       "Chat-Nachricht";
     const noteData = {
       title,
-      description: text,
+      description: useHtml ? sanitized : text,
       noteType: CONVERSATION_NOTE_TYPES.outbound,
       publish: 1,
     };
@@ -199,9 +206,10 @@ export async function sendTicketChatNote(
       const contactName = `${contact?.firstName ?? ""} ${contact?.lastName ?? ""}`.trim();
       const { html, text: textBody, subject } = buildCustomerEmail({
         contactName,
-        message: text,
+        message: useHtml ? sanitized : text,
         orgName,
         ticketNumber: number,
+        isHtml: useHtml,
       });
 
       await sendMail({

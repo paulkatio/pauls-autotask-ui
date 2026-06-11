@@ -7,6 +7,7 @@ import type { LucideIcon } from "lucide-react"
 import {
   SidebarGroup,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
@@ -16,6 +17,13 @@ export type NavItem = {
   title: string
   url: string
   icon: LucideIcon
+  // Optionaler Zähler-Badge (z. B. Anzahl offener Tickets). Bei 0/undefined ausgeblendet.
+  badge?: number
+}
+
+// Große Zahlen kompakt halten (Badge soll nicht die Beschriftung verdrängen).
+function fmtBadge(n: number): string {
+  return n > 999 ? "999+" : String(n)
 }
 
 export function isActiveRoute(pathname: string, url: string) {
@@ -49,6 +57,13 @@ export function NavMain({ items }: { items: NavItem[] }) {
               <item.icon />
               <span>{item.title}</span>
             </SidebarMenuButton>
+            {item.badge != null && item.badge > 0 && (
+              // Dezenter Pill in Sidebar-Tokens; im Icon-Modus blendet der Primitive
+              // den Badge selbst aus (group-data-[collapsible=icon]:hidden).
+              <SidebarMenuBadge className="top-1/2! -translate-y-1/2! bg-chart-2/15 text-chart-2">
+                {fmtBadge(item.badge)}
+              </SidebarMenuBadge>
+            )}
           </SidebarMenuItem>
         ))}
       </SidebarMenu>

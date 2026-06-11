@@ -6,7 +6,10 @@ import { AlertCircleIcon, MailIcon, PaperclipIcon, XIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  RichTextEditor,
+  type RichTextEditorHandle,
+} from "@/components/tickets/rich-text-editor";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -26,6 +29,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
+import { sanitizeRichHtml, hasRichMarkup } from "@/lib/html/sanitize-rich";
 import type { ChatMessage } from "@/lib/autotask/entities/ticket-chat";
 
 const POLL_MS = 45_000;
@@ -79,7 +83,11 @@ export function TicketChat({
 }) {
   const [messages, setMessages] = React.useState<LocalMessage[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  // text = Plaintext (Leerprüfung, optimistische Bubble), html = sanitisierter
+  // Rich-Inhalt aus dem Editor (geht als Notiz-Body + in die Kundenmail).
   const [text, setText] = React.useState("");
+  const [html, setHtml] = React.useState("");
+  const editorRef = React.useRef<RichTextEditorHandle>(null);
   const [sending, setSending] = React.useState(false);
   const [sendError, setSendError] = React.useState<string | null>(null);
   const [mailNotice, setMailNotice] = React.useState<string | null>(null);
@@ -178,21 +186,25 @@ export function TicketChat({
     setMailNotice(null);
 
     const sentFiles = files;
+    const sentHtml = html;
     const attachmentNames = sentFiles.map((f) => f.name);
 
     // Optimistisch: temporäre Outbound-Bubble sofort anzeigen (inkl. Dateinamen).
+    // Body als Rich-HTML (falls formatiert), sonst Plaintext.
     const optimistic: LocalMessage = {
       id: tempId.current--,
       direction: "outbound",
       noteType: 18,
       createDateTime: new Date().toISOString(),
       title: null,
-      body: body || attachmentNames.join(", "),
+      body: hasRichMarkup(sentHtml) ? sentHtml : body || attachmentNames.join(", "),
       sender: "Ich",
       pendingAttachments: attachmentNames.length ? attachmentNames : undefined,
     };
     setMessages((prev) => [...(prev ?? []), optimistic]);
     setText("");
+    setHtml("");
+    editorRef.current?.clear();
     setFiles([]);
 
     try {
@@ -201,6 +213,7 @@ export function TicketChat({
         // Mit Anhängen: multipart. Dateien gehen ans Ticket UND in die Kundenmail.
         const fd = new FormData();
         fd.set("text", body);
+        fd.set("html", sentHtml);
         fd.set("notify", "true");
         for (const f of sentFiles) fd.append("files", f);
         res = await fetch(`/api/tickets/${ticketId}/chat`, {
@@ -211,7 +224,7 @@ export function TicketChat({
         res = await fetch(`/api/tickets/${ticketId}/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: body, notify: true }),
+          body: JSON.stringify({ text: body, html: sentHtml, notify: true }),
         });
       }
       if (!res.ok) {
@@ -257,7 +270,10 @@ export function TicketChat({
       await load(); // echte Notiz holen (ersetzt die optimistische).
     } catch (err) {
       setSendError(err instanceof Error ? err.message : "Senden fehlgeschlagen.");
-      setText(body); // Eingabe + Dateien wiederherstellen
+      // Eingabe (inkl. Formatierung) + Dateien wiederherstellen.
+      setText(body);
+      setHtml(sentHtml);
+      editorRef.current?.setHtml(sentHtml);
       setFiles(sentFiles);
       await load(); // optimistische Bubble entfernen
     } finally {
@@ -265,8 +281,10 @@ export function TicketChat({
     }
   }
 
+  // Höhe gedeckelt + intern gescrollt (lange Nachrichten dürfen die Seite nicht
+  // strecken) UND vom Nutzer per Ziehgriff (resize-y) in der Höhe anpassbar.
   return (
-    <Card className="flex flex-col max-h-[75dvh] xl:h-full xl:max-h-none">
+    <Card className="flex min-h-80 max-h-[85dvh] flex-col resize-y overflow-hidden">
       <CardHeader className="border-b">
         <div className="flex items-baseline justify-between gap-2">
           <CardTitle>Chat</CardTitle>
@@ -387,9 +405,26 @@ export function TicketChat({
                           <span className="font-medium">{senderLabel}</span>
                           <span>{fmt(m.createDateTime)}</span>
                         </div>
-                        <p className="text-sm break-words whitespace-pre-wrap">
-                          {m.body}
-                        </p>
+                        {outbound ? (
+                          // Eigene Notizen tragen unseren Rich-Subset (b/i/u/Listen).
+                          // Sicher gerendert (sanitisiert, nie Attribute). Alt-Notizen
+                          // ohne Markup bleiben über pre-wrap zeilengetreu.
+                          <div
+                            className={cn(
+                              "text-sm break-words [overflow-wrap:anywhere]",
+                              hasRichMarkup(m.body)
+                                ? "[&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5"
+                                : "whitespace-pre-wrap",
+                            )}
+                            dangerouslySetInnerHTML={{
+                              __html: sanitizeRichHtml(m.body),
+                            }}
+                          />
+                        ) : (
+                          <p className="text-sm break-words whitespace-pre-wrap [overflow-wrap:anywhere]">
+                            {m.body}
+                          </p>
+                        )}
                         {m.pendingAttachments?.length ? (
                           <div className="flex flex-col gap-0.5">
                             {m.pendingAttachments.map((name, i) => (
@@ -462,12 +497,15 @@ export function TicketChat({
               ))}
             </div>
           )}
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
+          <RichTextEditor
+            ref={editorRef}
+            onChange={({ html: h, text: t }) => {
+              setHtml(h);
+              setText(t);
+            }}
             placeholder="Nachricht an den Kunden …"
-            rows={2}
-            aria-label="Nachricht"
+            ariaLabel="Nachricht"
+            disabled={sending}
           />
           <div className="flex items-center justify-between gap-2">
             <Button

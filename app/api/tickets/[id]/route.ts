@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getTicketDetail } from "@/lib/autotask/entities/ticket-detail";
 import { autotask, AutotaskError } from "@/lib/autotask/client";
+import type { Ticket } from "@/lib/autotask/types";
+import { notifyAssignment } from "@/lib/tickets/assignment-notify";
 
 export const dynamic = "force-dynamic";
 
@@ -124,8 +126,32 @@ export async function PATCH(
   }
 
   try {
+    // Zuweisungs-Mail serverseitig auslösen (robust gegen Client-Timing): nur wenn
+    // eine Resource gesetzt (nicht entfernt) wird, der Aufrufer es nicht unterdrückt
+    // (Bulk bündelt selbst) und sich die Resource tatsächlich ändert.
+    const wantNotify =
+      "assignedResourceID" in data &&
+      data.assignedResourceID != null &&
+      body._suppressAssignMail !== true;
+
+    let oldAssignee: number | null = null;
+    if (wantNotify) {
+      const before = await autotask.get<Ticket>("Tickets", num);
+      oldAssignee = before?.assignedResourceID ?? null;
+    }
+
     await autotask.update("Tickets", { id: num, ...data });
-    return NextResponse.json({ ok: true });
+
+    let assignMail;
+    if (wantNotify) {
+      const newRes = Number(data.assignedResourceID);
+      if (newRes !== oldAssignee) {
+        // Best effort: notifyAssignment fängt Fehler intern, wirft nie.
+        assignMail = await notifyAssignment(newRes, [num], session.displayName);
+      }
+    }
+
+    return NextResponse.json({ ok: true, ...(assignMail ? { assignMail } : {}) });
   } catch (e) {
     if (e instanceof AutotaskError) {
       const rateLimited = e.status === 429;

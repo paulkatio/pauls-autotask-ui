@@ -50,6 +50,45 @@ export interface TicketNote {
   lastActivityDate?: string;
 }
 
+// Ticket-Checkliste (in Autotask eingebaute „To-Dos"). Eigener Objekt-Endpoint
+// TicketChecklistItems; Felder verifiziert via entityInformation/fields (2026-06-11).
+export interface TicketChecklistItem {
+  id: number;
+  ticketID?: number;
+  itemName?: string;
+  isCompleted?: boolean;
+  isImportant?: boolean;
+  position?: number;
+  completedDateTime?: string | null;
+  completedByResourceID?: number | null;
+}
+
+// Autotask-Projekt (Felder via entityInformation/fields verifiziert 2026-06-11).
+// `status` ist eine eigene Picklist (0 Inaktiv … 5 Abgeschlossen). „Offen" =
+// status != 5, analog zu Tickets. projectLeadResourceID = Projektleiter.
+export interface Project {
+  id: number;
+  projectName?: string;
+  projectNumber?: string;
+  status?: number;
+  companyID?: number;
+  projectLeadResourceID?: number | null;
+  completedPercentage?: number | null;
+  startDateTime?: string | null;
+  endDateTime?: string | null;
+  lastActivityDateTime?: string | null;
+}
+
+// Zusätzlicher Mitarbeiter eines Tickets (eigener Objekt-Endpoint
+// TicketSecondaryResources; Felder verifiziert via entityInformation/fields
+// 2026-06-11). resourceID + roleID sind beim Anlegen Pflicht.
+export interface TicketSecondaryResource {
+  id: number;
+  ticketID?: number;
+  resourceID?: number;
+  roleID?: number;
+}
+
 export interface TimeEntry {
   id: number;
   ticketID?: number | null;

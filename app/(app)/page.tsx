@@ -1,10 +1,10 @@
 import Link from "next/link";
 import {
   AlertCircleIcon,
+  FolderKanbanIcon,
   InboxIcon,
   ReplyIcon,
   TicketIcon,
-  UsersIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -14,6 +14,7 @@ import {
   getTicketsPerResource,
 } from "@/lib/autotask/entities/dashboard";
 import { getTicketsPage } from "@/lib/autotask/entities/ticket-list";
+import { getSidebarTicketCounts } from "@/lib/autotask/entities/ticket-counts";
 import { CountBarChart } from "@/components/dashboard/count-bar-chart";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
 import { AutotaskError, type AutotaskFilter } from "@/lib/autotask/client";
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { OpenTickets } from "@/components/dashboard/open-tickets";
+import { NewTicketDialog } from "@/components/tickets/new-ticket-dialog";
 import { PageHeader } from "@/components/page-header";
 
 export const dynamic = "force-dynamic";
@@ -67,9 +69,12 @@ function KpiCard({
             />
           </CardAction>
         </CardHeader>
-        {hint && (
-          <CardContent className="text-muted-foreground text-xs">{hint}</CardContent>
-        )}
+        {/* Erklär-Unterzeile – IMMER gerendert und einzeilig (line-clamp-1), damit
+            alle Kacheln auf jeder Breite exakt gleiche Struktur/Höhe haben. Fällt eine
+            Kachel mal ohne Text aus, hält ein geschütztes Leerzeichen die Höhe. */}
+        <CardContent className="text-muted-foreground line-clamp-1 text-xs">
+          {hint ?? " "}
+        </CardContent>
       </Card>
     </Link>
   );
@@ -88,6 +93,9 @@ export default async function DashboardPage() {
   ];
 
   const picklists = await getTicketPicklists();
+  // Gesamtzahl offener Tickets (team-weit) für den Badge an der „Offene Tickets"-
+  // Sektion. Gecacht, best effort.
+  const counts = await getSidebarTicketCounts(rid).catch(() => null);
 
   // Datenabruf vom Rendern trennen: Fehler werden zu einem Sentinel, das JSX entsteht
   // AUSSERHALB von try/catch (React-19-Error-Boundary-Regel, kein JSX im try).
@@ -122,25 +130,33 @@ export default async function DashboardPage() {
       <PageHeader
         title="Übersicht"
         description="Deine Tickets auf einen Blick."
+        actions={<NewTicketDialog picklists={picklists} />}
       />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard
           title="Meine offenen Tickets"
-          value={kpis.myOpen}
+          value={kpis.myOpen + kpis.secondaryOpen}
           href="/tickets/my"
           icon={TicketIcon}
+          hint={
+            kpis.secondaryOpen > 0
+              ? `inkl. ${kpis.secondaryOpen} als zusätzlicher Mitarbeiter`
+              : "Dir zugewiesene offene Tickets"
+          }
         />
         <KpiCard
-          title="Nicht zugewiesen (Pool)"
+          title="Nicht zugewiesen"
           value={kpis.pool}
           href="/tickets/team?assigned=unassigned"
           icon={InboxIcon}
+          hint="Offen, noch niemandem zugewiesen"
         />
         <KpiCard
-          title="Zusätzlicher Mitarbeiter"
-          value={kpis.secondaryOpen}
-          href="/tickets/secondary"
-          icon={UsersIcon}
+          title="Meine Projekte"
+          value={kpis.myProjects}
+          href="/projekte"
+          icon={FolderKanbanIcon}
+          hint="Projekte, die du leitest oder bearbeitest"
         />
         <KpiCard
           title="Ball liegt bei mir"
@@ -149,14 +165,16 @@ export default async function DashboardPage() {
           icon={ReplyIcon}
           accent
           hint={
-            kpis.ballApprox ? "approximativ (Obergrenze erreicht)" : undefined
+            kpis.ballApprox
+              ? "Kunde zuletzt aktiv (approximativ)"
+              : "Kunde hat zuletzt geantwortet"
           }
         />
       </div>
 
       <CountBarChart title="Tickets pro Mitarbeiter" data={perResource} />
 
-      <OpenTickets picklists={picklists} initial={openTickets} />
+      <OpenTickets picklists={picklists} initial={openTickets} count={counts?.team} />
     </div>
   );
 }

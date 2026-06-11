@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { CommandPalette } from "@/components/command-palette";
 import { ContactModal } from "@/components/contacts/contact-modal";
+import { HeaderAutotaskLink } from "@/components/header-autotask-link";
 import { HeaderBack } from "@/components/header-back";
 import { HeaderLogo } from "@/components/header-logo";
 import { HeaderSearch } from "@/components/header-search";
@@ -18,6 +19,8 @@ import {
 import { requireSession, authMode } from "@/lib/auth";
 import { mockUsers } from "@/lib/auth/mock-users";
 import { getOrgName } from "@/lib/branding-server";
+import { autotaskWebBase } from "@/lib/autotask/links";
+import { getSidebarTicketCounts } from "@/lib/autotask/entities/ticket-counts";
 
 export default async function AppLayout({
   children,
@@ -27,6 +30,15 @@ export default async function AppLayout({
   const orgName = await getOrgName();
 
   const isMock = authMode() === "mock";
+  const webBase = autotaskWebBase();
+
+  // Offene-Tickets-Zähler für die Sidebar-Badges (best effort: nie die App kippen).
+  let ticketCounts: { mine: number; team: number } | undefined;
+  try {
+    ticketCounts = await getSidebarTicketCounts(session.autotaskResourceId);
+  } catch {
+    ticketCounts = undefined;
+  }
   const switcherUsers = mockUsers.map((u) => ({
     userName: u.userName,
     displayName: u.displayName,
@@ -34,7 +46,7 @@ export default async function AppLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar user={session} orgName={orgName} />
+      <AppSidebar user={session} orgName={orgName} ticketCounts={ticketCounts} />
       <SidebarInset className="min-w-0">
 
         <header className="bg-background/80 supports-[backdrop-filter]:bg-background/65 sticky top-0 z-30 flex min-h-16 shrink-0 items-center gap-2 border-b pt-[env(safe-area-inset-top)] backdrop-blur">
@@ -61,9 +73,10 @@ export default async function AppLayout({
               <span className="hidden md:inline-flex">
                 <ThemeToggle />
               </span>
-              {/* Mobil: Sidebar-Trigger rechts (öffnet die Leiste von rechts, passend
-                  zum „Mehr"-Tab unten rechts). Desktop nutzt den linken Trigger. */}
-              <SidebarTrigger className="size-11 md:hidden" />
+              {/* Mobil rechts: „In Autotask öffnen" (nur auf Detailrouten). Der frühere
+                  Sidebar-Trigger ist hier entfallen – die Sidebar öffnet der „Mehr"-Tab
+                  der Bottom-Nav. Desktop nutzt weiter den linken Trigger. */}
+              <HeaderAutotaskLink webBase={webBase} />
             </div>
           </div>
         </header>
@@ -73,7 +86,7 @@ export default async function AppLayout({
         <div className="flex min-w-0 flex-1 flex-col gap-6 p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
           {children}
         </div>
-        <MobileBottomNav />
+        <MobileBottomNav ticketCounts={ticketCounts} />
       </SidebarInset>
       <CommandPalette />
       <ContactModal />

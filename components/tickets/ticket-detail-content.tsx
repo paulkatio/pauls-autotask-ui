@@ -10,6 +10,7 @@ import {
   getNotePicklists,
 } from "@/lib/autotask/entities/picklists";
 import { AutotaskError } from "@/lib/autotask/client";
+import { autotaskTicketUrl } from "@/lib/autotask/links";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { TicketDetailView } from "@/components/tickets/ticket-detail";
 
@@ -26,7 +27,15 @@ function ErrorAlert({ title, message }: { title: string; message: string }) {
   );
 }
 
-export async function TicketDetailContent({ id }: { id: number }) {
+export async function TicketDetailContent({
+  id,
+  popout = false,
+}: {
+  id: number;
+  // Im Pop-out-Fenster gibt es KEINEN globalen Header → der mobile
+  // „In Autotask öffnen"-Knopf wird dann direkt im Detail gezeigt.
+  popout?: boolean;
+}) {
   const session = await getSession();
   if (!session) return null;
   if (!Number.isFinite(id)) {
@@ -56,6 +65,8 @@ export async function TicketDetailContent({ id }: { id: number }) {
         notePicklists={notePicklists}
         resourceOptions={resourceOptions}
         me={{ name: session.displayName, avatar: session.avatarUrl ?? "" }}
+        autotaskUrl={autotaskTicketUrl(id)}
+        showMobileAutotaskButton={popout}
       />
     );
   } catch (e) {

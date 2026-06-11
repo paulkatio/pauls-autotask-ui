@@ -39,9 +39,25 @@ const TABS: Tab[] = [
 const tabClass =
   "flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-none px-0 text-xs font-normal [&>svg]:size-5";
 
-export function MobileBottomNav() {
+// Kompakte Mobile-Variante (wenig Platz): ab 100 -> „99+".
+function fmtBadge(n: number): string {
+  return n > 99 ? "99+" : String(n);
+}
+
+export function MobileBottomNav({
+  ticketCounts,
+}: {
+  // Offene-Tickets-Zähler (mir / Team) für die kleinen Badges an „Meine"/„Team".
+  ticketCounts?: { mine: number; team: number };
+}) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
+
+  function badgeFor(href: string): number | undefined {
+    if (href === "/tickets/my") return ticketCounts?.mine;
+    if (href === "/tickets/team") return ticketCounts?.team;
+    return undefined;
+  }
 
   return (
     <nav
@@ -51,6 +67,7 @@ export function MobileBottomNav() {
       {TABS.map((tab) => {
         if (tab.kind === "link") {
           const active = isActiveRoute(pathname, tab.href);
+          const badge = badgeFor(tab.href);
           return (
             <Button
               key={tab.href}
@@ -63,7 +80,16 @@ export function MobileBottomNav() {
               )}
               render={<Link href={tab.href} />}
             >
-              <tab.icon />
+              <span className="relative inline-flex">
+                <tab.icon />
+                {badge != null && badge > 0 && (
+                  // Kleiner, dezenter Zähler am Icon (gefüllter Stahlblau-Akzent,
+                  // gut lesbar; hell + dunkel über semantische Tokens).
+                  <span className="bg-chart-2 text-background pointer-events-none absolute -top-1.5 -right-4.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-medium tabular-nums">
+                    {fmtBadge(badge)}
+                  </span>
+                )}
+              </span>
               <span className="max-w-full truncate leading-none">{tab.label}</span>
             </Button>
           );

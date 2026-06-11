@@ -51,6 +51,7 @@ const num = (t: MergeTicket) => t.ticketNumber ?? String(t.id);
 export async function mergeTickets(
   targetId: number,
   sourceIds: number[],
+  authorName?: string,
 ): Promise<MergeResult> {
   const uniqueSources = [...new Set(sourceIds)].filter((id) => id !== targetId);
   if (uniqueSources.length === 0) {
@@ -93,6 +94,7 @@ export async function mergeTickets(
     await ticketNotes.createInternal(targetId, {
       title: `Zusammengeführt aus ${sources.length} Ticket(s)`,
       description: targetBody,
+      authorName,
     });
     targetNoteCreated = true;
   } catch {
@@ -106,6 +108,7 @@ export async function mergeTickets(
       await ticketNotes.createInternal(s.id, {
         title: "Zusammengeführt",
         description: `Dieses Ticket wurde abgeschlossen und in ${num(target)} zusammengeführt. Zeiteinträge und Anhänge verbleiben hier.`,
+        authorName,
       });
       await autotask.update("Tickets", { id: s.id, status: STATUS_COMPLETE });
       results.push({ id: s.id, ticketNumber: num(s), ok: true });

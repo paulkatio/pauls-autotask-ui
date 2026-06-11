@@ -71,19 +71,29 @@ export const ticketNotes = {
   // Interne Notiz (Aktivität): fest auf INTERNAL_NOTE (noteType 2 / publish 1).
   // `title` ist bei TicketNotes Pflicht (DECISIONS B11) – aus dem Text ableiten,
   // falls der Nutzer keinen Titel angibt.
+  // `authorName` (Anzeigename des eingeloggten Users) wird dem Body vorangestellt,
+  // damit erkennbar ist, WER die Notiz geschrieben hat – Autotask trägt sonst nur
+  // den API-User „AutoTask UI" als Ersteller ein. WICHTIG: Der Titel wird ZUERST
+  // aus dem ORIGINALTEXT abgeleitet, NICHT aus dem Namen.
   createInternal: (
     ticketId: number,
-    { title, description }: { title?: string; description: string },
+    {
+      title,
+      description,
+      authorName,
+    }: { title?: string; description: string; authorName?: string },
   ): Promise<number> => {
     const firstLine = description.split("\n")[0].trim();
     const finalTitle =
       (title && title.trim()) ||
       (firstLine.length > 120 ? firstLine.slice(0, 117) + "…" : firstLine) ||
       "Notiz";
+    const name = authorName?.trim();
+    const finalDescription = name ? `${name}:\n${description}` : description;
     return autotask.create(`Tickets/${ticketId}/Notes`, {
       ticketID: ticketId,
       title: finalTitle,
-      description,
+      description: finalDescription,
       noteType: INTERNAL_NOTE.noteType,
       publish: INTERNAL_NOTE.publish,
     });
