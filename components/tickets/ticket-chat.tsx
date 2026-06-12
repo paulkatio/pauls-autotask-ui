@@ -35,8 +35,17 @@ import type { ChatMessage } from "@/lib/autotask/entities/ticket-chat";
 const POLL_MS = 45_000;
 
 // Anhang-Limits (v1, nur ausgehend) – serverseitig in der Route gespiegelt.
-const MAX_FILES = 5;
-const MAX_FILE_MB = 10;
+const MAX_FILES = 5; // Anzahl je Nachricht
+const MAX_FILE_MB = 10; // pro Datei
+const MAX_TOTAL_MB = 25; // alle Anhänge zusammen (E-Mail-tauglich)
+
+// Dateiname in Format (Endung, GROSS) + Basisname zerlegen – für die Chip-Anzeige
+// „PDF: Angebot". Ohne erkennbare Endung gibt es kein Format-Präfix.
+function splitFileName(name: string): { format: string | null; base: string } {
+  const dot = name.lastIndexOf(".");
+  if (dot <= 0 || dot === name.length - 1) return { format: null, base: name };
+  return { format: name.slice(dot + 1).toUpperCase(), base: name.slice(0, dot) };
+}
 
 // Optimistische Bubble kann die gerade gesendeten Dateinamen tragen (nur Anzeige,
 // bis der Reload die echte Notiz holt; die Dateien liegen dann am Ticket + in der Mail).
@@ -112,13 +121,38 @@ export function TicketChat({
 
   function addFiles(incoming: FileList | File[]) {
     const arr = Array.from(incoming);
+
+    // 1) Einzelgröße: zu große Datei sofort ablehnen (kein Teil-Hochladen).
     const tooBig = arr.find((f) => f.size > MAX_FILE_MB * 1024 * 1024);
     if (tooBig) {
       setSendError(`Datei „${tooBig.name}" ist größer als ${MAX_FILE_MB} MB.`);
       return;
     }
-    setSendError(null);
-    setFiles((prev) => [...prev, ...arr].slice(0, MAX_FILES));
+
+    // 2) Anzahl + Gesamtgröße gegen die schon vorgemerkten Dateien prüfen. Was nicht
+    //    mehr passt, wird NICHT still verworfen, sondern mit Hinweis abgelehnt.
+    const accepted: File[] = [];
+    let total = files.reduce((s, f) => s + f.size, 0);
+    let hitCount = false;
+    let hitSize = false;
+    for (const f of arr) {
+      if (files.length + accepted.length >= MAX_FILES) {
+        hitCount = true;
+        break;
+      }
+      if (total + f.size > MAX_TOTAL_MB * 1024 * 1024) {
+        hitSize = true;
+        continue;
+      }
+      accepted.push(f);
+      total += f.size;
+    }
+
+    if (accepted.length > 0) setFiles((prev) => [...prev, ...accepted]);
+    if (hitCount) setSendError(`Maximal ${MAX_FILES} Dateien pro Nachricht.`);
+    else if (hitSize)
+      setSendError(`Anhänge dürfen zusammen ${MAX_TOTAL_MB} MB nicht überschreiten.`);
+    else setSendError(null);
   }
 
   const load = React.useCallback(async () => {
@@ -472,29 +506,41 @@ export function TicketChat({
           </Alert>
         )}
 
+        {/* Composer als dezent gefülltes Feld absetzen (statt einer Trennlinie –
+            keine konkurrierende Linie zum Eingabe-Box-Rand). So ist klar, wo der
+            Nachrichtenverlauf endet und die Eingabe beginnt. */}
         <form
           onSubmit={attemptSend}
-          className="mt-auto flex shrink-0 flex-col gap-2 pb-[env(safe-area-inset-bottom)]"
+          className="bg-muted/40 mt-auto flex shrink-0 flex-col gap-2 rounded-xl p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         >
           {files.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {files.map((f, i) => (
-                <span
-                  key={i}
-                  className="bg-muted flex items-center gap-1 rounded-md py-1 pr-1 pl-2 text-xs"
-                >
-                  <PaperclipIcon className="size-3 shrink-0" />
-                  <span className="max-w-40 truncate">{f.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
-                    aria-label={`${f.name} entfernen`}
-                    className="text-muted-foreground hover:text-foreground rounded p-0.5"
+              {files.map((f, i) => {
+                // Dezent farblich hervorgehoben (Akzent chart-2, wie die Zähler-Badges),
+                // damit klar erkennbar ist: hier hängt wirklich ein Anhang dran.
+                // Anzeige: „FORMAT: Dateiname".
+                const { format, base } = splitFileName(f.name);
+                return (
+                  <span
+                    key={i}
+                    className="border-chart-2/30 bg-chart-2/10 text-chart-2 flex items-center gap-1.5 rounded-md border py-1 pr-1 pl-2 text-xs"
                   >
-                    <XIcon className="size-3" />
-                  </button>
-                </span>
-              ))}
+                    <PaperclipIcon className="size-3 shrink-0" />
+                    <span className="max-w-44 truncate">
+                      {format && <span className="font-semibold">{format}: </span>}
+                      <span className="font-medium">{base}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
+                      aria-label={`${f.name} entfernen`}
+                      className="text-chart-2/70 hover:bg-chart-2/15 hover:text-chart-2 rounded p-0.5"
+                    >
+                      <XIcon className="size-3" />
+                    </button>
+                  </span>
+                );
+              })}
             </div>
           )}
           <RichTextEditor
