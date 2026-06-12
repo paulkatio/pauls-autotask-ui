@@ -6,7 +6,14 @@
 
 export interface HistoryReverse {
   id: number;
-  ticketNumber: string;
+  // Anzeigename des Datensatzes für Fehlermeldungen (Ticketnummer, Projektname …).
+  // Bestandseinträge nutzen `ticketNumber`; neue Einträge `label`. Beide optional,
+  // damit `ticket-history-v1` ohne Migration weiterläuft.
+  ticketNumber?: string;
+  label?: string;
+  // API-Pfad für das Re-PATCH der Alt-Werte. Fehlt er (Bestandseinträge), wird
+  // `/api/tickets/{id}` angenommen – Tickets bleiben so abwärtskompatibel.
+  apiPath?: string;
   // Felder, die zum Zurücksetzen erneut per PATCH gesendet werden (Alt-Werte).
   body: Record<string, number | string | null>;
 }

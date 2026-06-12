@@ -15,6 +15,16 @@ import type { Project } from "@/lib/autotask/types";
 
 const OPEN: AutotaskFilter = { op: "noteq", field: "status", value: 5 };
 const IN_BLOCK = 300; // `in`-Operator defensiv in Blöcken (vgl. Dashboard B15).
+const LEAD_CAP = 200; // Obergrenze der Lead-Projekte (MaxRecords der Lead-Query).
+const ALL_CAP = 500; // Obergrenze „Alle aktiven Projekte".
+
+// Listen-Rückgabe mit Cap-Hinweis: `capped` = die Obergrenze wurde erreicht, die
+// Liste ist also evtl. unvollständig (wichtig, weil Suche/Filter/Sortierung
+// clientseitig über die geladenen Zeilen laufen).
+export interface ProjectListResult {
+  rows: ProjectRow[];
+  capped: boolean;
+}
 
 const PROJECT_FIELDS = [
   "id",
@@ -83,12 +93,15 @@ async function myTaskProjectIds(resourceId: number): Promise<number[]> {
 }
 
 // Rohe „meine offenen Projekte" (ohne Namensauflösung) – Basis für Liste UND Zähler.
-async function collectMyOpenProjects(resourceId: number): Promise<Project[]> {
+// `capped` = die Lead-Obergrenze wurde erreicht (Liste evtl. unvollständig).
+async function collectMyOpenProjects(
+  resourceId: number,
+): Promise<{ projects: Project[]; capped: boolean }> {
   const [lead, taskIds] = await Promise.all([
     autotask.query<Project>(
       "Projects",
       {
-        MaxRecords: 200,
+        MaxRecords: LEAD_CAP,
         IncludeFields: PROJECT_FIELDS,
         Filter: [
           { op: "eq", field: "projectLeadResourceID", value: resourceId },
@@ -123,7 +136,7 @@ async function collectMyOpenProjects(resourceId: number): Promise<Project[]> {
     extra = blocks.flat();
   }
 
-  return [...lead, ...extra];
+  return { projects: [...lead, ...extra], capped: lead.length >= LEAD_CAP };
 }
 
 async function enrich(rows: Project[]): Promise<ProjectRow[]> {
@@ -156,38 +169,53 @@ async function enrich(rows: Project[]): Promise<ProjectRow[]> {
     );
 }
 
-// „Meine" Projekte (Leiter oder eigene Tasks), angereichert. 60 s gecacht pro Resource.
-export function getMyProjects(resourceId: number): Promise<ProjectRow[]> {
+// „Meine" Projekte (Leiter oder eigene Tasks), angereichert + Cap-Hinweis. 60 s
+// gecacht pro Resource. EINZIGE Quelle für „meine Projekte": Liste, Zähler und
+// Dashboard-Vorschau leiten sich alle hieraus ab (ein Collect statt mehrerer).
+export function getMyProjects(resourceId: number): Promise<ProjectListResult> {
   return unstable_cache(
-    async () => enrich(await collectMyOpenProjects(resourceId)),
+    async (): Promise<ProjectListResult> => {
+      const { projects, capped } = await collectMyOpenProjects(resourceId);
+      return { rows: await enrich(projects), capped };
+    },
     ["my-projects", String(resourceId)],
     { revalidate: 60 },
   )();
 }
 
-// Zähler für die Dashboard-Kachel (gleiche Definition wie getMyProjects). 60 s gecacht.
-export function countMyOpenProjects(resourceId: number): Promise<number> {
-  return unstable_cache(
-    async () => (await collectMyOpenProjects(resourceId)).length,
-    ["my-projects-count", String(resourceId)],
-    { revalidate: 60 },
-  )();
+// Zähler für die Dashboard-Kachel (aus derselben gecachten Quelle wie getMyProjects).
+export async function countMyOpenProjects(resourceId: number): Promise<number> {
+  return (await getMyProjects(resourceId)).rows.length;
+}
+
+// Kompakte Vorschau für die Dashboard-Sektion „Meine Projekte" (Top 5 + Gesamtzahl) –
+// ebenfalls aus getMyProjects, also ohne zusätzlichen Datenabruf.
+export interface ProjectsPreview {
+  count: number;
+  items: ProjectRow[];
+}
+
+export async function getMyProjectsPreview(
+  resourceId: number,
+): Promise<ProjectsPreview> {
+  const { rows } = await getMyProjects(resourceId);
+  return { count: rows.length, items: rows.slice(0, 5) };
 }
 
 // Alle aktiven Projekte (team-weit, status != 5) – für den „Alle"-Blick. Gedeckelt
-// auf 500, 60 s gecacht (team-weit, kein Resource-Schlüssel nötig).
+// auf 500 (mit Cap-Hinweis), 60 s gecacht (team-weit, kein Resource-Schlüssel nötig).
 export const getAllActiveProjects = unstable_cache(
-  async (): Promise<ProjectRow[]> => {
+  async (): Promise<ProjectListResult> => {
     const rows = await autotask.query<Project>(
       "Projects",
       {
-        MaxRecords: 500,
+        MaxRecords: ALL_CAP,
         IncludeFields: PROJECT_FIELDS,
         Filter: [OPEN],
       },
-      { maxItems: 500 },
+      { maxItems: ALL_CAP },
     );
-    return enrich(rows);
+    return { rows: await enrich(rows), capped: rows.length >= ALL_CAP };
   },
   ["all-active-projects"],
   { revalidate: 60 },

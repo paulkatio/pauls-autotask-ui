@@ -3,7 +3,11 @@
 import { usePathname } from "next/navigation";
 
 import { AutotaskOpenButton } from "@/components/autotask-open-button";
-import { ticketUrlFrom, companyUrlFrom } from "@/lib/autotask/links-format";
+import {
+  ticketUrlFrom,
+  companyUrlFrom,
+  projectUrlFrom,
+} from "@/lib/autotask/links-format";
 
 // Mobiler „In Autotask öffnen"-Link in der App-Kopfzeile (md:hidden), rechts wo
 // sonst der Sidebar-Trigger saß – die Sidebar ist über den „Mehr"-Tab der
@@ -14,12 +18,17 @@ export function HeaderAutotaskLink({ webBase }: { webBase: string | null }) {
 
   const ticketMatch = pathname.match(/^\/tickets\/(\d+)/);
   const companyMatch = pathname.match(/^\/companies\/(\d+)/);
+  const projectMatch = pathname.match(/^\/projekte\/(\d+)/);
 
+  // projectUrlFrom liefert vorerst null (Autotask-Projekt-Deeplink noch unbestätigt)
+  // → der Knopf erscheint auf Projektseiten erst, wenn der Pfad eingetragen ist.
   const href = ticketMatch
     ? ticketUrlFrom(webBase, Number(ticketMatch[1]))
     : companyMatch
       ? companyUrlFrom(webBase, Number(companyMatch[1]))
-      : null;
+      : projectMatch
+        ? projectUrlFrom(webBase, Number(projectMatch[1]))
+        : null;
 
   if (!href) return null;
 

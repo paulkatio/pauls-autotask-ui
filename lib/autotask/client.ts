@@ -101,6 +101,9 @@ export interface FieldInfo {
   dataType: string;
   isPickList: boolean;
   picklistValues: PicklistValue[] | null;
+  // Optional (nicht jede Antwort liefert sie) – für Schreib-/Pflichtfeld-Gates.
+  isRequired?: boolean;
+  isReadOnly?: boolean;
 }
 
 function baseUrl(): string {

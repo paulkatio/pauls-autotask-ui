@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 const DETAIL_ROUTES: { re: RegExp; fallback: string }[] = [
   { re: /^\/tickets\/\d+$/, fallback: "/tickets/my" },
   { re: /^\/companies\/\d+$/, fallback: "/companies" },
+  { re: /^\/projekte\/\d+$/, fallback: "/projekte" },
 ];
 
 export function HeaderBack() {

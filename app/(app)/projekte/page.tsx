@@ -4,7 +4,6 @@ import { getSession } from "@/lib/auth";
 import {
   getMyProjects,
   getAllActiveProjects,
-  countMyOpenProjects,
 } from "@/lib/autotask/entities/projects";
 import { AutotaskError } from "@/lib/autotask/client";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -29,21 +28,25 @@ export default async function ProjectsPage({
   const rid = session.autotaskResourceId;
 
   try {
-    // myCount immer (für den Umschalter-Badge, auch im „Alle"-Blick); die Liste je
-    // nach Scope. Beide Quellen sind 60 s gecacht.
-    const [myCount, data] = await Promise.all([
-      countMyOpenProjects(rid),
-      scope === "all" ? getAllActiveProjects() : getMyProjects(rid),
-    ]);
+    // „Meine" immer laden (Umschalter-Badge + Quelle im „Mine"-Blick); im „Alle"-Blick
+    // zusätzlich die Team-Liste. getMyProjects ist 60 s gecacht → der Doppelbezug im
+    // Mine-Blick kostet nichts.
+    const mine = await getMyProjects(rid);
+    const scoped = scope === "all" ? await getAllActiveProjects() : mine;
 
     return (
       <div className="flex flex-col gap-6">
         <PageHeader
           title="Projekte"
           description="Projekte, die du leitest oder in denen du mitarbeitest – plus der Blick auf alle aktiven Projekte."
-          badge={myCount}
+          badge={mine.rows.length}
         />
-        <ProjectsList data={data} scope={scope} myCount={myCount} />
+        <ProjectsList
+          data={scoped.rows}
+          scope={scope}
+          myCount={mine.rows.length}
+          capped={scoped.capped}
+        />
       </div>
     );
   } catch (e) {

@@ -7,9 +7,13 @@ import { usePathname } from "next/navigation";
 import autotaskLogo from "../public/autotask-logo.png";
 
 // Logo oben links im App-Header – nur mobil (Desktop hat es in der Sidebar).
-// Auf Detailseiten (Ticket/Firma) sitzt links der Zurück-Button allein, daher
+// Auf Detailseiten (Ticket/Firma/Projekt) sitzt links der Zurück-Button allein, daher
 // dort kein Logo (gleiche Routen-Regel wie header-back.tsx).
-const DETAIL_ROUTES = [/^\/tickets\/\d+$/, /^\/companies\/\d+$/];
+const DETAIL_ROUTES = [
+  /^\/tickets\/\d+$/,
+  /^\/companies\/\d+$/,
+  /^\/projekte\/\d+$/,
+];
 
 export function HeaderLogo() {
   const pathname = usePathname();

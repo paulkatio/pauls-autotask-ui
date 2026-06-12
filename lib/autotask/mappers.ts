@@ -76,6 +76,23 @@ export function statusColor(id: number | null | undefined): string {
   }
 }
 
+// Projekt-Status (IDs verifiziert 2026-06-12). Eigene Picklist, KEIN Eskalations-
+// zustand → kein lautes Rot. Drei ruhige Stufen (warm-achromatisch):
+//  default (schwarz) = „In Bearbeitung" (aktiver Fokus, dezent betont)
+//  secondary (grau)  = erledigt/ruhend (Abgeschlossen, Inaktiv)
+//  outline           = alle übrigen (Neu, Pausiert, Projektänderung, Warte-Status)
+export function projectStatusVariant(id: number | null | undefined): BadgeVariant {
+  switch (id) {
+    case 2: // In Bearbeitung
+      return "default";
+    case 5: // Abgeschlossen
+    case 0: // Inaktiv
+      return "secondary";
+    default:
+      return "outline";
+  }
+}
+
 // Priorität (Farbsystem v2): Kritisch=rot, Hoch=schwarz (selten+bedeutsam),
 // Mittel=grau, Niedrig=outline. Quiet-Scale — nur Kritisch ist "laut".
 export function priorityVariant(id: number | null | undefined): BadgeVariant {

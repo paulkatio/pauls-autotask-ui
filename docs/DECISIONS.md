@@ -2018,3 +2018,62 @@ zur Voranzeige). Wegwerf-Skript danach gelöscht.
   Dashboard-Kachel 3 („Zusätzlicher Mitarbeiter") → „Meine Projekte" (`/projekte`).
   Die Sekundär-Tickets wandern in einen eigenen Bereich auf „Meine Tickets" und
   zählen jetzt in `counts.mine` (Sidebar/Heading/Kachel 1) mit.
+
+## Projekt-Detail: Tasks/Phases/Notes + Picklisten (verifiziert 2026-06-12, Sandbox-REST)
+
+Verifiziert per read-only REST-Proben gegen den **Sandbox-Tenant**
+(`webservices18` / `ssig-itSB021825`, eigene REST-Creds — von Paul für die
+Schreib-Verifikation bereitgestellt). Sandbox-Testprojekte mit `companyID = 0`
+(„SSIG-IT GmbH Sandbox"): **#6** und **#30**.
+
+- **`Phases` (Projektphasen):** `POST /Phases/query` mit Filter `projectID = <id>`
+  → HTTP 200. Felder u. a. `id`, `title`, `projectID`, `startDate`, `dueDate`,
+  `estimatedHours`, `parentPhaseID` (Unterphasen). Entitätsname **`Phases`** (kein
+  Sub-Resource-Pfad nötig). Belegbeispiel #6: 3 Phasen (Vorbereitung/Umsetzung/Nacharbeit).
+- **`Tasks` je Projekt:** `POST /Tasks/query` mit Filter `projectID = <id>` → HTTP 200.
+  Felder u. a. `title`, `status`, `assignedResourceID`, `endDateTime`. **`Tasks.status`
+  ist eine EIGENE Picklist** (1 Neu / 2 In Bearbeitung / 5 Abgeschlossen …), NICHT
+  identisch mit `Projects.status`.
+- **`ProjectNotes`:** `POST /ProjectNotes/query` mit Filter `projectID = <id>` → HTTP 200
+  (Entität existiert; #6 leer). Lesen/Schreiben ist vorbereitet, aber **nicht** Teil
+  der aktuellen Detail-Runde (keine Notizen-Anzeige/-Erstellung).
+- **`Projects.projectType`-Picklist** (Pflichtfeld): `2` Projektierung, `3` Vorlage,
+  `4` Intern, `5` Kunde, `8` Baseline.
+- **Weitere `Projects`-Felder** (43 gesamt, via `entityInformation/fields`): u. a.
+  `description`, `department`, `estimatedTime`, `actualHours`, `contractID`,
+  `createDateTime`, `statusDetail`.
+
+### Projekt-SCHREIBPfade: Round-Trip-Verifikation (Sandbox #30/#6, 2026-06-12)
+
+`PATCH /Projects` (Body `{id, feld}`) gegen die Sandbox-Testprojekte (`companyID 0`),
+je Feld gesetzt → per Query zurückgelesen → zurückgesetzt. Ergebnis (maßgeblich für
+die einzig erlaubten Inline-Edit-Felder):
+
+| Feld | `isReadOnly` | PATCH-Verhalten | Editierbar in der App? |
+|------|-------------|-----------------|------------------------|
+| `projectLeadResourceID` | false | **ändert sich sauber** (29682886→29682885→zurück) | **JA** |
+| `endDateTime` (Fällig) | false | **ändert sich sauber** (2022-12-09→-15→zurück) | **JA** |
+| `startDateTime` | false | **Fehler**: „Startdatum kann nicht geändert werden, da zugehörige Aufgaben, Phasen oder Projektprobleme vorhanden sind." | nein |
+| `completedPercentage` | **true** | Antwort `{itemId}`, Wert bleibt aber (berechnet aus Aufgaben) | nein |
+| `status` | false | **No-Op**: Antwort `{itemId}`, Wert ändert sich NIE (über #30 und #6, Werte 2/3/5/7 getestet) | nein |
+
+- **Wichtig:** `status` meldet zwar `isReadOnly:false`, ist per einfachem REST-PATCH
+  aber **nicht** setzbar (Antwort gaukelt Erfolg vor). Daher in der App NICHT als
+  editierbar angeboten – sonst „stiller" Fehlschlag. Falls Projekt-Status künftig
+  doch gesetzt werden soll, muss der echte Autotask-Mechanismus erst gefunden werden.
+- **Konsequenz für die UI:** Inline-Edit auf der Projektdetailseite bietet nur
+  **Projektleiter** und **Fällig (endDateTime)**; Status/Fortschritt/Start stehen
+  read-only daneben. Schreibpfad serverseitig hinter `PROJECT_WRITES_ENABLED=1`
+  ([app/api/projects/[id]/route.ts](../app/api/projects/[id]/route.ts)).
+- **Undo:** Feldänderungen sind reversibel über den globalen Verlauf; `lib/history.ts`
+  wurde dafür entity-aware gemacht (`apiPath` + `label`), damit ein Projekt-Undo an
+  `/api/projects/{id}` geht und NICHT versehentlich ein gleich-nummeriertes Ticket trifft.
+
+### Autotask-Web-Deeplink für Projekte (bestätigt 2026-06-12)
+
+- Pfad: **`/Mvc/Projects/ProjectDetail.mvc/ProjectDetail?gridConfiguration=0&initialContentPage=0&projectId={id}`**
+  (von Paul aus einer echten Projekt-URL übernommen, gegen `ww18` geprüft → Login-Redirect = gültig).
+- **Eigenheit:** Die Action steht als **Pfad-Segment hinter `.mvc`** (`ProjectDetail.mvc/ProjectDetail`),
+  nicht als reiner Query. Darum scheiterten frühere `…/ProjectDetail.mvc?projectId=`-Versuche (→ Error.mvc).
+- Implementiert in [`lib/autotask/links-format.ts`](../lib/autotask/links-format.ts) (`projectUrlFrom`);
+  Button auf der Projektdetailseite (Desktop) + mobiler App-Kopfzeile, wie Ticket/Firma.

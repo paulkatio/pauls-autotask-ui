@@ -34,11 +34,13 @@ function fmtTime(ts: number): string {
   }).format(new Date(ts));
 }
 
-async function patchTicket(
-  id: number,
+// Re-PATCH der Alt-Werte an den im Eintrag gespeicherten API-Pfad. Fehlt der Pfad
+// (Bestands-Ticketeinträge), wird /api/tickets/{id} angenommen → abwärtskompatibel.
+async function patchReverse(
+  apiPath: string,
   body: Record<string, number | string | null>,
 ): Promise<void> {
-  const res = await fetch(`/api/tickets/${id}`, {
+  const res = await fetch(apiPath, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -78,17 +80,21 @@ export function HistorySheet({
     let ok = 0;
     const failed: string[] = [];
     for (const op of entry.reverse) {
+      const label = op.label ?? op.ticketNumber ?? `#${op.id}`;
       try {
-        await patchTicket(op.id, op.body);
+        await patchReverse(op.apiPath ?? `/api/tickets/${op.id}`, op.body);
         ok++;
       } catch {
-        failed.push(op.ticketNumber);
+        failed.push(label);
       }
     }
-    markUndone(entry.id);
     setBusy(null);
     if (failed.length === 0) {
-      toast.success(`Rückgängig: ${ok} Ticket(s) wiederhergestellt.`);
+      // Nur bei vollständigem Erfolg als „rückgängig" markieren – sonst bliebe ein
+      // fehlgeschlagenes Undo (z. B. 403 bei deaktiviertem PROJECT_WRITES_ENABLED)
+      // fälschlich als erledigt stehen. Bei Teilfehlern bleibt der Eintrag undoable.
+      markUndone(entry.id);
+      toast.success(`Rückgängig: ${ok} Datensatz/Datensätze wiederhergestellt.`);
     } else {
       toast.warning(
         `Rückgängig: ${ok} ok, ${failed.length} fehlgeschlagen (${failed.join(", ")}).`,

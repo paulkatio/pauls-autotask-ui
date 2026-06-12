@@ -1,6 +1,10 @@
 import "server-only";
 
-import { ticketUrlFrom, companyUrlFrom } from "@/lib/autotask/links-format";
+import {
+  ticketUrlFrom,
+  companyUrlFrom,
+  projectUrlFrom,
+} from "@/lib/autotask/links-format";
 
 // Deep-Links in die echte Autotask-Weboberfläche. Aus der REST-Zone
 // (`webservices{N}.autotask.net`) wird die Web-Zone (`ww{N}.autotask.net`)
@@ -32,4 +36,8 @@ export function autotaskTicketUrl(ticketId: number): string | null {
 
 export function autotaskCompanyUrl(companyId: number): string | null {
   return companyUrlFrom(autotaskWebBase(), companyId);
+}
+
+export function autotaskProjectUrl(projectId: number): string | null {
+  return projectUrlFrom(autotaskWebBase(), projectId);
 }

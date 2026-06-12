@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { autotask, type PicklistValue } from "@/lib/autotask/client";
 import type {
   Picklist,
+  ProjectPicklists,
   SubPicklist,
   TicketPicklists,
 } from "@/lib/autotask/types";
@@ -64,6 +65,23 @@ export const getTicketPicklists = unstable_cache(
     };
   },
   ["ticket-picklists"],
+  { revalidate: 21600 }, // 6 h
+);
+
+// status/projectType aus Projects/entityInformation/fields. Eigene Picklisten der
+// Projects-Entität (NICHT Tickets). LANG gecacht (6 h) – statische Metadaten, gleiche
+// Last-Vorsicht wie bei den Ticket-Picklisten (3-Threads-pro-Tabelle-Limit).
+export const getProjectPicklists = unstable_cache(
+  async (): Promise<ProjectPicklists> => {
+    const fields = await autotask.fieldInfo("Projects");
+    const picklistOf = (name: string) =>
+      fields.find((f) => f.name === name)?.picklistValues ?? null;
+    return {
+      status: activeOnly(picklistOf("status")),
+      projectType: activeOnly(picklistOf("projectType")),
+    };
+  },
+  ["project-picklists"],
   { revalidate: 21600 }, // 6 h
 );
 

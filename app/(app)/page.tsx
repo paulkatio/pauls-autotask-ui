@@ -13,6 +13,8 @@ import {
   getDashboardKpis,
   getTicketsPerResource,
 } from "@/lib/autotask/entities/dashboard";
+import { getMyProjectsPreview } from "@/lib/autotask/entities/projects";
+import { MyProjectsSection } from "@/components/dashboard/my-projects-section";
 import { getTicketsPage } from "@/lib/autotask/entities/ticket-list";
 import { getSidebarTicketCounts } from "@/lib/autotask/entities/ticket-counts";
 import { CountBarChart } from "@/components/dashboard/count-bar-chart";
@@ -125,6 +127,14 @@ export default async function DashboardPage() {
 
   const [kpis, perResource, openTickets] = data;
 
+  // Vorschau „Meine Projekte" – best effort, aus derselben gecachten Quelle wie die
+  // KPI-Kachel (kein zusätzlicher Collect). Ein Projektfehler darf die Übersicht nicht
+  // blanken, daher eigener Fallback.
+  const projectsPreview = await getMyProjectsPreview(rid).catch(() => ({
+    count: 0,
+    items: [],
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -169,6 +179,8 @@ export default async function DashboardPage() {
       </div>
 
       <CountBarChart title="Tickets pro Mitarbeiter" data={perResource} />
+
+      <MyProjectsSection preview={projectsPreview} />
 
       <OpenTickets picklists={picklists} initial={openTickets} count={counts?.team} />
     </div>

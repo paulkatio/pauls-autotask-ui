@@ -63,20 +63,46 @@ export interface TicketChecklistItem {
   completedByResourceID?: number | null;
 }
 
-// Autotask-Projekt (Felder via entityInformation/fields verifiziert 2026-06-11).
-// `status` ist eine eigene Picklist (0 Inaktiv … 5 Abgeschlossen). „Offen" =
-// status != 5, analog zu Tickets. projectLeadResourceID = Projektleiter.
+// Autotask-Projekt (Felder via entityInformation/fields verifiziert 2026-06-11,
+// Detailfelder 2026-06-12). `status` ist eine eigene Picklist (0 Inaktiv …
+// 5 Abgeschlossen). „Offen" = status != 5, analog zu Tickets.
+// projectLeadResourceID = Projektleiter.
 export interface Project {
   id: number;
   projectName?: string;
   projectNumber?: string;
   status?: number;
+  projectType?: number;
   companyID?: number;
   projectLeadResourceID?: number | null;
   completedPercentage?: number | null;
   startDateTime?: string | null;
   endDateTime?: string | null;
   lastActivityDateTime?: string | null;
+  description?: string | null;
+}
+
+// Projektaufgabe (REST-Entität `Tasks`, Filter `projectID`; verifiziert 2026-06-12).
+// `status` ist eine EIGENE Picklist (nicht Projects.status).
+export interface ProjectTask {
+  id: number;
+  projectID?: number;
+  title?: string;
+  status?: number;
+  assignedResourceID?: number | null;
+  endDateTime?: string | null;
+}
+
+// Projektphase (REST-Entität `Phases`, Filter `projectID`; verifiziert 2026-06-12).
+// `parentPhaseID` verweist auf eine Eltern-Phase (Unterphasen).
+export interface ProjectPhase {
+  id: number;
+  projectID?: number;
+  title?: string;
+  startDate?: string | null;
+  dueDate?: string | null;
+  estimatedHours?: number | null;
+  parentPhaseID?: number | null;
 }
 
 // Zusätzlicher Mitarbeiter eines Tickets (eigener Objekt-Endpoint
@@ -195,4 +221,10 @@ export interface TicketPicklists {
   ticketType: Picklist; // Typ (lesend)
   issueType: Picklist; // Kategorie
   subIssueType: SubPicklist; // Unterkategorie (abhängig von issueType)
+}
+
+// Projekt-Picklisten für Anzeige/Bearbeitung (eigene Listen der Projects-Entität).
+export interface ProjectPicklists {
+  status: Picklist;
+  projectType: Picklist;
 }
