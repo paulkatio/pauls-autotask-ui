@@ -26,6 +26,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Lint-Gate: bricht bei ESLint-ERRORS ab (Warnings — z. B. die bewusst auf
+      # "warn" gestellte react-hooks/error-boundaries — blockieren NICHT).
+      - name: Lint
+        run: npm run lint
+
       # next build erzeugt next-env.d.ts und typprüft das Projekt mit (eigener
       # tsc-Lauf) — deckt den Typecheck ab. Ein separater `tsc --noEmit` davor
       # würde an den von Next generierten Bild-Modul-Typen scheitern.

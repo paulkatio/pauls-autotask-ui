@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# Lint-Gate (lokal): blockt Commits mit ESLint-ERRORS. Warnings (z. B. die bewusst
+# auf "warn" gestellte react-hooks/error-boundaries) erlauben den Commit.
+# Lintet nur die gestagten .ts/.tsx/.mjs-Dateien -> schnell. Notfall-Umgehung:
+#   git commit --no-verify
+files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|mjs)$')
+[ -z "$files" ] && exit 0
+echo "$files" | xargs npx eslint
