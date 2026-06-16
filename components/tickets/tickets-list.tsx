@@ -39,6 +39,9 @@ import { labelOf } from "@/lib/autotask/mappers";
 import { PriorityBadge } from "@/components/priority-indicator";
 import { StatusBadge } from "@/components/status-indicator";
 import { TicketCard } from "@/components/tickets/ticket-card";
+import { ResourceFilter } from "@/components/tickets/resource-filter";
+import { useTableSort, type SortValue } from "@/hooks/use-table-sort";
+import { SortIcon } from "@/components/table-sort-icon";
 import type { Ticket, TicketPicklists } from "@/lib/autotask/types";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import { useRecordNav } from "@/hooks/use-record-nav";
@@ -64,6 +67,11 @@ interface Props {
   filters: { status: string; priority: string; queue: string; assigned?: string };
   columns?: { queue?: boolean; assigned?: boolean; company?: boolean };
   assignmentFilter?: boolean; // Team: "Alle / nur nicht zugewiesene"
+  // Team: Mitarbeiter-Mehrfachfilter statt Queue-Filter. Standardmäßig sind alle
+  // Mitarbeiter ausgewählt, außer den hier genannten (z. B. Philipp König). Wirkt
+  // clientseitig auf die geladene Liste (Team lädt alles in einem Rutsch).
+  resourceFilter?: boolean;
+  defaultDeselectedResourceIds?: number[];
   showFilters?: boolean; // Fokuslisten (Dashboard) blenden die Filterleiste aus
   showPager?: boolean; // und das Paging
   mobileLimit?: number; // Dashboard: Karten-Stack mobil deckeln (Tabelle bleibt komplett)
@@ -89,12 +97,52 @@ function formatDate(iso?: string | null): string {
   }).format(d);
 }
 
+function setsEqual(a: Set<number>, b: Set<number>): boolean {
+  if (a.size !== b.size) return false;
+  for (const x of a) if (!b.has(x)) return false;
+  return true;
+}
+
+// Datum -> sortierbarer Zeitstempel (ungültig/leer -> null, landet beim Sortieren hinten).
+function dateSortValue(iso?: string | null): number | null {
+  if (!iso) return null;
+  const ms = Date.parse(iso);
+  return Number.isNaN(ms) ? null : ms;
+}
+
+// Persistenz des Mitarbeiter-Filters (Team): wir speichern die ABGEWÄHLTEN IDs in
+// localStorage, damit die getroffene Auswahl Sitzungen/Reloads übersteht. Fehlt ein
+// gespeicherter Wert, greift der Standard (alle außer Philipp König).
+const RESOURCE_FILTER_STORAGE_KEY = "tickets:team:resource-filter:deselected:v1";
+
+function loadDeselectedResources(): Set<number> | null {
+  try {
+    const raw = localStorage.getItem(RESOURCE_FILTER_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    return new Set(parsed.filter((n): n is number => typeof n === "number"));
+  } catch {
+    return null;
+  }
+}
+
+function persistDeselectedResources(ids: Set<number>): void {
+  try {
+    localStorage.setItem(RESOURCE_FILTER_STORAGE_KEY, JSON.stringify([...ids]));
+  } catch {
+    // localStorage nicht verfügbar -> Auswahl bleibt nur für diese Sitzung.
+  }
+}
+
 export function TicketsList({
   data,
   picklists,
   filters,
   columns = {},
   assignmentFilter = false,
+  resourceFilter = false,
+  defaultDeselectedResourceIds,
   showFilters = true,
   showPager = true,
   mobileLimit,
@@ -136,6 +184,62 @@ export function TicketsList({
   const selectableActive =
     selectable && resources != null && myResourceId != null;
 
+  // Mitarbeiter-Filter (Team): wir merken uns die ABGEWÄHLTEN IDs, nicht die
+  // ausgewählten. Das übersteht ein serverseitiges Nachladen (Status-/Suchwechsel)
+  // unbeschadet – der Standard (alle außer Philipp König) bleibt erhalten, ohne dass
+  // eine sich ändernde Optionsliste die Auswahl verwirft. Nicht zugewiesene Tickets
+  // (und Tickets unbekannter Mitarbeiter) werden von diesem Filter NIE ausgeblendet.
+  const defaultDeselected = React.useMemo(
+    () => new Set(defaultDeselectedResourceIds ?? []),
+    [defaultDeselectedResourceIds],
+  );
+  const [deselectedResources, setDeselectedResources] = React.useState<
+    Set<number>
+  >(() => new Set(defaultDeselectedResourceIds ?? []));
+
+  // Gespeicherte Auswahl laden (erst im Effect -> kein Hydration-Mismatch). Nur wenn
+  // der Mitarbeiter-Filter aktiv ist und tatsächlich etwas gespeichert wurde.
+  React.useEffect(() => {
+    if (!resourceFilter) return;
+    const saved = loadDeselectedResources();
+    if (saved) setDeselectedResources(saved);
+  }, [resourceFilter]);
+
+  // Auswählbare Mitarbeiter = die in der geladenen Liste tatsächlich vorkommenden
+  // Bearbeiter (dedupliziert, alphabetisch). So listet der Filter nur relevante Namen.
+  const resourceOptions = React.useMemo(() => {
+    if (!resourceFilter) return [];
+    const map = new Map<number, string>();
+    for (const t of data.items) {
+      if (t.assignedResourceID != null && t.assignedResourceName) {
+        map.set(t.assignedResourceID, t.assignedResourceName);
+      }
+    }
+    return [...map.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+  }, [resourceFilter, data.items]);
+
+  // Brücke zwischen „abgewählt" (interner Zustand) und „ausgewählt" (Sicht der
+  // Filter-Komponente über die aktuell sichtbaren Optionen).
+  const selectedResourceIds = new Set(
+    resourceOptions.filter((o) => !deselectedResources.has(o.id)).map((o) => o.id),
+  );
+  function handleResourceChange(nextSelected: Set<number>) {
+    // Aus dem aktuellen Render-Wert ableiten (Event-Handler -> frischer Closure-Wert).
+    // Persistenz BEWUSST außerhalb des State-Updaters: React kann Updater spekulativ
+    // mehrfach/verworfen aufrufen – Seiteneffekte gehören nicht hinein.
+    const next = new Set(deselectedResources);
+    for (const o of resourceOptions) {
+      if (nextSelected.has(o.id)) next.delete(o.id);
+      else next.add(o.id);
+    }
+    setDeselectedResources(next);
+    persistDeselectedResources(next);
+  }
+  const resourceFilterApplied =
+    resourceFilter && resourceOptions.length > 0;
+
   // Server-Suche: bei geändertem Begriff (debounced) ?q= setzen; die Seite mischt
   // den Filter serverseitig ein. Nur wenn sich der Begriff vom URL-Stand unterscheidet.
   React.useEffect(() => {
@@ -174,13 +278,22 @@ export function TicketsList({
 
   // Sofort-Clientfilter (Nummer/Titel) der geladenen Zeilen.
   const term = searchValue.trim().toLowerCase();
-  const items = term
+  const searched = term
     ? data.items.filter(
         (t) =>
           (t.ticketNumber ?? "").toLowerCase().includes(term) ||
           (t.title ?? "").toLowerCase().includes(term),
       )
     : data.items;
+  // Mitarbeiter-Filter (Team): nur zugewiesene Tickets mit abgewähltem Bearbeiter
+  // fallen raus. Nicht zugewiesene bleiben immer sichtbar.
+  const items = resourceFilterApplied
+    ? searched.filter(
+        (t) =>
+          t.assignedResourceID == null ||
+          !deselectedResources.has(t.assignedResourceID),
+      )
+    : searched;
 
   const statusItems = [
     { label: "Offene", value: "open" },
@@ -249,10 +362,12 @@ export function TicketsList({
     header: string;
     cell: (t: TicketRow) => React.ReactNode;
     headClass?: string;
+    sortValue?: (t: TicketRow) => SortValue;
   }[] = [
     {
       id: "number",
       header: "Nummer",
+      sortValue: (t) => t.ticketNumber ?? "",
       cell: (t) => (
         <TableCell className="font-medium tabular-nums whitespace-nowrap">
           {t.ticketNumber}
@@ -262,6 +377,7 @@ export function TicketsList({
     {
       id: "title",
       header: "Titel",
+      sortValue: (t) => t.title ?? "",
       cell: (t) => (
         <TableCell>
           <TruncatedText className="max-w-xs xl:max-w-[12rem] 2xl:max-w-md">
@@ -276,6 +392,7 @@ export function TicketsList({
             id: "company",
             header: "Firma",
             headClass: hideSecondary,
+            sortValue: (t: TicketRow) => t.companyName ?? "",
             cell: (t: TicketRow) => (
               <TableCell className={hideSecondary}>
                 <TruncatedText className="max-w-44">
@@ -292,6 +409,7 @@ export function TicketsList({
             id: "queue",
             header: "Queue",
             headClass: hideSecondary,
+            sortValue: (t: TicketRow) => labelOf(picklists.queue, t.queueID),
             cell: (t: TicketRow) => (
               <TableCell className={hideSecondary}>
                 <TruncatedText className="max-w-36">
@@ -308,6 +426,7 @@ export function TicketsList({
             id: "assigned",
             header: "Zugewiesen",
             headClass: hideAssignee,
+            sortValue: (t: TicketRow) => t.assignedResourceName ?? "",
             cell: (t: TicketRow) => (
               <TableCell className={hideAssignee}>
                 <TruncatedText className="max-w-40">
@@ -321,6 +440,7 @@ export function TicketsList({
     {
       id: "status",
       header: "Status",
+      sortValue: (t) => t.status ?? null,
       cell: (t) => (
         <TableCell>
           <StatusBadge
@@ -333,6 +453,7 @@ export function TicketsList({
     {
       id: "priority",
       header: "Priorität",
+      sortValue: (t) => t.priority ?? null,
       cell: (t) => (
         <TableCell>
           <PriorityBadge
@@ -343,8 +464,19 @@ export function TicketsList({
       ),
     },
     {
+      id: "created",
+      header: "Erstellt",
+      sortValue: (t) => dateSortValue(t.createDate),
+      cell: (t) => (
+        <TableCell className="text-muted-foreground tabular-nums whitespace-nowrap">
+          {formatDate(t.createDate)}
+        </TableCell>
+      ),
+    },
+    {
       id: "due",
       header: "Fällig",
+      sortValue: (t) => dateSortValue(t.dueDateTime),
       cell: (t) => (
         <TableCell className="text-muted-foreground tabular-nums whitespace-nowrap">
           {formatDate(t.dueDateTime)}
@@ -361,6 +493,19 @@ export function TicketsList({
   } = useColumnOrder(`cols:tickets:${columnIds.join("-")}`, columnIds);
   const colMap = Object.fromEntries(dataColumns.map((c) => [c.id, c]));
   const orderedCols = colOrder.map((id) => colMap[id]).filter(Boolean);
+
+  // Klick-zum-Sortieren der Desktop-Tabelle. Sortiert nur die Tabelle (die mobile
+  // Kartenliste behält die Server-Reihenfolge – dort gibt es keine Spaltenköpfe).
+  const {
+    toggle: toggleSort,
+    sortRows,
+    isSortable,
+    ariaSort,
+    sort,
+  } = useTableSort(
+    dataColumns.map((c) => ({ key: c.id, sortValue: c.sortValue })),
+  );
+  const tableItems = sortRows(items);
 
   // Mobile-Filterchips (Pillen, horizontal scrollbar). Aktiver = nicht-Default-Filter
   // wird gefüllt hervorgehoben, inaktiv neutral/outline. Ab sm normaler Select-Look
@@ -463,27 +608,36 @@ export function TicketsList({
                 </SelectContent>
               </Select>
 
-              <Select
-                items={queueItems}
-                value={filters.queue || "all"}
-                onValueChange={(v) => updateFilter("queue", String(v))}
-              >
-                <SelectTrigger
-                  size="sm"
-                  className={cn("h-11 w-full min-w-0 sm:h-9", chipState(queueActive))}
+              {resourceFilter ? (
+                <ResourceFilter
+                  options={resourceOptions}
+                  selected={selectedResourceIds}
+                  onChange={handleResourceChange}
+                  active={!setsEqual(deselectedResources, defaultDeselected)}
+                />
+              ) : (
+                <Select
+                  items={queueItems}
+                  value={filters.queue || "all"}
+                  onValueChange={(v) => updateFilter("queue", String(v))}
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="w-auto min-w-52">
-                  <SelectGroup>
-                    {queueItems.map((i) => (
-                      <SelectItem key={i.value} value={i.value}>
-                        {i.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                  <SelectTrigger
+                    size="sm"
+                    className={cn("h-11 w-full min-w-0 sm:h-9", chipState(queueActive))}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="w-auto min-w-52">
+                    <SelectGroup>
+                      {queueItems.map((i) => (
+                        <SelectItem key={i.value} value={i.value}>
+                          {i.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              )}
 
               {assignmentFilter && (
                 <Select
@@ -596,23 +750,38 @@ export function TicketsList({
                       />
                     </TableHead>
                   )}
-                  {orderedCols.map((c) => (
-                    <TableHead
-                      key={c.id}
-                      className={cn(
-                        "data-[dragover]:bg-accent data-[dragging]:opacity-60 cursor-grab transition-colors select-none active:cursor-grabbing",
-                        c.headClass,
-                      )}
-                      title="Spalte ziehen, um die Reihenfolge zu ändern"
-                      {...colHeadProps(c.id)}
-                    >
-                      {c.header}
-                    </TableHead>
-                  ))}
+                  {orderedCols.map((c) => {
+                    const sortable = isSortable(c.id);
+                    const state =
+                      sort?.key === c.id ? sort.dir : ("none" as const);
+                    return (
+                      <TableHead
+                        key={c.id}
+                        aria-sort={ariaSort(c.id)}
+                        className={cn(
+                          "group/sorthead data-[dragover]:bg-accent data-[dragging]:opacity-60 cursor-grab transition-colors select-none active:cursor-grabbing",
+                          sortable && "cursor-pointer",
+                          c.headClass,
+                        )}
+                        title={
+                          sortable
+                            ? "Klicken zum Sortieren · ziehen zum Verschieben"
+                            : "Spalte ziehen, um die Reihenfolge zu ändern"
+                        }
+                        {...colHeadProps(c.id)}
+                        onClick={sortable ? () => toggleSort(c.id) : undefined}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          {c.header}
+                          {sortable && <SortIcon state={state} />}
+                        </span>
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((t) => (
+                {tableItems.map((t) => (
                   <TableRow
                     key={t.id}
                     className="cursor-pointer"

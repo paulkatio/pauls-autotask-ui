@@ -1,3 +1,5 @@
+"use client";
+
 import { ListTodoIcon } from "lucide-react";
 
 import {
@@ -16,10 +18,13 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { useTableSort, type SortValue } from "@/hooks/use-table-sort";
+import { SortIcon } from "@/components/table-sort-icon";
 import type { ProjectTaskRow } from "@/lib/autotask/entities/project-tasks";
 
 // Aufgaben-Tab der Projektdetailseite (read-only). Karten unter md, Tabelle ab md –
-// gleiches responsives Muster wie die übrigen Listen. Reine Anzeige, keine Bearbeitung.
+// gleiches responsives Muster wie die übrigen Listen. Spaltenköpfe sind klickbar
+// sortierbar (Desktop); die mobile Kartenliste behält die Server-Reihenfolge.
 
 function formatDate(iso?: string | null): string {
   if (!iso) return "—";
@@ -32,6 +37,12 @@ function formatDate(iso?: string | null): string {
   }).format(d);
 }
 
+function dateSort(iso?: string | null): number | null {
+  if (!iso) return null;
+  const ms = Date.parse(iso);
+  return Number.isNaN(ms) ? null : ms;
+}
+
 // Aufgaben-Status (eigene Picklist): Abgeschlossen (5) gedämpft, sonst neutral.
 function TaskStatus({ label, status }: { label: string | null; status?: number }) {
   if (!label) return <span className="text-muted-foreground">—</span>;
@@ -42,7 +53,25 @@ function TaskStatus({ label, status }: { label: string | null; status?: number }
   );
 }
 
+const COLUMNS: {
+  key: string;
+  header: string;
+  sortValue: (t: ProjectTaskRow) => SortValue;
+}[] = [
+  { key: "title", header: "Aufgabe", sortValue: (t) => t.title ?? "" },
+  { key: "status", header: "Status", sortValue: (t) => t.status ?? null },
+  {
+    key: "assigned",
+    header: "Zugewiesen",
+    sortValue: (t) => t.assignedName ?? "",
+  },
+  { key: "due", header: "Fällig", sortValue: (t) => dateSort(t.endDateTime) },
+];
+
 export function ProjectTasksPanel({ rows }: { rows: ProjectTaskRow[] }) {
+  const { toggle, sortRows, ariaSort, sort } = useTableSort(COLUMNS);
+  const sorted = sortRows(rows);
+
   if (rows.length === 0) {
     return (
       <Empty>
@@ -61,7 +90,7 @@ export function ProjectTasksPanel({ rows }: { rows: ProjectTaskRow[] }) {
 
   return (
     <>
-      {/* Mobile/Tablet: Karten. */}
+      {/* Mobile/Tablet: Karten (Server-Reihenfolge). */}
       <div className="grid grid-cols-1 gap-2 md:hidden">
         {rows.map((t) => (
           <div key={t.id} className="flex flex-col gap-2 rounded-lg border p-3">
@@ -83,19 +112,31 @@ export function ProjectTasksPanel({ rows }: { rows: ProjectTaskRow[] }) {
         ))}
       </div>
 
-      {/* Desktop ab md: Tabelle. */}
+      {/* Desktop ab md: Tabelle mit sortierbaren Spaltenköpfen. */}
       <div className="hidden overflow-x-auto rounded-lg border md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead>Aufgabe</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Zugewiesen</TableHead>
-              <TableHead>Fällig</TableHead>
+              {COLUMNS.map((c) => (
+                <TableHead
+                  key={c.key}
+                  aria-sort={ariaSort(c.key)}
+                  className="group/sorthead cursor-pointer select-none"
+                  title="Klicken zum Sortieren"
+                  onClick={() => toggle(c.key)}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    {c.header}
+                    <SortIcon
+                      state={sort?.key === c.key ? sort.dir : "none"}
+                    />
+                  </span>
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((t) => (
+            {sorted.map((t) => (
               <TableRow key={t.id}>
                 <TableCell className="font-medium break-words">
                   {t.title ?? "—"}

@@ -45,6 +45,10 @@ import {
 import type { Picklist, TicketPicklists } from "@/lib/autotask/types";
 import type { RefOption } from "@/lib/autotask/entities/contacts";
 import { NEW_TICKET_DEFAULT_QUEUE } from "@/lib/autotask/new-ticket";
+import {
+  StatusSelect,
+  PrioritySelect,
+} from "@/components/tickets/ticket-field-selects";
 
 const UNASSIGNED = "none";
 const NONE = "none"; // Sentinel für optionale Picklists (base-ui mag kein value="").
@@ -500,7 +504,7 @@ export function NewTicketDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
               <FieldLabel htmlFor="nt-status">Status</FieldLabel>
-              <SimpleSelect
+              <StatusSelect
                 id="nt-status"
                 value={status}
                 items={picklists.status.map((s) => ({
@@ -512,7 +516,7 @@ export function NewTicketDialog({
             </div>
             <div className="flex flex-col gap-2">
               <FieldLabel htmlFor="nt-priority">Priorität</FieldLabel>
-              <SimpleSelect
+              <PrioritySelect
                 id="nt-priority"
                 value={priority}
                 items={picklists.priority.map((p) => ({

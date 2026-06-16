@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 import {
   Select,
@@ -19,6 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { recordHistory } from "@/lib/history";
+import { saveToast } from "@/lib/ui/save-toast";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import type { Project } from "@/lib/autotask/types";
 
@@ -199,7 +199,9 @@ function SelectField({
     const newVal = next === NONE ? null : Number(next);
     const oldVal = prev === NONE ? null : Number(prev);
     try {
-      await patchProject(id, { [field]: newVal });
+      await saveToast(() => patchProject(id, { [field]: newVal }), {
+        success: `${successLabel} gespeichert.`,
+      });
       recordHistory({
         label: `${successLabel} geändert (${projectName})`,
         reversible: true,
@@ -212,7 +214,6 @@ function SelectField({
           },
         ],
       });
-      toast.success(`${successLabel} gespeichert.`);
       router.refresh();
     } catch (e) {
       setValue(prev);
@@ -281,7 +282,10 @@ function DateField({
     setSaving(true);
     setError(null);
     try {
-      await patchProject(id, { [field]: `${nextDate}T00:00:00` });
+      await saveToast(
+        () => patchProject(id, { [field]: `${nextDate}T00:00:00` }),
+        { success: `${successLabel} gespeichert.` },
+      );
       // Nur reversibel, wenn es einen gültigen Alt-Wert gibt (sonst gäbe es kein
       // valides Datum zum Zurücksetzen – endDateTime ist in Autotask Pflicht).
       recordHistory({
@@ -299,7 +303,6 @@ function DateField({
               ]
             : undefined,
       });
-      toast.success(`${successLabel} gespeichert.`);
       router.refresh();
     } catch (e) {
       setValue(isoToDateInput(current));

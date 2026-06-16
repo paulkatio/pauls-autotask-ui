@@ -106,16 +106,26 @@ export function TicketCard({
   // noch NEUEN Ticket (Autotask-System-Status 1 = Neu) das Erstelldatum die
   // sprechendere Information als „Aktualisiert" – sonst die letzte Aktivität.
   const isNew = t.status === 1;
-  const resolved =
-    date ??
-    (variant === "activity"
-      ? isNew && t.createDate
-        ? { label: "Erstellt", iso: t.createDate, relative: true }
-        : { label: "Aktualisiert", iso: t.lastActivityDate ?? null, relative: true }
-      : { label: "Fällig", iso: t.dueDateTime ?? null, relative: false });
-  const dateText = resolved.iso
-    ? `${resolved.label} ${resolved.relative ? relTime(resolved.iso) : formatDate(resolved.iso)}`
-    : null;
+  let dateText: string | null;
+  if (date) {
+    // Explizit hereingereichtes Kontextdatum hat Vorrang.
+    dateText = date.iso
+      ? `${date.label} ${date.relative ? relTime(date.iso) : formatDate(date.iso)}`
+      : null;
+  } else if (variant === "activity") {
+    // Aktivitätsfeed: bei neuem Ticket Erstelldatum, sonst letzte Aktivität (relativ).
+    const r =
+      isNew && t.createDate
+        ? { label: "Erstellt", iso: t.createDate }
+        : { label: "Aktualisiert", iso: t.lastActivityDate ?? null };
+    dateText = r.iso ? `${r.label} ${relTime(r.iso)}` : null;
+  } else {
+    // Worklist: Erstellt UND Fällig zusammen, getrennt durch den Mittelpunkt.
+    const parts: string[] = [];
+    if (t.createDate) parts.push(`Erstellt ${formatDate(t.createDate)}`);
+    if (t.dueDateTime) parts.push(`Fällig ${formatDate(t.dueDateTime)}`);
+    dateText = parts.length ? parts.join(" · ") : null;
+  }
 
   // Firma + Nummer getrennt: die Nummer ist der eindeutige Identifikator und darf
   // nie abgeschnitten werden. Nur die Firma trunkiert bei Platzmangel.

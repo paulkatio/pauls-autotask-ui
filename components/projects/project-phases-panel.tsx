@@ -1,3 +1,5 @@
+"use client";
+
 import { LayersIcon } from "lucide-react";
 
 import {
@@ -16,10 +18,13 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
+import { useTableSort, type SortValue } from "@/hooks/use-table-sort";
+import { SortIcon } from "@/components/table-sort-icon";
 import type { ProjectPhase } from "@/lib/autotask/types";
 
 // Phasen-Tab der Projektdetailseite (read-only). Unterphasen (parentPhaseID gesetzt)
-// werden leicht eingerückt dargestellt.
+// werden leicht eingerückt dargestellt. Spaltenköpfe sind klickbar sortierbar
+// (Desktop); ohne aktive Sortierung bleibt die Server-Reihenfolge (Hierarchie).
 
 function formatDate(iso?: string | null): string {
   if (!iso) return "—";
@@ -32,6 +37,12 @@ function formatDate(iso?: string | null): string {
   }).format(d);
 }
 
+function dateSort(iso?: string | null): number | null {
+  if (!iso) return null;
+  const ms = Date.parse(iso);
+  return Number.isNaN(ms) ? null : ms;
+}
+
 function formatRange(start?: string | null, due?: string | null): string {
   if (!start && !due) return "—";
   return `${formatDate(start)} – ${formatDate(due)}`;
@@ -42,7 +53,25 @@ function formatHours(n?: number | null): string {
   return `${n} h`;
 }
 
+const COLUMNS: {
+  key: string;
+  header: string;
+  sortValue: (p: ProjectPhase) => SortValue;
+  headClassName?: string;
+}[] = [
+  { key: "phase", header: "Phase", sortValue: (p) => p.title ?? "" },
+  { key: "period", header: "Zeitraum", sortValue: (p) => dateSort(p.startDate) },
+  {
+    key: "hours",
+    header: "Geschätzt",
+    sortValue: (p) => p.estimatedHours ?? null,
+  },
+];
+
 export function ProjectPhasesPanel({ rows }: { rows: ProjectPhase[] }) {
+  const { toggle, sortRows, ariaSort, sort } = useTableSort(COLUMNS);
+  const sorted = sortRows(rows);
+
   if (rows.length === 0) {
     return (
       <Empty>
@@ -61,7 +90,7 @@ export function ProjectPhasesPanel({ rows }: { rows: ProjectPhase[] }) {
 
   return (
     <>
-      {/* Mobile/Tablet: Karten. */}
+      {/* Mobile/Tablet: Karten (Server-Reihenfolge). */}
       <div className="grid grid-cols-1 gap-2 md:hidden">
         {rows.map((p) => (
           <div
@@ -82,18 +111,29 @@ export function ProjectPhasesPanel({ rows }: { rows: ProjectPhase[] }) {
         ))}
       </div>
 
-      {/* Desktop ab md: Tabelle. */}
+      {/* Desktop ab md: Tabelle mit sortierbaren Spaltenköpfen. */}
       <div className="hidden overflow-x-auto rounded-lg border md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead>Phase</TableHead>
-              <TableHead>Zeitraum</TableHead>
-              <TableHead>Geschätzt</TableHead>
+              {COLUMNS.map((c) => (
+                <TableHead
+                  key={c.key}
+                  aria-sort={ariaSort(c.key)}
+                  className="group/sorthead cursor-pointer select-none"
+                  title="Klicken zum Sortieren"
+                  onClick={() => toggle(c.key)}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    {c.header}
+                    <SortIcon state={sort?.key === c.key ? sort.dir : "none"} />
+                  </span>
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((p) => (
+            {sorted.map((p) => (
               <TableRow key={p.id}>
                 <TableCell
                   className={cn(

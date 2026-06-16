@@ -97,6 +97,15 @@ export default async function TeamTicketsPage({
   const teamBadge =
     !scopedToResource && sp.assigned !== "unassigned" ? counts?.team : undefined;
 
+  // Mitarbeiter-Filter (ersetzt den Queue-Filter): standardmäßig sind alle Bearbeiter
+  // ausgewählt – außer Philipp König. Seine Resource-ID wird namentlich aus der
+  // Mitarbeiterliste ermittelt (robust gegen ID-Wechsel); fehlt er, bleibt der
+  // Standard „alle ausgewählt".
+  const philipp = assignableResources.find(
+    (r) => /philipp/i.test(r.name) && /k(ö|oe)nig/i.test(r.name),
+  );
+  const defaultDeselectedResourceIds = philipp ? [philipp.id] : [];
+
   try {
     // Alle offenen Teamtickets in EINER Liste (keine Paginierung).
     const data = await getTicketsAll(filter, { withAssigned: true });
@@ -120,6 +129,8 @@ export default async function TeamTicketsPage({
           }}
           columns={{ queue: true, assigned: true }}
           assignmentFilter={!scopedToResource}
+          resourceFilter
+          defaultDeselectedResourceIds={defaultDeselectedResourceIds}
           selectable
           resources={assignableResources}
           myResourceId={session.autotaskResourceId}

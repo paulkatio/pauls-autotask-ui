@@ -77,6 +77,7 @@ export function HistorySheet({
   async function undo(entry: HistoryEntry) {
     if (!entry.reverse || entry.reverse.length === 0) return;
     setBusy(entry.id);
+    const toastId = toast.loading("Rückgängig …");
     let ok = 0;
     const failed: string[] = [];
     for (const op of entry.reverse) {
@@ -94,10 +95,13 @@ export function HistorySheet({
       // fehlgeschlagenes Undo (z. B. 403 bei deaktiviertem PROJECT_WRITES_ENABLED)
       // fälschlich als erledigt stehen. Bei Teilfehlern bleibt der Eintrag undoable.
       markUndone(entry.id);
-      toast.success(`Rückgängig: ${ok} Datensatz/Datensätze wiederhergestellt.`);
+      toast.success(`Rückgängig: ${ok} Datensatz/Datensätze wiederhergestellt.`, {
+        id: toastId,
+      });
     } else {
       toast.warning(
         `Rückgängig: ${ok} ok, ${failed.length} fehlgeschlagen (${failed.join(", ")}).`,
+        { id: toastId },
       );
     }
     router.refresh();

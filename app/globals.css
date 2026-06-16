@@ -160,3 +160,34 @@
     }
   }
 }
+
+/* ─── Toast (sonner) ──────────────────────────────────────────────────────────
+   Hebt Toasts dezent vom Hintergrund ab (Tiefe per Schatten) und gibt Erfolg/
+   Fehler/Warnung einen leisen Farbakzent über die semantischen Tokens – bewusst
+   nicht knallig (10 % Tint, gefärbter Rahmen + Icon). Lade-Toasts bleiben neutral. */
+[data-sonner-toast] {
+  box-shadow:
+    0 1px 2px oklch(0 0 0 / 0.06),
+    0 10px 24px -12px oklch(0 0 0 / 0.25);
+}
+[data-sonner-toast][data-type="success"] {
+  --normal-bg: color-mix(in oklab, var(--success) 10%, var(--popover));
+  --normal-border: color-mix(in oklab, var(--success) 32%, var(--border));
+}
+[data-sonner-toast][data-type="success"] [data-icon] {
+  color: var(--success);
+}
+[data-sonner-toast][data-type="error"] {
+  --normal-bg: color-mix(in oklab, var(--destructive) 10%, var(--popover));
+  --normal-border: color-mix(in oklab, var(--destructive) 32%, var(--border));
+}
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: var(--destructive);
+}
+[data-sonner-toast][data-type="warning"] {
+  --normal-bg: color-mix(in oklab, var(--warning) 10%, var(--popover));
+  --normal-border: color-mix(in oklab, var(--warning) 32%, var(--border));
+}
+[data-sonner-toast][data-type="warning"] [data-icon] {
+  color: var(--warning);
+}

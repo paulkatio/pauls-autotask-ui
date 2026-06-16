@@ -24,6 +24,12 @@ function fmtDay(iso?: string | null): string {
   }).format(d);
 }
 
+function daySort(iso?: string | null): number | null {
+  if (!iso) return null;
+  const ms = Date.parse(iso);
+  return Number.isNaN(ms) ? null : ms;
+}
+
 export function ContactsPanel({ rows }: { rows: ContactRow[] }) {
   return (
     <SearchableTable
@@ -39,6 +45,7 @@ export function ContactsPanel({ rows }: { rows: ContactRow[] }) {
         {
           key: "name",
           header: "Name",
+          sortValue: (r) => r.name ?? "",
           cell: (r) => (
             <TruncatedText className="max-w-xs font-medium">
               {r.name}
@@ -48,6 +55,7 @@ export function ContactsPanel({ rows }: { rows: ContactRow[] }) {
         {
           key: "email",
           header: "E-Mail",
+          sortValue: (r) => r.email ?? "",
           cell: (r) => (
             <TruncatedText className="text-muted-foreground max-w-xs">
               {r.email || "—"}
@@ -57,6 +65,7 @@ export function ContactsPanel({ rows }: { rows: ContactRow[] }) {
         {
           key: "phone",
           header: "Telefon",
+          sortValue: (r) => r.phone ?? "",
           cell: (r) => r.phone || "—",
           cellClassName:
             "text-muted-foreground tabular-nums whitespace-nowrap",
@@ -80,6 +89,7 @@ export function DevicesPanel({ rows }: { rows: DeviceRow[] }) {
         {
           key: "name",
           header: "Name",
+          sortValue: (r) => r.name ?? "",
           cell: (r) => (
             <TruncatedText className="max-w-xs font-medium">
               {r.name}
@@ -89,6 +99,7 @@ export function DevicesPanel({ rows }: { rows: DeviceRow[] }) {
         {
           key: "serial",
           header: "Seriennummer",
+          sortValue: (r) => r.serialNumber ?? "",
           cell: (r) => (
             <TruncatedText className="text-muted-foreground max-w-44">
               {r.serialNumber || "—"}
@@ -98,6 +109,7 @@ export function DevicesPanel({ rows }: { rows: DeviceRow[] }) {
         {
           key: "location",
           header: "Standort",
+          sortValue: (r) => r.location ?? "",
           cell: (r) => (
             <TruncatedText className="text-muted-foreground max-w-44">
               {r.location || "—"}
@@ -123,6 +135,7 @@ export function ContractsPanel({ rows }: { rows: ContractRow[] }) {
         {
           key: "name",
           header: "Name",
+          sortValue: (r) => r.name ?? "",
           cell: (r) => (
             <TruncatedText className="max-w-xs font-medium">
               {r.name}
@@ -132,6 +145,7 @@ export function ContractsPanel({ rows }: { rows: ContractRow[] }) {
         {
           key: "period",
           header: "Zeitraum",
+          sortValue: (r) => daySort(r.startDate),
           cell: (r) => `${fmtDay(r.startDate)} – ${fmtDay(r.endDate)}`,
           cellClassName:
             "text-muted-foreground tabular-nums whitespace-nowrap",
@@ -139,6 +153,7 @@ export function ContractsPanel({ rows }: { rows: ContractRow[] }) {
         {
           key: "status",
           header: "Status",
+          sortValue: (r) => r.status ?? null,
           cell: (r) =>
             r.status === 1 ? (
               <Badge>Aktiv</Badge>

@@ -30,6 +30,12 @@ function fmtDate(iso?: string | null): string {
   }).format(d);
 }
 
+function dateSort(iso?: string | null): number | null {
+  if (!iso) return null;
+  const ms = Date.parse(iso);
+  return Number.isNaN(ms) ? null : ms;
+}
+
 // „Meine Zeiten" als durchsuchbare Tabelle (Paul-Feedback: jede Liste braucht eine
 // Suche; Spaltenbreiten automatisch).
 export function ZeitenTable({ rows }: { rows: ZeitenRow[] }) {
@@ -88,6 +94,7 @@ export function ZeitenTable({ rows }: { rows: ZeitenRow[] }) {
         {
           key: "date",
           header: "Datum",
+          sortValue: (r) => dateSort(r.dateWorked),
           cell: (r) => fmtDate(r.dateWorked),
           cellClassName:
             "text-muted-foreground tabular-nums whitespace-nowrap",
@@ -95,6 +102,7 @@ export function ZeitenTable({ rows }: { rows: ZeitenRow[] }) {
         {
           key: "ticket",
           header: "Ticket",
+          sortValue: (r) => r.ticketTitle ?? r.ticketNumber ?? "",
           cell: (r) =>
             r.ticketID != null ? (
               <Link
@@ -117,6 +125,7 @@ export function ZeitenTable({ rows }: { rows: ZeitenRow[] }) {
         {
           key: "activity",
           header: "Tätigkeit",
+          sortValue: (r) => r.workTypeName ?? "",
           cell: (r) =>
             r.workTypeName ? (
               <Badge variant="secondary">{r.workTypeName}</Badge>
@@ -127,6 +136,7 @@ export function ZeitenTable({ rows }: { rows: ZeitenRow[] }) {
         {
           key: "dauer",
           header: "Dauer",
+          sortValue: (r) => r.hoursWorked ?? null,
           cell: (r) => formatHours(r.hoursWorked),
           headClassName: "text-right",
           cellClassName: "text-right font-medium tabular-nums whitespace-nowrap",
@@ -134,6 +144,7 @@ export function ZeitenTable({ rows }: { rows: ZeitenRow[] }) {
         {
           key: "bill",
           header: "Abrechenbar",
+          sortValue: (r) => r.hoursToBill ?? null,
           cell: (r) => formatHours(r.hoursToBill),
           headClassName: "text-right",
           cellClassName:

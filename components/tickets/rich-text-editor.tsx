@@ -10,8 +10,6 @@ import {
   UnderlineIcon,
   ListIcon,
   ListOrderedIcon,
-  Undo2Icon,
-  Redo2Icon,
   RemoveFormattingIcon,
 } from "lucide-react";
 
@@ -29,8 +27,7 @@ import { sanitizeRichHtml } from "@/lib/html/sanitize-rich";
 // WYSIWYG-Composer für den Kunden-Chat. Editor-Engine ist Tiptap v3 (ProseMirror) –
 // KEIN selbstgebautes contentEditable/execCommand mehr. Die Toolbar ist aus den
 // vorhandenen shadcn-Bausteinen (Button/Tooltip/Separator) komponiert; Format-Subset
-// bewusst klein: fett/kursiv/unterstrichen + Listen, plus Rückgängig/Wiederholen und
-// Formatierung-entfernen.
+// bewusst klein: fett/kursiv/unterstrichen + Listen, plus Formatierung-entfernen.
 //
 // Ausgabe-Vertrag (unverändert ggü. der alten Komponente, damit TicketChat & Backend
 // nichts merken): onChange liefert { html, text }. html ist IMMER durch sanitizeRichHtml
@@ -150,8 +147,6 @@ export const RichTextEditor = React.forwardRef<
             underline: editor.isActive("underline"),
             bullet: editor.isActive("bulletList"),
             ordered: editor.isActive("orderedList"),
-            canUndo: editor.can().undo(),
-            canRedo: editor.can().redo(),
           }
         : null,
   });
@@ -204,18 +199,6 @@ export const RichTextEditor = React.forwardRef<
           <Separator orientation="vertical" className="mx-0.5 !h-5" />
 
           <ToolbarButton
-            label="Rückgängig"
-            icon={Undo2Icon}
-            disabled={toolbarDisabled || !state?.canUndo}
-            onClick={() => editor?.chain().focus().undo().run()}
-          />
-          <ToolbarButton
-            label="Wiederholen"
-            icon={Redo2Icon}
-            disabled={toolbarDisabled || !state?.canRedo}
-            onClick={() => editor?.chain().focus().redo().run()}
-          />
-          <ToolbarButton
             label="Formatierung entfernen"
             icon={RemoveFormattingIcon}
             disabled={toolbarDisabled}
@@ -239,7 +222,7 @@ export const RichTextEditor = React.forwardRef<
 });
 
 // Einzelner Toolbar-Knopf: shadcn-Button in einem Tooltip. Toggle-Knöpfe melden
-// `aria-pressed`; Aktions-Knöpfe (Undo/Redo/Clear) nicht. onMouseDown verhindert den
+// `aria-pressed`; Aktions-Knöpfe (Formatierung entfernen) nicht. onMouseDown verhindert den
 // Fokusverlust, damit das Toggle auf die aktuelle Auswahl wirkt.
 function ToolbarButton({
   label,

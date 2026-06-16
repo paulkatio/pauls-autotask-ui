@@ -48,10 +48,26 @@ import type { ProjectRow } from "@/lib/autotask/entities/projects";
 
 export type ProjectScope = "mine" | "all";
 
-type SortKey = "name" | "due" | "progress";
+type SortKey =
+  | "name"
+  | "number"
+  | "company"
+  | "status"
+  | "lead"
+  | "due"
+  | "progress";
 type SortDir = "asc" | "desc";
 
 const ALL = "all";
+const SORT_KEYS: SortKey[] = [
+  "name",
+  "number",
+  "company",
+  "status",
+  "lead",
+  "due",
+  "progress",
+];
 
 function formatDate(iso?: string | null): string {
   if (!iso) return "—";
@@ -184,8 +200,9 @@ export function ProjectsList({
   // Aus der URL gelesene Sortierung defensiv validieren – ungültige Parameter
   // (?sort=xyz&dir=foo) fallen sauber auf Name/aufsteigend zurück.
   const sortParam = searchParams.get("sort");
-  const sortKey: SortKey =
-    sortParam === "due" || sortParam === "progress" ? sortParam : "name";
+  const sortKey: SortKey = SORT_KEYS.includes(sortParam as SortKey)
+    ? (sortParam as SortKey)
+    : "name";
   const sortDir: SortDir = searchParams.get("dir") === "desc" ? "desc" : "asc";
 
   function setParam(key: string, value: string | null) {
@@ -246,6 +263,22 @@ export function ProjectsList({
     const dir = sortDir === "desc" ? -1 : 1;
     const cmp = (a: ProjectRow, b: ProjectRow): number => {
       switch (sortKey) {
+        case "number":
+          return (
+            (a.projectNumber ?? "").localeCompare(b.projectNumber ?? "", "de", {
+              numeric: true,
+            }) * dir
+          );
+        case "company":
+          return (
+            (a.companyName ?? "").localeCompare(b.companyName ?? "", "de") * dir
+          );
+        case "status":
+          return (
+            (a.statusLabel ?? "").localeCompare(b.statusLabel ?? "", "de") * dir
+          );
+        case "lead":
+          return (a.leadName ?? "").localeCompare(b.leadName ?? "", "de") * dir;
         case "due": {
           // Fehlende Fälligkeit immer ans Ende (unabhängig von der Richtung).
           const av = a.endDateTime ?? "";
@@ -412,10 +445,42 @@ export function ProjectsList({
                       onToggle={toggleSort}
                     />
                   </TableHead>
-                  <TableHead>Nummer</TableHead>
-                  <TableHead>Firma</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Leiter</TableHead>
+                  <TableHead>
+                    <SortHead
+                      label="Nummer"
+                      sortId="number"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onToggle={toggleSort}
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <SortHead
+                      label="Firma"
+                      sortId="company"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onToggle={toggleSort}
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <SortHead
+                      label="Status"
+                      sortId="status"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onToggle={toggleSort}
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <SortHead
+                      label="Leiter"
+                      sortId="lead"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onToggle={toggleSort}
+                    />
+                  </TableHead>
                   <TableHead>
                     <SortHead
                       label="Fortschritt"

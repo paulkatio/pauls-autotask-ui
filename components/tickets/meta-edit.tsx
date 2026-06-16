@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { ChevronsUpDownIcon, PencilIcon } from "lucide-react";
 
 import {
@@ -57,7 +56,11 @@ import type {
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import type { RefOption } from "@/lib/autotask/entities/contacts";
 import { recordHistory } from "@/lib/history";
-import { StatusDot } from "@/components/status-indicator";
+import { saveToast } from "@/lib/ui/save-toast";
+import {
+  StatusSelect,
+  PrioritySelect,
+} from "@/components/tickets/ticket-field-selects";
 import { cn } from "@/lib/utils";
 
 const UNASSIGNED = "none";
@@ -107,13 +110,18 @@ export function DescriptionEdit({
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(`/api/tickets/${ticketId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: text }),
-      });
-      const j = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? "Speichern fehlgeschlagen.");
+      await saveToast(
+        async () => {
+          const res = await fetch(`/api/tickets/${ticketId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ description: text }),
+          });
+          const j = (await res.json().catch(() => ({}))) as { error?: string };
+          if (!res.ok) throw new Error(j.error ?? "Speichern fehlgeschlagen.");
+        },
+        { success: "Beschreibung gespeichert." },
+      );
       recordHistory({
         label: "Beschreibung geändert",
         reversible: true,
@@ -121,7 +129,6 @@ export function DescriptionEdit({
           { id: ticketId, ticketNumber: `#${ticketId}`, body: { description: value ?? "" } },
         ],
       });
-      toast.success("Beschreibung gespeichert.");
       setEditing(false);
       router.refresh();
     } catch (e) {
@@ -277,7 +284,7 @@ export function TicketFieldSelect({
     setSaving(true);
     setError(null);
     try {
-      await patchTicket(ticketId, { [field]: Number(next) });
+      await saveToast(() => patchTicket(ticketId, { [field]: Number(next) }));
       recordHistory({
         label: `${ariaLabel} geändert`,
         reversible: true,
@@ -285,7 +292,6 @@ export function TicketFieldSelect({
           { id: ticketId, ticketNumber: `#${ticketId}`, body: { [field]: value ?? null } },
         ],
       });
-      toast.success("Gespeichert.");
       router.refresh();
     } catch (e) {
       setVal(prev);
@@ -301,13 +307,26 @@ export function TicketFieldSelect({
   }));
   return (
     <div className="flex flex-col gap-1">
-      <OptionSelect
-        value={val}
-        options={items}
-        ariaLabel={ariaLabel}
-        disabled={saving}
-        onChange={onChange}
-      />
+      {/* Priorität einheitlich als Badge (wie Listen/Bulk/Anlegen); andere
+          Picklisten (z. B. Queue) als schlichter Text-Select. */}
+      {field === "priority" ? (
+        <PrioritySelect
+          value={val}
+          items={items}
+          ariaLabel={ariaLabel}
+          disabled={saving}
+          size="sm"
+          onChange={onChange}
+        />
+      ) : (
+        <OptionSelect
+          value={val}
+          options={items}
+          ariaLabel={ariaLabel}
+          disabled={saving}
+          onChange={onChange}
+        />
+      )}
       <FieldError message={error} />
     </div>
   );
@@ -359,7 +378,7 @@ export function StatusEdit({
     setSaving(true);
     setError(null);
     try {
-      await patchTicket(ticketId, { status: next });
+      await saveToast(() => patchTicket(ticketId, { status: next }));
       recordHistory({
         label: `${ariaLabel} geändert`,
         reversible: true,
@@ -367,7 +386,6 @@ export function StatusEdit({
           { id: ticketId, ticketNumber: `#${ticketId}`, body: { status: value ?? null } },
         ],
       });
-      toast.success("Gespeichert.");
       router.refresh();
     } catch (e) {
       setVal(prevVal);
@@ -405,35 +423,45 @@ export function StatusEdit({
     setDialogSaving(true);
     setDialogError(null);
     try {
-      // 1) Notiz ZUERST, dann Status. So bleibt bei einem Statusfehler die Notiz
-      // erhalten – und der Status wechselt nie ohne dokumentierte Notiz.
-      if (pending.mode === "close" && toCustomer) {
-        const r = await fetch(`/api/tickets/${ticketId}/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, notify: true }),
-        });
-        const j = (await r.json().catch(() => ({}))) as { error?: string };
-        if (!r.ok) throw new Error(j.error ?? "Senden an den Kunden fehlgeschlagen.");
-      } else {
-        const r = await fetch(`/api/tickets/${ticketId}/note`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: pending.mode === "close" ? "Abschluss" : "Wieder-Öffnung",
-            text,
-          }),
-        });
-        const j = (await r.json().catch(() => ({}))) as {
-          itemId?: number;
-          error?: string;
-        };
-        if (!r.ok || !j.itemId) {
-          throw new Error(j.error ?? "Notiz konnte nicht gespeichert werden.");
-        }
-      }
-      // 2) Status setzen.
-      await patchTicket(ticketId, { status: pending.next });
+      await saveToast(
+        async () => {
+          // 1) Notiz ZUERST, dann Status. So bleibt bei einem Statusfehler die Notiz
+          // erhalten – und der Status wechselt nie ohne dokumentierte Notiz.
+          if (pending.mode === "close" && toCustomer) {
+            const r = await fetch(`/api/tickets/${ticketId}/chat`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text, notify: true }),
+            });
+            const j = (await r.json().catch(() => ({}))) as { error?: string };
+            if (!r.ok) throw new Error(j.error ?? "Senden an den Kunden fehlgeschlagen.");
+          } else {
+            const r = await fetch(`/api/tickets/${ticketId}/note`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: pending.mode === "close" ? "Abschluss" : "Wieder-Öffnung",
+                text,
+              }),
+            });
+            const j = (await r.json().catch(() => ({}))) as {
+              itemId?: number;
+              error?: string;
+            };
+            if (!r.ok || !j.itemId) {
+              throw new Error(j.error ?? "Notiz konnte nicht gespeichert werden.");
+            }
+          }
+          // 2) Status setzen.
+          await patchTicket(ticketId, { status: pending.next });
+        },
+        {
+          success:
+            pending.mode === "close"
+              ? "Ticket abgeschlossen."
+              : "Ticket wieder geöffnet.",
+        },
+      );
       recordHistory({
         label:
           pending.mode === "close" ? "Ticket abgeschlossen" : "Ticket wieder geöffnet",
@@ -443,9 +471,6 @@ export function StatusEdit({
         ],
       });
       setVal(String(pending.next));
-      toast.success(
-        pending.mode === "close" ? "Ticket abgeschlossen." : "Ticket wieder geöffnet.",
-      );
       setPending(null);
       router.refresh();
     } catch (e) {
@@ -462,35 +487,14 @@ export function StatusEdit({
 
   return (
     <div className="flex flex-col gap-1">
-      <Select
-        items={items}
+      <StatusSelect
         value={val}
-        onValueChange={(v) => onChange(String(v))}
-      >
-        <SelectTrigger
-          size="sm"
-          className="w-full"
-          disabled={saving}
-          aria-label={ariaLabel}
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            {val && <StatusDot status={Number(val)} />}
-            <SelectValue placeholder="Status wählen" />
-          </span>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {items.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                <span className="flex items-center gap-2">
-                  <StatusDot status={Number(o.value)} />
-                  {o.label}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+        items={items}
+        ariaLabel={ariaLabel}
+        disabled={saving}
+        size="sm"
+        onChange={onChange}
+      />
       <FieldError message={error} />
 
       <Dialog
@@ -612,7 +616,9 @@ export function CategoryEdit({
     setSaving(true);
     setError(null);
     try {
-      await patchTicket(ticketId, { issueType: Number(next), subIssueType: null });
+      await saveToast(() =>
+        patchTicket(ticketId, { issueType: Number(next), subIssueType: null }),
+      );
       recordHistory({
         label: "Kategorie geändert",
         reversible: true,
@@ -624,7 +630,6 @@ export function CategoryEdit({
           },
         ],
       });
-      toast.success("Gespeichert.");
       router.refresh();
     } catch (e) {
       setIss(prevI);
@@ -642,7 +647,7 @@ export function CategoryEdit({
     setSaving(true);
     setError(null);
     try {
-      await patchTicket(ticketId, { subIssueType: Number(next) });
+      await saveToast(() => patchTicket(ticketId, { subIssueType: Number(next) }));
       recordHistory({
         label: "Unterkategorie geändert",
         reversible: true,
@@ -654,7 +659,6 @@ export function CategoryEdit({
           },
         ],
       });
-      toast.success("Gespeichert.");
       router.refresh();
     } catch (e) {
       setSub(prev);
@@ -768,11 +772,14 @@ export function AssignmentEdit({
       setRes(UNASSIGNED);
       setSaving(true);
       try {
-        await patchTicket(ticketId, {
-          assignedResourceID: null,
-          assignedResourceRoleID: null,
-        });
-        toast.success("Zuweisung entfernt.");
+        await saveToast(
+          () =>
+            patchTicket(ticketId, {
+              assignedResourceID: null,
+              assignedResourceRoleID: null,
+            }),
+          { success: "Zuweisung entfernt." },
+        );
         logAssign(
           "Zuweisung entfernt",
           assignedResourceID ?? null,
@@ -796,11 +803,14 @@ export function AssignmentEdit({
       if (rs.length === 0) {
         setError("Diese Resource hat keine Rolle – Zuweisung nicht möglich.");
       } else if (rs.length === 1) {
-        const r = await patchTicket(ticketId, {
-          assignedResourceID: rid,
-          assignedResourceRoleID: rs[0].roleID,
-        });
-        toast.success("Zugewiesen.");
+        const r = await saveToast(
+          () =>
+            patchTicket(ticketId, {
+              assignedResourceID: rid,
+              assignedResourceRoleID: rs[0].roleID,
+            }),
+          { success: "Zugewiesen." },
+        );
         // Mailstatus kommt aus der PATCH-Route (serverseitig ausgelöst).
         toastAssignMail(r.assignMail);
         logAssign(
@@ -826,11 +836,14 @@ export function AssignmentEdit({
     setSaving(true);
     setError(null);
     try {
-      const r = await patchTicket(ticketId, {
-        assignedResourceID: pendingResource,
-        assignedResourceRoleID: Number(next),
-      });
-      toast.success("Zugewiesen.");
+      const r = await saveToast(
+        () =>
+          patchTicket(ticketId, {
+            assignedResourceID: pendingResource,
+            assignedResourceRoleID: Number(next),
+          }),
+        { success: "Zugewiesen." },
+      );
       // Mailstatus kommt aus der PATCH-Route (serverseitig ausgelöst).
       toastAssignMail(r.assignMail);
       logAssign(
@@ -920,8 +933,7 @@ export function RefCombobox({
     setSaving(true);
     setError(null);
     try {
-      await patchTicket(ticketId, { [field]: id });
-      toast.success("Gespeichert.");
+      await saveToast(() => patchTicket(ticketId, { [field]: id }));
       router.refresh();
     } catch (e) {
       setLabel(prev);
@@ -1034,14 +1046,17 @@ export function CompanyChange({
       // companyID neu + ALLE firmengebundenen Abhängigen im selben PATCH nullen
       // (keine Auto-Kaskade). companyLocationID gehört ebenfalls zur alten Firma
       // und muss mit zurückgesetzt werden (sonst lehnt Autotask den PATCH ab).
-      await patchTicket(ticketId, {
-        companyID: selected.id,
-        contactID: null,
-        configurationItemID: null,
-        contractID: null,
-        companyLocationID: null,
-      });
-      toast.success("Firma geändert. Kontakt/Gerät/Vertrag wurden zurückgesetzt.");
+      await saveToast(
+        () =>
+          patchTicket(ticketId, {
+            companyID: selected.id,
+            contactID: null,
+            configurationItemID: null,
+            contractID: null,
+            companyLocationID: null,
+          }),
+        { success: "Firma geändert. Kontakt/Gerät/Vertrag wurden zurückgesetzt." },
+      );
       setOpen(false);
       setSelected(null);
       setQ("");

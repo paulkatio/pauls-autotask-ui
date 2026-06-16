@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { XIcon } from "lucide-react";
 
 import {
@@ -14,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { saveToast } from "@/lib/ui/save-toast";
 import type { ResourceOption } from "@/lib/autotask/entities/resources";
 import type { SecondaryResourceRow } from "@/lib/autotask/entities/ticket-secondary-resources";
 
@@ -65,14 +65,18 @@ export function SecondaryResourcesEdit({
     setSaving(true);
     setError(null);
     try {
-      const r = await fetch(`/api/tickets/${ticketId}/secondary-resources`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resourceID, roleID }),
-      });
-      const j = (await r.json().catch(() => ({}))) as { error?: string };
-      if (!r.ok) throw new Error(j.error ?? "Hinzufügen fehlgeschlagen.");
-      toast.success(`${nameOf(resourceID)} als zusätzlicher Mitarbeiter hinzugefügt.`);
+      await saveToast(
+        async () => {
+          const r = await fetch(`/api/tickets/${ticketId}/secondary-resources`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ resourceID, roleID }),
+          });
+          const j = (await r.json().catch(() => ({}))) as { error?: string };
+          if (!r.ok) throw new Error(j.error ?? "Hinzufügen fehlgeschlagen.");
+        },
+        { success: `${nameOf(resourceID)} als zusätzlicher Mitarbeiter hinzugefügt.` },
+      );
       setRoles([]);
       setPendingResource(null);
       router.refresh();
@@ -111,13 +115,17 @@ export function SecondaryResourcesEdit({
     setSaving(true);
     setError(null);
     try {
-      const r = await fetch(
-        `/api/tickets/${ticketId}/secondary-resources/${id}`,
-        { method: "DELETE" },
+      await saveToast(
+        async () => {
+          const r = await fetch(
+            `/api/tickets/${ticketId}/secondary-resources/${id}`,
+            { method: "DELETE" },
+          );
+          const j = (await r.json().catch(() => ({}))) as { error?: string };
+          if (!r.ok) throw new Error(j.error ?? "Entfernen fehlgeschlagen.");
+        },
+        { success: `${name ?? "Mitarbeiter"} entfernt.` },
       );
-      const j = (await r.json().catch(() => ({}))) as { error?: string };
-      if (!r.ok) throw new Error(j.error ?? "Entfernen fehlgeschlagen.");
-      toast.success(`${name ?? "Mitarbeiter"} entfernt.`);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Fehler beim Entfernen.");

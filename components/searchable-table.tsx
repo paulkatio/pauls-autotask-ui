@@ -7,6 +7,8 @@ import { RotateCcwIcon, SearchIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useColumnOrder } from "@/hooks/use-column-order";
+import { useTableSort, type SortValue } from "@/hooks/use-table-sort";
+import { SortIcon } from "@/components/table-sort-icon";
 import {
   Table,
   TableBody,
@@ -34,6 +36,9 @@ export interface Column<T> {
   cell: (row: T) => React.ReactNode;
   headClassName?: string;
   cellClassName?: string;
+  // Macht die Spalte sortierbar (Klick auf den Kopf). Liefert den Vergleichswert je
+  // Zeile (Text -> alphabetisch, Zahl/Datum -> numerisch). Ohne Angabe: nicht sortierbar.
+  sortValue?: (row: T) => SortValue;
 }
 
 export function SearchableTable<T extends { id: number | string }>({
@@ -84,6 +89,10 @@ export function SearchableTable<T extends { id: number | string }>({
   );
   const orderedColumns = order.map((k) => columnMap[k]).filter(Boolean);
 
+  // Klick-zum-Sortieren (Desktop-Tabelle). Sortiert die bereits gefilterten Zeilen.
+  const { toggle, sortRows, isSortable, ariaSort, sort } = useTableSort(columns);
+  const sorted = sortRows(filtered);
+
   const handleRow = onRowClick
     ? onRowClick
     : hrefFor
@@ -131,7 +140,7 @@ export function SearchableTable<T extends { id: number | string }>({
         {/* Mobile/Tablet: bis xl je Zeile eine Karte (Tabelle würde sonst bis ~1280
             rechts klippen). */}
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:hidden">
-          {filtered.map((row) => (
+          {sorted.map((row) => (
             <div
               key={String(row.id)}
               {...(handleRow
@@ -181,23 +190,38 @@ export function SearchableTable<T extends { id: number | string }>({
           <Table className={cn(minWidthClass)}>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
-                {orderedColumns.map((c) => (
-                  <TableHead
-                    key={c.key}
-                    className={cn(
-                      "data-[dragover]:bg-accent data-[dragging]:opacity-60 cursor-grab transition-colors select-none active:cursor-grabbing",
-                      c.headClassName,
-                    )}
-                    title="Spalte ziehen, um die Reihenfolge zu ändern"
-                    {...headProps(c.key)}
-                  >
-                    {c.header}
-                  </TableHead>
-                ))}
+                {orderedColumns.map((c) => {
+                  const sortable = isSortable(c.key);
+                  const state =
+                    sort?.key === c.key ? sort.dir : ("none" as const);
+                  return (
+                    <TableHead
+                      key={c.key}
+                      aria-sort={ariaSort(c.key)}
+                      className={cn(
+                        "group/sorthead data-[dragover]:bg-accent data-[dragging]:opacity-60 cursor-grab transition-colors select-none active:cursor-grabbing",
+                        sortable && "cursor-pointer",
+                        c.headClassName,
+                      )}
+                      title={
+                        sortable
+                          ? "Klicken zum Sortieren · ziehen zum Verschieben"
+                          : "Spalte ziehen, um die Reihenfolge zu ändern"
+                      }
+                      {...headProps(c.key)}
+                      onClick={sortable ? () => toggle(c.key) : undefined}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {c.header}
+                        {sortable && <SortIcon state={state} />}
+                      </span>
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((row) => (
+              {sorted.map((row) => (
                 <TableRow
                   key={String(row.id)}
                   className={handleRow ? "cursor-pointer" : undefined}
