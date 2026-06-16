@@ -1,5 +1,3 @@
-import { AlertCircleIcon } from "lucide-react";
-
 import { getSession } from "@/lib/auth";
 import {
   getTicketsAll,
@@ -9,8 +7,9 @@ import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
 import { getAssignableResources } from "@/lib/autotask/entities/resources";
 import { getSidebarTicketCounts } from "@/lib/autotask/entities/ticket-counts";
 import { getSecondaryOpenTickets } from "@/lib/autotask/entities/dashboard";
-import { AutotaskError, type AutotaskFilter } from "@/lib/autotask/client";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { type AutotaskFilter } from "@/lib/autotask/client";
+import { loadOrError } from "@/lib/data/load-or-error";
+import { DataError } from "@/components/data-error";
 import { Badge } from "@/components/ui/badge";
 import { TicketsList } from "@/components/tickets/tickets-list";
 import { PageHeader } from "@/components/page-header";
@@ -103,9 +102,16 @@ export default async function MyTicketsPage({
     })),
   ]);
 
-  try {
-    // Alle dir zugewiesenen Tickets in EINER Liste (keine Paginierung).
-    const data = await getTicketsAll(filter);
+  // Alle dir zugewiesenen Tickets in EINER Liste (keine Paginierung).
+  const res = await loadOrError(() => getTicketsAll(filter));
+  if (!res.ok)
+    return (
+      <DataError
+        title="Tickets konnten nicht geladen werden"
+        rateLimited={res.rateLimited}
+      />
+    );
+  const data = res.data;
 
     return (
       <div className="flex flex-col gap-6">
@@ -164,18 +170,4 @@ export default async function MyTicketsPage({
         )}
       </div>
     );
-  } catch (e) {
-    const rateLimited = e instanceof AutotaskError && e.status === 429;
-    return (
-      <Alert variant="destructive">
-        <AlertCircleIcon />
-        <AlertTitle>Tickets konnten nicht geladen werden</AlertTitle>
-        <AlertDescription>
-          {rateLimited
-            ? "Rate-Limit erreicht (429). Bitte kurz warten und erneut versuchen."
-            : "Bitte später erneut versuchen."}
-        </AlertDescription>
-      </Alert>
-    );
-  }
 }

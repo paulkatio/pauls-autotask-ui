@@ -9,9 +9,10 @@ import {
   getTicketPicklists,
   getNotePicklists,
 } from "@/lib/autotask/entities/picklists";
-import { AutotaskError } from "@/lib/autotask/client";
+import { loadOrError } from "@/lib/data/load-or-error";
 import { autotaskTicketUrl } from "@/lib/autotask/links";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { DataError } from "@/components/data-error";
 import { TicketDetailView } from "@/components/tickets/ticket-detail";
 
 // Gemeinsamer Ticketdetail-Inhalt für die normale Seite (`app/(app)/tickets/[id]`)
@@ -48,40 +49,34 @@ export async function TicketDetailContent({
     resources.listActive(),
   ]);
 
-  try {
-    const detail = await getTicketDetail(id);
-    if (!detail) {
-      return (
-        <ErrorAlert
-          title="Ticket nicht gefunden"
-          message={`Zur ID ${id} existiert kein Ticket.`}
-        />
-      );
-    }
+  const res = await loadOrError(() => getTicketDetail(id));
+  if (!res.ok)
     return (
-      <TicketDetailView
-        detail={detail}
-        picklists={picklists}
-        notePicklists={notePicklists}
-        resourceOptions={resourceOptions}
-        me={{ name: session.displayName, avatar: session.avatarUrl ?? "" }}
-        autotaskUrl={autotaskTicketUrl(id)}
-        showMobileAutotaskButton={popout}
+      <DataError
+        title="Ticket konnte nicht geladen werden"
+        rateLimited={res.rateLimited}
       />
     );
-  } catch (e) {
-    const rateLimited = e instanceof AutotaskError && e.status === 429;
+  const detail = res.data;
+  if (!detail) {
     return (
       <ErrorAlert
-        title="Ticket konnte nicht geladen werden"
-        message={
-          rateLimited
-            ? "Rate-Limit erreicht (429). Bitte kurz warten und erneut versuchen."
-            : "Bitte später erneut versuchen."
-        }
+        title="Ticket nicht gefunden"
+        message={`Zur ID ${id} existiert kein Ticket.`}
       />
     );
   }
+  return (
+    <TicketDetailView
+      detail={detail}
+      picklists={picklists}
+      notePicklists={notePicklists}
+      resourceOptions={resourceOptions}
+      me={{ name: session.displayName, avatar: session.avatarUrl ?? "" }}
+      autotaskUrl={autotaskTicketUrl(id)}
+      showMobileAutotaskButton={popout}
+    />
+  );
 }
 
 // Dokumenttitel (Browser-Tab / Taskleiste des Popup-Fensters) = Ticketnummer + Titel.

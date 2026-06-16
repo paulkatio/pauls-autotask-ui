@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  AlertCircleIcon,
   Building2Icon,
   ChevronLeftIcon,
   MailIcon,
@@ -18,11 +17,12 @@ import {
 } from "@/lib/autotask/entities/ticket-list";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
 import { getAssignableResources } from "@/lib/autotask/entities/resources";
-import { AutotaskError, type AutotaskFilter } from "@/lib/autotask/client";
+import { type AutotaskFilter } from "@/lib/autotask/client";
+import { loadOrError } from "@/lib/data/load-or-error";
+import { DataError } from "@/components/data-error";
 import { PageHeader } from "@/components/page-header";
 import { UrlTabs } from "@/components/url-tabs";
 import { TicketsList } from "@/components/tickets/tickets-list";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -54,12 +54,15 @@ export default async function ContactDetailPage({
     ? (sp.tab as Tab)
     : "offen";
 
-  let contact;
-  try {
-    contact = await contacts.get(contactId);
-  } catch (e) {
-    return <LoadError entity="Kontakt" rateLimited={isRateLimited(e)} />;
-  }
+  const contactRes = await loadOrError(() => contacts.get(contactId));
+  if (!contactRes.ok)
+    return (
+      <DataError
+        title="Kontakt konnte nicht geladen werden"
+        rateLimited={contactRes.rateLimited}
+      />
+    );
+  const contact = contactRes.data;
   if (!contact) notFound();
 
   const name =
@@ -90,33 +93,32 @@ export default async function ContactDetailPage({
   }
   filter.push(...ticketSearchFilter(sp.q));
 
-  let panel: React.ReactNode;
-  try {
-    const data = await getTicketsPage(filter, {
-      cursorUrl: sp.cursor,
-      withAssigned: true,
-    });
-    panel = (
-      <TicketsList
-        data={data}
-        picklists={picklists}
-        filters={{ status: tab === "offen" ? "open" : "5", priority: "", queue: "" }}
-        columns={{ assigned: true, company: false }}
-        showFilters={false}
-        showPager
-        selectable
-        resources={assignableResources}
-        myResourceId={session.autotaskResourceId}
-        emptyDescription={
-          tab === "offen"
-            ? "Dieser Kontakt hat keine offenen Tickets."
-            : "Dieser Kontakt hat keine abgeschlossenen Tickets."
-        }
-      />
-    );
-  } catch (e) {
-    panel = <LoadError entity="Tickets" rateLimited={isRateLimited(e)} />;
-  }
+  const panelRes = await loadOrError(() =>
+    getTicketsPage(filter, { cursorUrl: sp.cursor, withAssigned: true }),
+  );
+  const panel = !panelRes.ok ? (
+    <DataError
+      title="Tickets konnten nicht geladen werden"
+      rateLimited={panelRes.rateLimited}
+    />
+  ) : (
+    <TicketsList
+      data={panelRes.data}
+      picklists={picklists}
+      filters={{ status: tab === "offen" ? "open" : "5", priority: "", queue: "" }}
+      columns={{ assigned: true, company: false }}
+      showFilters={false}
+      showPager
+      selectable
+      resources={assignableResources}
+      myResourceId={session.autotaskResourceId}
+      emptyDescription={
+        tab === "offen"
+          ? "Dieser Kontakt hat keine offenen Tickets."
+          : "Dieser Kontakt hat keine abgeschlossenen Tickets."
+      }
+    />
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -168,29 +170,5 @@ export default async function ContactDetailPage({
         {panel}
       </UrlTabs>
     </div>
-  );
-}
-
-function isRateLimited(e: unknown): boolean {
-  return e instanceof AutotaskError && e.status === 429;
-}
-
-function LoadError({
-  entity,
-  rateLimited,
-}: {
-  entity: string;
-  rateLimited: boolean;
-}) {
-  return (
-    <Alert variant="destructive">
-      <AlertCircleIcon />
-      <AlertTitle>{entity} konnten nicht geladen werden</AlertTitle>
-      <AlertDescription>
-        {rateLimited
-          ? "Rate-Limit erreicht (429). Bitte kurz warten und erneut versuchen."
-          : "Bitte später erneut versuchen."}
-      </AlertDescription>
-    </Alert>
   );
 }

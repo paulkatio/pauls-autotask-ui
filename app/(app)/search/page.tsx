@@ -1,18 +1,12 @@
-import { AlertCircleIcon } from "lucide-react";
-
 import { getSession } from "@/lib/auth";
 import { searchColumnPage } from "@/lib/autotask/entities/search";
-import { AutotaskError } from "@/lib/autotask/client";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { loadOrError } from "@/lib/data/load-or-error";
+import { DataError } from "@/components/data-error";
 import { SearchBox } from "@/components/search/search-box";
 import { SearchColumns } from "@/components/search/search-columns";
 import { PageHeader } from "@/components/page-header";
 
 export const dynamic = "force-dynamic";
-
-function isRateLimited(e: unknown): boolean {
-  return e instanceof AutotaskError && e.status === 429;
-}
 
 export default async function SearchPage({
   searchParams,
@@ -33,14 +27,21 @@ export default async function SearchPage({
       </p>
     );
   } else {
-    try {
-      // Erste Seite je Spalte parallel (inkl. Gesamtzahl); „Mehr laden" lädt clientseitig.
-      const [firma, kontakt, ticketName, ticketNummer] = await Promise.all([
+    // Erste Seite je Spalte parallel (inkl. Gesamtzahl); „Mehr laden" lädt clientseitig.
+    const res = await loadOrError(() =>
+      Promise.all([
         searchColumnPage("firma", query),
         searchColumnPage("kontakt", query),
         searchColumnPage("ticket-name", query),
         searchColumnPage("ticket-nummer", query),
-      ]);
+      ]),
+    );
+    if (!res.ok) {
+      body = (
+        <DataError title="Suche fehlgeschlagen" rateLimited={res.rateLimited} />
+      );
+    } else {
+      const [firma, kontakt, ticketName, ticketNummer] = res.data;
       body = (
         <SearchColumns
           query={query}
@@ -51,18 +52,6 @@ export default async function SearchPage({
             "ticket-nummer": ticketNummer,
           }}
         />
-      );
-    } catch (e) {
-      body = (
-        <Alert variant="destructive">
-          <AlertCircleIcon />
-          <AlertTitle>Suche fehlgeschlagen</AlertTitle>
-          <AlertDescription>
-            {isRateLimited(e)
-              ? "Rate-Limit erreicht (429). Bitte kurz warten und erneut versuchen."
-              : "Bitte später erneut versuchen."}
-          </AlertDescription>
-        </Alert>
       );
     }
   }

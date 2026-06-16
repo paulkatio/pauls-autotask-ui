@@ -1,12 +1,10 @@
-import { AlertCircleIcon } from "lucide-react";
-
 import { getSession } from "@/lib/auth";
 import {
   getMyProjects,
   getAllActiveProjects,
 } from "@/lib/autotask/entities/projects";
-import { AutotaskError } from "@/lib/autotask/client";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { loadOrError } from "@/lib/data/load-or-error";
+import { DataError } from "@/components/data-error";
 import { PageHeader } from "@/components/page-header";
 import { ProjectsList, type ProjectScope } from "@/components/projects/projects-list";
 
@@ -27,12 +25,22 @@ export default async function ProjectsPage({
   const scope: ProjectScope = sp.scope === "all" ? "all" : "mine";
   const rid = session.autotaskResourceId;
 
-  try {
-    // „Meine" immer laden (Umschalter-Badge + Quelle im „Mine"-Blick); im „Alle"-Blick
-    // zusätzlich die Team-Liste. getMyProjects ist 60 s gecacht → der Doppelbezug im
-    // Mine-Blick kostet nichts.
+  // „Meine" immer laden (Umschalter-Badge + Quelle im „Mine"-Blick); im „Alle"-Blick
+  // zusätzlich die Team-Liste. getMyProjects ist 60 s gecacht → der Doppelbezug im
+  // Mine-Blick kostet nichts.
+  const res = await loadOrError(async () => {
     const mine = await getMyProjects(rid);
     const scoped = scope === "all" ? await getAllActiveProjects() : mine;
+    return { mine, scoped };
+  });
+  if (!res.ok)
+    return (
+      <DataError
+        title="Projekte konnten nicht geladen werden"
+        rateLimited={res.rateLimited}
+      />
+    );
+  const { mine, scoped } = res.data;
 
     return (
       <div className="flex flex-col gap-6">
@@ -49,18 +57,4 @@ export default async function ProjectsPage({
         />
       </div>
     );
-  } catch (e) {
-    const rateLimited = e instanceof AutotaskError && e.status === 429;
-    return (
-      <Alert variant="destructive">
-        <AlertCircleIcon />
-        <AlertTitle>Projekte konnten nicht geladen werden</AlertTitle>
-        <AlertDescription>
-          {rateLimited
-            ? "Rate-Limit erreicht (429). Bitte kurz warten und erneut versuchen."
-            : "Bitte später erneut versuchen."}
-        </AlertDescription>
-      </Alert>
-    );
-  }
 }

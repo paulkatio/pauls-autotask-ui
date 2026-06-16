@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  AlertCircleIcon,
   ChevronLeftIcon,
   CircleCheckIcon,
   FileTextIcon,
@@ -33,8 +32,10 @@ import {
   getAssignableResources,
   type ResourceOption,
 } from "@/lib/autotask/entities/resources";
-import { AutotaskError, type AutotaskFilter } from "@/lib/autotask/client";
+import { type AutotaskFilter } from "@/lib/autotask/client";
+import { loadOrError } from "@/lib/data/load-or-error";
 import { autotaskCompanyUrl } from "@/lib/autotask/links";
+import { DataError } from "@/components/data-error";
 import { NewTicketDialog } from "@/components/tickets/new-ticket-dialog";
 import { AutotaskOpenButton } from "@/components/autotask-open-button";
 import { CompanyTabs } from "@/components/companies/company-tabs";
@@ -44,7 +45,6 @@ import {
   ContractsPanel,
 } from "@/components/companies/kundenakte-panels";
 import { TicketsList } from "@/components/tickets/tickets-list";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
   CardAction,
@@ -103,12 +103,15 @@ export async function CompanyDetailContent({
     ? (tabParam as Tab)
     : "offen";
 
-  let company;
-  try {
-    company = await companies.get(companyId);
-  } catch (e) {
-    return <LoadError entity="Firma" rateLimited={isRateLimited(e)} />;
-  }
+  const companyRes = await loadOrError(() => companies.get(companyId));
+  if (!companyRes.ok)
+    return (
+      <DataError
+        title="Firma konnte nicht geladen werden"
+        rateLimited={companyRes.rateLimited}
+      />
+    );
+  const company = companyRes.data;
   if (!company) notFound();
 
   const [picklists, assignableResources] = await Promise.all([
@@ -124,15 +127,20 @@ export async function CompanyDetailContent({
     .filter(Boolean)
     .join(", ");
 
-  let panel: React.ReactNode;
-  try {
-    panel = await renderPanel(tab, companyId, cursor, q, picklists, {
+  const panelRes = await loadOrError(() =>
+    renderPanel(tab, companyId, cursor, q, picklists, {
       resources: assignableResources,
       myResourceId: session.autotaskResourceId,
-    });
-  } catch (e) {
-    panel = <LoadError entity="Daten" rateLimited={isRateLimited(e)} />;
-  }
+    }),
+  );
+  const panel = panelRes.ok ? (
+    panelRes.data
+  ) : (
+    <DataError
+      title="Daten konnten nicht geladen werden"
+      rateLimited={panelRes.rateLimited}
+    />
+  );
 
   let stats: CompanyStats | null = null;
   try {
@@ -397,29 +405,5 @@ function StatCard({
         </CardHeader>
       </Card>
     </Link>
-  );
-}
-
-function isRateLimited(e: unknown): boolean {
-  return e instanceof AutotaskError && e.status === 429;
-}
-
-function LoadError({
-  entity,
-  rateLimited,
-}: {
-  entity: string;
-  rateLimited: boolean;
-}) {
-  return (
-    <Alert variant="destructive">
-      <AlertCircleIcon />
-      <AlertTitle>{entity} konnten nicht geladen werden</AlertTitle>
-      <AlertDescription>
-        {rateLimited
-          ? "Rate-Limit erreicht (429). Bitte kurz warten und erneut versuchen."
-          : "Bitte später erneut versuchen."}
-      </AlertDescription>
-    </Alert>
   );
 }

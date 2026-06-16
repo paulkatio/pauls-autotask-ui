@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  AlertCircleIcon,
   CalendarRangeIcon,
   ChevronLeftIcon,
   GaugeIcon,
@@ -20,7 +19,7 @@ import {
 import { getProjectTasks } from "@/lib/autotask/entities/project-tasks";
 import { getProjectPhases } from "@/lib/autotask/entities/project-phases";
 import { getAssignableResources } from "@/lib/autotask/entities/resources";
-import { AutotaskError } from "@/lib/autotask/client";
+import { loadOrError } from "@/lib/data/load-or-error";
 import { autotaskProjectUrl } from "@/lib/autotask/links";
 import { projectStatusVariant } from "@/lib/autotask/mappers";
 import { AutotaskOpenButton } from "@/components/autotask-open-button";
@@ -28,7 +27,7 @@ import { ProjectMetaEdit } from "@/components/projects/project-meta-edit";
 import { ProjectTabs } from "@/components/projects/project-tabs";
 import { ProjectTasksPanel } from "@/components/projects/project-tasks-panel";
 import { ProjectPhasesPanel } from "@/components/projects/project-phases-panel";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { DataError } from "@/components/data-error";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -61,10 +60,6 @@ function formatPercent(n?: number | null): string {
   return `${Math.round(n)} %`;
 }
 
-function isRateLimited(e: unknown): boolean {
-  return e instanceof AutotaskError && e.status === 429;
-}
-
 export async function ProjectDetailContent({
   projectId,
   tabParam,
@@ -81,12 +76,15 @@ export async function ProjectDetailContent({
     ? (tabParam as Tab)
     : "aufgaben";
 
-  let detail;
-  try {
-    detail = await getProjectDetail(projectId);
-  } catch (e) {
-    return <LoadError entity="Projekt" rateLimited={isRateLimited(e)} />;
-  }
+  const detailRes = await loadOrError(() => getProjectDetail(projectId));
+  if (!detailRes.ok)
+    return (
+      <DataError
+        title="Projekt konnte nicht geladen werden"
+        rateLimited={detailRes.rateLimited}
+      />
+    );
+  const detail = detailRes.data;
   if (!detail) notFound();
   const { project, companyName, leadName, statusLabel, typeLabel } = detail;
 
@@ -110,15 +108,26 @@ export async function ProjectDetailContent({
   }
 
   let panel: React.ReactNode;
-  try {
-    panel =
-      tab === "phasen" ? (
-        <ProjectPhasesPanel rows={await getProjectPhases(projectId)} />
-      ) : (
-        <ProjectTasksPanel rows={await getProjectTasks(projectId)} />
-      );
-  } catch (e) {
-    panel = <LoadError entity="Daten" rateLimited={isRateLimited(e)} />;
+  if (tab === "phasen") {
+    const r = await loadOrError(() => getProjectPhases(projectId));
+    panel = r.ok ? (
+      <ProjectPhasesPanel rows={r.data} />
+    ) : (
+      <DataError
+        title="Daten konnten nicht geladen werden"
+        rateLimited={r.rateLimited}
+      />
+    );
+  } else {
+    const r = await loadOrError(() => getProjectTasks(projectId));
+    panel = r.ok ? (
+      <ProjectTasksPanel rows={r.data} />
+    ) : (
+      <DataError
+        title="Daten konnten nicht geladen werden"
+        rateLimited={r.rateLimited}
+      />
+    );
   }
 
   const title = project.projectName ?? `Projekt ${projectId}`;
@@ -300,25 +309,5 @@ function StatCard({
         </CardHeader>
       </Card>
     </Link>
-  );
-}
-
-function LoadError({
-  entity,
-  rateLimited,
-}: {
-  entity: string;
-  rateLimited: boolean;
-}) {
-  return (
-    <Alert variant="destructive">
-      <AlertCircleIcon />
-      <AlertTitle>{entity} konnte nicht geladen werden</AlertTitle>
-      <AlertDescription>
-        {rateLimited
-          ? "Rate-Limit erreicht (429). Bitte kurz warten und erneut versuchen."
-          : "Bitte später erneut versuchen."}
-      </AlertDescription>
-    </Alert>
   );
 }

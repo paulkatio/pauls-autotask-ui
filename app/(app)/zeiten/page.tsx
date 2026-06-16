@@ -1,13 +1,13 @@
-import { AlertCircleIcon, ClockIcon } from "lucide-react";
+import { ClockIcon } from "lucide-react";
 
 import { getSession } from "@/lib/auth";
 import { getMyTimeEntries, type TimeRange } from "@/lib/autotask/entities/my-time";
-import { AutotaskError } from "@/lib/autotask/client";
+import { loadOrError } from "@/lib/data/load-or-error";
 import { formatHours } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { RangeToggle } from "@/components/time/range-toggle";
 import { ZeitenTable } from "@/components/time/zeiten-table";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { DataError } from "@/components/data-error";
 import {
   Empty,
   EmptyDescription,
@@ -28,8 +28,17 @@ export default async function ZeitenPage({
 
   const range: TimeRange = sp.range === "week" ? "week" : "today";
 
-  try {
-    const data = await getMyTimeEntries(session.autotaskResourceId, range);
+  const res = await loadOrError(() =>
+    getMyTimeEntries(session.autotaskResourceId, range),
+  );
+  if (!res.ok)
+    return (
+      <DataError
+        title="Zeiten konnten nicht geladen werden"
+        rateLimited={res.rateLimited}
+      />
+    );
+  const data = res.data;
 
     return (
       <div className="flex flex-col gap-6">
@@ -81,18 +90,4 @@ export default async function ZeitenPage({
         )}
       </div>
     );
-  } catch (e) {
-    const rateLimited = e instanceof AutotaskError && e.status === 429;
-    return (
-      <Alert variant="destructive">
-        <AlertCircleIcon />
-        <AlertTitle>Zeiten konnten nicht geladen werden</AlertTitle>
-        <AlertDescription>
-          {rateLimited
-            ? "Rate-Limit erreicht (429). Bitte kurz warten und erneut versuchen."
-            : "Bitte später erneut versuchen."}
-        </AlertDescription>
-      </Alert>
-    );
-  }
 }

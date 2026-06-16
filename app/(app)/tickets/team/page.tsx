@@ -1,5 +1,3 @@
-import { AlertCircleIcon } from "lucide-react";
-
 import { getSession } from "@/lib/auth";
 import {
   getTicketsAll,
@@ -11,8 +9,9 @@ import {
 } from "@/lib/autotask/entities/resources";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
 import { getSidebarTicketCounts } from "@/lib/autotask/entities/ticket-counts";
-import { AutotaskError, type AutotaskFilter } from "@/lib/autotask/client";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { type AutotaskFilter } from "@/lib/autotask/client";
+import { loadOrError } from "@/lib/data/load-or-error";
+import { DataError } from "@/components/data-error";
 import { TicketsList } from "@/components/tickets/tickets-list";
 import { PageHeader } from "@/components/page-header";
 import { NewTicketDialog } from "@/components/tickets/new-ticket-dialog";
@@ -106,9 +105,18 @@ export default async function TeamTicketsPage({
   );
   const defaultDeselectedResourceIds = philipp ? [philipp.id] : [];
 
-  try {
-    // Alle offenen Teamtickets in EINER Liste (keine Paginierung).
-    const data = await getTicketsAll(filter, { withAssigned: true });
+  // Alle offenen Teamtickets in EINER Liste (keine Paginierung).
+  const res = await loadOrError(() =>
+    getTicketsAll(filter, { withAssigned: true }),
+  );
+  if (!res.ok)
+    return (
+      <DataError
+        title="Teamtickets konnten nicht geladen werden"
+        rateLimited={res.rateLimited}
+      />
+    );
+  const data = res.data;
 
     return (
       <div className="flex flex-col gap-6">
@@ -144,18 +152,4 @@ export default async function TeamTicketsPage({
         )}
       </div>
     );
-  } catch (e) {
-    const rateLimited = e instanceof AutotaskError && e.status === 429;
-    return (
-      <Alert variant="destructive">
-        <AlertCircleIcon />
-        <AlertTitle>Teamtickets konnten nicht geladen werden</AlertTitle>
-        <AlertDescription>
-          {rateLimited
-            ? "Rate-Limit erreicht (429). Bitte kurz warten und erneut versuchen."
-            : "Bitte später erneut versuchen."}
-        </AlertDescription>
-      </Alert>
-    );
-  }
 }

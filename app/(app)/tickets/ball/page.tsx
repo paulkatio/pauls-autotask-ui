@@ -1,10 +1,8 @@
-import { AlertCircleIcon } from "lucide-react";
-
 import { getSession } from "@/lib/auth";
 import { getBallInMyCourtTickets } from "@/lib/autotask/entities/dashboard";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
-import { AutotaskError } from "@/lib/autotask/client";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { loadOrError } from "@/lib/data/load-or-error";
+import { DataError } from "@/components/data-error";
 import { TicketsList } from "@/components/tickets/tickets-list";
 import { PageHeader } from "@/components/page-header";
 import { NewTicketDialog } from "@/components/tickets/new-ticket-dialog";
@@ -20,8 +18,17 @@ export default async function BallInMyCourtPage() {
 
   const picklists = await getTicketPicklists();
 
-  try {
-    const items = await getBallInMyCourtTickets(session.autotaskResourceId);
+  const res = await loadOrError(() =>
+    getBallInMyCourtTickets(session.autotaskResourceId),
+  );
+  if (!res.ok)
+    return (
+      <DataError
+        title="Tickets konnten nicht geladen werden"
+        rateLimited={res.rateLimited}
+      />
+    );
+  const items = res.data;
 
     return (
       <div className="flex flex-col gap-6">
@@ -41,18 +48,4 @@ export default async function BallInMyCourtPage() {
         />
       </div>
     );
-  } catch (e) {
-    const rateLimited = e instanceof AutotaskError && e.status === 429;
-    return (
-      <Alert variant="destructive">
-        <AlertCircleIcon />
-        <AlertTitle>Tickets konnten nicht geladen werden</AlertTitle>
-        <AlertDescription>
-          {rateLimited
-            ? "Rate-Limit erreicht (429). Bitte kurz warten und erneut versuchen."
-            : "Bitte später erneut versuchen."}
-        </AlertDescription>
-      </Alert>
-    );
-  }
 }
