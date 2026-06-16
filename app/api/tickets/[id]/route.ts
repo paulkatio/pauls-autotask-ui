@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
 import { getTicketDetail } from "@/lib/autotask/entities/ticket-detail";
-import { autotask, AutotaskError } from "@/lib/autotask/client";
+import { autotask } from "@/lib/autotask/client";
+import { autotaskErrorResponse } from "@/lib/api/error-response";
 import type { Ticket } from "@/lib/autotask/types";
 import { notifyAssignment } from "@/lib/tickets/assignment-notify";
 
@@ -47,14 +48,7 @@ export async function GET(
     }
     return NextResponse.json(detail);
   } catch (e) {
-    if (e instanceof AutotaskError) {
-      const rateLimited = e.status === 429;
-      return NextResponse.json(
-        { error: `Autotask-Fehler (${e.status})`, rateLimited },
-        { status: rateLimited ? 429 : 502 },
-      );
-    }
-    return NextResponse.json({ error: "Unerwarteter Fehler" }, { status: 500 });
+    return autotaskErrorResponse(e);
   }
 }
 
@@ -153,13 +147,6 @@ export async function PATCH(
 
     return NextResponse.json({ ok: true, ...(assignMail ? { assignMail } : {}) });
   } catch (e) {
-    if (e instanceof AutotaskError) {
-      const rateLimited = e.status === 429;
-      return NextResponse.json(
-        { error: rateLimited ? "Rate-Limit erreicht (429)." : e.message, rateLimited },
-        { status: rateLimited ? 429 : 502 },
-      );
-    }
-    return NextResponse.json({ error: "Unerwarteter Fehler" }, { status: 500 });
+    return autotaskErrorResponse(e);
   }
 }

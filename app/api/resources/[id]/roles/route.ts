@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
 import { timeEntries } from "@/lib/autotask/entities/time-entries";
-import { AutotaskError } from "@/lib/autotask/client";
+import { autotaskErrorResponse } from "@/lib/api/error-response";
 
 export const dynamic = "force-dynamic";
 
@@ -25,13 +25,6 @@ export async function GET(
     const roles = await timeEntries.rolesForResource(resourceId);
     return NextResponse.json({ roles });
   } catch (e) {
-    if (e instanceof AutotaskError) {
-      const rateLimited = e.status === 429;
-      return NextResponse.json(
-        { error: `Autotask-Fehler (${e.status})`, rateLimited },
-        { status: rateLimited ? 429 : 502 },
-      );
-    }
-    return NextResponse.json({ error: "Unerwarteter Fehler" }, { status: 500 });
+    return autotaskErrorResponse(e);
   }
 }

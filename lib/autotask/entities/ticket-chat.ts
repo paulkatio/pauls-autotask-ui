@@ -9,6 +9,7 @@ import { sendMail, isResendConfigured } from "@/lib/mail/resend";
 import { buildCustomerEmail } from "@/lib/mail/customer-email";
 import { getOrgName } from "@/lib/branding-server";
 import { sanitizeRichHtml, hasRichMarkup } from "@/lib/html/sanitize-rich";
+import { AutotaskError } from "@/lib/autotask/client";
 import {
   CONVERSATION_NOTE_TYPES,
   CONVERSATION_TYPE_IDS,
@@ -162,7 +163,7 @@ export async function sendTicketChatNote(
           dataBase64: f.dataBase64,
         });
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Upload fehlgeschlagen";
+        const msg = e instanceof AutotaskError ? e.message : "Upload fehlgeschlagen.";
         attachmentError = `${attachmentError ? `${attachmentError}; ` : ""}${f.fileName}: ${msg}`;
       }
     }
@@ -223,8 +224,9 @@ export async function sendTicketChatNote(
         })),
       });
       mail.sent = true;
-    } catch (e) {
-      mail.error = e instanceof Error ? e.message : "Mailversand fehlgeschlagen.";
+    } catch {
+      // Mail-Infra-Fehler (Resend o. Ä.) nicht roh an den Browser durchreichen.
+      mail.error = "Mailversand fehlgeschlagen.";
     }
 
     return { itemId, mail, attachmentError };

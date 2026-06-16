@@ -5,7 +5,7 @@ import {
   getTicketChat,
   sendTicketChatNote,
 } from "@/lib/autotask/entities/ticket-chat";
-import { AutotaskError } from "@/lib/autotask/client";
+import { autotaskErrorResponse } from "@/lib/api/error-response";
 
 export const dynamic = "force-dynamic";
 
@@ -32,14 +32,7 @@ export async function GET(
     const messages = await getTicketChat(num);
     return NextResponse.json({ messages });
   } catch (e) {
-    if (e instanceof AutotaskError) {
-      const rateLimited = e.status === 429;
-      return NextResponse.json(
-        { error: `Autotask-Fehler (${e.status})`, rateLimited },
-        { status: rateLimited ? 429 : 502 },
-      );
-    }
-    return NextResponse.json({ error: "Unerwarteter Fehler" }, { status: 500 });
+    return autotaskErrorResponse(e);
   }
 }
 
@@ -126,13 +119,6 @@ export async function POST(
     const result = await sendTicketChatNote(num, text, notify, files, html);
     return NextResponse.json(result);
   } catch (e) {
-    if (e instanceof AutotaskError) {
-      const rateLimited = e.status === 429;
-      return NextResponse.json(
-        { error: `Autotask-Fehler (${e.status})`, rateLimited },
-        { status: rateLimited ? 429 : 502 },
-      );
-    }
-    return NextResponse.json({ error: "Unerwarteter Fehler" }, { status: 500 });
+    return autotaskErrorResponse(e);
   }
 }

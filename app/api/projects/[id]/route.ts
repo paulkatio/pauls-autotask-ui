@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
-import { autotask, AutotaskError } from "@/lib/autotask/client";
+import { autotask } from "@/lib/autotask/client";
+import { autotaskErrorResponse } from "@/lib/api/error-response";
 
 export const dynamic = "force-dynamic";
 
@@ -100,16 +101,6 @@ export async function PATCH(
     await autotask.update("Projects", { id: num, ...data });
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof AutotaskError) {
-      const rateLimited = e.status === 429;
-      return NextResponse.json(
-        {
-          error: rateLimited ? "Rate-Limit erreicht (429)." : e.message,
-          rateLimited,
-        },
-        { status: rateLimited ? 429 : 502 },
-      );
-    }
-    return NextResponse.json({ error: "Unerwarteter Fehler" }, { status: 500 });
+    return autotaskErrorResponse(e);
   }
 }

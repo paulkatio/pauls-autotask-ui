@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
 import { ticketNotes } from "@/lib/autotask/entities/ticket-notes";
-import { AutotaskError } from "@/lib/autotask/client";
+import { autotaskErrorResponse } from "@/lib/api/error-response";
 
 export const dynamic = "force-dynamic";
 
@@ -45,13 +45,6 @@ export async function POST(
     });
     return NextResponse.json({ itemId });
   } catch (e) {
-    if (e instanceof AutotaskError) {
-      const rateLimited = e.status === 429;
-      return NextResponse.json(
-        { error: rateLimited ? "Rate-Limit erreicht (429)." : e.message, rateLimited },
-        { status: rateLimited ? 429 : 502 },
-      );
-    }
-    return NextResponse.json({ error: "Unerwarteter Fehler" }, { status: 500 });
+    return autotaskErrorResponse(e);
   }
 }

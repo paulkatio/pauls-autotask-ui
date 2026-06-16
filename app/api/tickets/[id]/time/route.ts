@@ -4,25 +4,9 @@ import { getSession } from "@/lib/auth";
 import { timeEntries } from "@/lib/autotask/entities/time-entries";
 import { tickets } from "@/lib/autotask/entities/tickets";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
-import { AutotaskError } from "@/lib/autotask/client";
+import { autotaskErrorResponse } from "@/lib/api/error-response";
 
 export const dynamic = "force-dynamic";
-
-function autotaskError(e: unknown) {
-  if (e instanceof AutotaskError) {
-    const rateLimited = e.status === 429;
-    return NextResponse.json(
-      {
-        error: rateLimited
-          ? "Rate-Limit erreicht (429). Bitte kurz warten."
-          : e.message,
-        rateLimited,
-      },
-      { status: rateLimited ? 429 : 502 },
-    );
-  }
-  return NextResponse.json({ error: "Unerwarteter Fehler" }, { status: 500 });
-}
 
 // GET: Tätigkeitsarten (Work Types) + Status-Picklist + aktueller Ticket-Status
 // für den Dialog (optionaler Status-Wechsel beim Zeiterfassen). Die Rolle wird
@@ -52,7 +36,7 @@ export async function GET(
       currentStatus: ticket?.status ?? null,
     });
   } catch (e) {
-    return autotaskError(e);
+    return autotaskErrorResponse(e);
   }
 }
 
@@ -140,6 +124,6 @@ export async function POST(
     }
     return NextResponse.json({ itemId });
   } catch (e) {
-    return autotaskError(e);
+    return autotaskErrorResponse(e);
   }
 }

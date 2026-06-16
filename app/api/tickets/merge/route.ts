@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
-import { mergeTickets } from "@/lib/autotask/entities/ticket-merge";
-import { AutotaskError } from "@/lib/autotask/client";
+import {
+  mergeTickets,
+  MergeValidationError,
+} from "@/lib/autotask/entities/ticket-merge";
+import { autotaskErrorResponse } from "@/lib/api/error-response";
 
 export const dynamic = "force-dynamic";
 
@@ -55,16 +58,11 @@ export async function POST(req: Request) {
     const result = await mergeTickets(targetId, sourceIds, session.displayName);
     return NextResponse.json(result);
   } catch (e) {
-    if (e instanceof AutotaskError) {
-      const rateLimited = e.status === 429;
-      return NextResponse.json(
-        { error: `Autotask-Fehler (${e.status})`, rateLimited },
-        { status: rateLimited ? 429 : 502 },
-      );
+    // Fachliche Validierung (z. B. Firmen-Guard) → verständlicher 400 vor jedem
+    // Schreibpfad. Alles andere zentral (AutotaskError kuratiert, Rest generisch).
+    if (e instanceof MergeValidationError) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
     }
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Unerwarteter Fehler" },
-      { status: 400 },
-    );
+    return autotaskErrorResponse(e);
   }
 }

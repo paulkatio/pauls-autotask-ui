@@ -146,11 +146,12 @@ export async function notifyAssignment(
       recipientName: recipientName || undefined,
       ticketCount: tickets.length,
     };
-  } catch (e) {
+  } catch {
+    // Mail-Infra-Fehler (Resend o. Ä.) nicht roh an den Browser durchreichen.
     return {
       attempted: true,
       sent: false,
-      error: e instanceof Error ? e.message : "Mailversand fehlgeschlagen.",
+      error: "Mailversand fehlgeschlagen.",
     };
   }
 }

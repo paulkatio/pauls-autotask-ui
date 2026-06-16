@@ -1,6 +1,6 @@
 import "server-only";
 
-import { autotask } from "@/lib/autotask/client";
+import { autotask, AutotaskError } from "@/lib/autotask/client";
 import { ticketNotes } from "@/lib/autotask/entities/ticket-notes";
 
 // Ticket-Zusammenführung (B26) — bildet das NATIVE Autotask-Merge nach, weil die REST-
@@ -13,6 +13,15 @@ import { ticketNotes } from "@/lib/autotask/entities/ticket-notes";
 // Umsetzung: ticketNotes.createInternal (noteType 2/publish 1, kundenunsichtbar) +
 // Status-Update der Quellen. Zeit-/Anhang-Reparenting ist per API nicht möglich → die
 // bleiben am (abgeschlossenen) Quellticket. Nur bestehende, verifizierte Schreibpfade.
+
+// Fachliche Validierungsfehler (Nutzer-Eingabe), die als 400 + Klartext an die
+// UI gehen sollen – im Gegensatz zu internen Fehlern, die generisch werden.
+export class MergeValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MergeValidationError";
+  }
+}
 
 const STATUS_COMPLETE = 5;
 const MERGE_FIELDS = [
@@ -55,7 +64,7 @@ export async function mergeTickets(
 ): Promise<MergeResult> {
   const uniqueSources = [...new Set(sourceIds)].filter((id) => id !== targetId);
   if (uniqueSources.length === 0) {
-    throw new Error("Mindestens ein Quellticket (≠ Ziel) nötig.");
+    throw new MergeValidationError("Mindestens ein Quellticket (≠ Ziel) nötig.");
   }
 
   const rows = await autotask.query<MergeTicket>(
@@ -69,15 +78,18 @@ export async function mergeTickets(
   );
   const byId = new Map(rows.map((t) => [t.id, t]));
   const target = byId.get(targetId);
-  if (!target) throw new Error("Ziel-Ticket nicht gefunden.");
+  if (!target) throw new MergeValidationError("Ziel-Ticket nicht gefunden.");
   const sources = uniqueSources
     .map((id) => byId.get(id))
     .filter((t): t is MergeTicket => t != null);
-  if (sources.length === 0) throw new Error("Keine Quelltickets gefunden.");
+  if (sources.length === 0)
+    throw new MergeValidationError("Keine Quelltickets gefunden.");
 
   // Guard (server-seitig erzwungen): nur innerhalb derselben Firma.
   if (target.companyID == null || sources.some((s) => s.companyID !== target.companyID)) {
-    throw new Error("Zusammenführen nur innerhalb derselben Firma möglich.");
+    throw new MergeValidationError(
+      "Zusammenführen nur innerhalb derselben Firma möglich.",
+    );
   }
 
   // Ziel-Notiz: Titel + Beschreibung jeder Quelle übernehmen (Dubletten-Inhalt im Master).
@@ -117,7 +129,9 @@ export async function mergeTickets(
         id: s.id,
         ticketNumber: num(s),
         ok: false,
-        error: e instanceof Error ? e.message : "Fehler.",
+        // Nur kuratierte Autotask-Meldung (errors[]) an den Browser; interne
+        // Fehler generisch – kein Rohfehler-Leak (konsistent zu autotaskErrorResponse).
+        error: e instanceof AutotaskError ? e.message : "Fehler beim Zusammenführen.",
       });
     }
   }

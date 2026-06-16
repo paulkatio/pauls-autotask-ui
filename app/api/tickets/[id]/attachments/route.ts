@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
 import { attachments } from "@/lib/autotask/entities/attachments";
-import { AutotaskError } from "@/lib/autotask/client";
+import { autotaskErrorResponse } from "@/lib/api/error-response";
 import {
   MAX_ATTACHMENT_BYTES,
   MAX_ATTACHMENT_LABEL,
@@ -66,16 +66,6 @@ export async function POST(
     const itemId = await attachments.upload(ticketId, { fileName, dataBase64 });
     return NextResponse.json({ itemId });
   } catch (e) {
-    if (e instanceof AutotaskError) {
-      const rateLimited = e.status === 429;
-      return NextResponse.json(
-        {
-          error: rateLimited ? "Rate-Limit erreicht (429)." : e.message,
-          rateLimited,
-        },
-        { status: rateLimited ? 429 : 502 },
-      );
-    }
-    return NextResponse.json({ error: "Unerwarteter Fehler" }, { status: 500 });
+    return autotaskErrorResponse(e);
   }
 }
