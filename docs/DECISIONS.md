@@ -2077,3 +2077,174 @@ die einzig erlaubten Inline-Edit-Felder):
   nicht als reiner Query. Darum scheiterten frühere `…/ProjectDetail.mvc?projectId=`-Versuche (→ Error.mvc).
 - Implementiert in [`lib/autotask/links-format.ts`](../lib/autotask/links-format.ts) (`projectUrlFrom`);
   Button auf der Projektdetailseite (Desktop) + mobiler App-Kopfzeile, wie Ticket/Firma.
+
+---
+
+## Security- & Responsive-Check (2026-06-16)
+
+### HTTP-Security-Header (Baseline, kein CSP)
+- [`next.config.ts`](../next.config.ts) setzt jetzt via `async headers()` auf allen
+  Routen (`source: "/(.*)"`) sechs Baseline-Header. Live gegen `next start` per
+  `curl -I /login` belegt (alle sechs in der Antwort, Status 200):
+  - `X-Content-Type-Options: nosniff`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `X-Frame-Options: SAMEORIGIN`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=(), browsing-topics=()`
+  - `Strict-Transport-Security: max-age=63072000; includeSubDomains` — **bewusst
+    ohne `preload`** (Domain-weite, schwer rückholbare Verpflichtung; separate
+    Entscheidung, falls je gewünscht). HSTS greift nur über HTTPS (Prod/Vercel).
+  - `X-DNS-Prefetch-Control: off`
+- **Kein CSP** (würde Next.js/Tiptap-Inline-Scripts/Styles brechen) — bewusst
+  zurückgestellt. Späteres Nachziehen am besten zuerst als `Content-Security-Policy-
+  Report-Only`.
+
+### Zentrale API-Fehlerantwort (Rohfehler-Leak geschlossen)
+- Neu: [`lib/api/error-response.ts`](../lib/api/error-response.ts) → `autotaskErrorResponse(e)`.
+  - `AutotaskError` 429 → 429 `{ rateLimited:true }`
+  - `AutotaskError` sonst → 502 mit `e.message` (Autotasks eigener `errors[]`-Text =
+    kuratiertes Feld-Feedback, nutzerrelevant + sicher; Quelle: `client.ts` baut die
+    Message aus `errors[]`).
+  - alles andere (interne Fehler: TypeError, JSON-Parse …) → 500 „Unerwarteter
+    Fehler" — **kein Internal-Leak mehr**.
+- **Alle** AutotaskError-Catch-Blöcke in `app/api/**/route.ts` (21 Routen) auf den
+  Helper umgestellt → eine einzige Fehler-Konvention, keine Duplikate. Der echte
+  Leak saß im `else`-Zweig der Merge-Route (`e instanceof Error ? e.message`); die
+  übrigen waren bereits hinter `instanceof AutotaskError` gekapselt (kein Leak),
+  wurden zur Vereinheitlichung mitgezogen.
+- **Merge-Validierung typisiert:** [`lib/autotask/entities/ticket-merge.ts`](../lib/autotask/entities/ticket-merge.ts)
+  wirft fachliche Fälle jetzt als `MergeValidationError` (statt nacktem `Error`).
+  [`app/api/tickets/merge/route.ts`](../app/api/tickets/merge/route.ts) mappt
+  `MergeValidationError → 400` mit Klartext, sonst Helper. So bleiben nützliche
+  400er erhalten, ohne dass interne Fehler durchsickern.
+  - **Live belegt (kein Write):** `POST /api/tickets/merge` mit nicht existentem
+    Ziel (`targetId:999999999`) → `400 {"error":"Ziel-Ticket nicht gefunden."}`.
+    Der Firmen-/Existenz-Guard greift vor jedem Schreibpfad → sicher.
+
+### Responsive-Audit (320–1920 px)
+- [`.playwright-mcp/audit/audit.mjs`](../.playwright-mcp/audit/audit.mjs) um **320 px**
+  erweitert (VPS[320]=720 + ALL). Lauf gegen `next start` (Mock-Login), 53 Messungen.
+- **Ergebnis: 0 Overflow auf JEDER Route bei JEDER Breite** (320/375/414/768/1024/
+  1280/1440/1920). Screenshots (Dashboard, Meine Tickets, Ticketdetail+Chat, Firmen)
+  gesichtet — sauber, langer Titel umbricht, KPI-Karten/Karten stacken, Bottom-Nav
+  passt, Tabellen füllen Desktop.
+- Sub-44px-Touch-Targets nur: `input 1×1` = bekanntes Base-UI-Select-Rauschen
+  (kein echtes Element); „Auswahl aufheben" Icon-Button 36×44 (Höhe ok); Text-Links
+  „Alle anzeigen" (20px) / „Autotask" (36px) — visuell tappbar, kein Bruch. **Keine
+  echten Fixes nötig** (keine kosmetischen Umbauten laut Auftrag).
+
+### Lint-Altlast (React-19-Hooks-Plugin)
+- `npm run lint` war vor diesem Check mit **~76 Errors** rot — durchweg aus dem
+  neueren `eslint-plugin-react-hooks` v6 (`react-hooks/set-state-in-effect`,
+  `react-hooks/error-boundaries`, `react-hooks/purity` bei `Date.now()/Math.random()`,
+  vereinzelt `react/no-unescaped-entities`), verteilt über ~30 Dateien (u. a.
+  `app/(app)/zeiten/page.tsx`, `tickets/my|team|ball/page.tsx`, diverse Komponenten).
+  **Nicht** vom Security-/Responsive-Check verursacht; `typecheck` + `build` grün
+  (kein Build-Blocker).
+- In diesem Zug sauber + dauerhaft gefixt (ohne `eslint-disable`):
+  - `hooks/use-mobile.ts` → `useSyncExternalStore` (matchMedia als externer Store).
+  - `hooks/use-column-order.ts` → localStorage als externer Store via
+    `useSyncExternalStore` (In-Memory-Spiegel = stabiler Snapshot + Sitzungs-Fallback);
+    Lade-Effect entfällt komplett. DnD-Reorder ist ein 1:1-Logik-Port (nicht live
+    gedraggt – Hausregel; über localStorage/Code prüfbar).
+  - `lib/autotask/entities/picklists.ts` → tote `activeWithParent`-Funktion entfernt.
+### Lint grün gezogen + als Gate verdrahtet (2026-06-16)
+Die restlichen ~73 Errors in einem zweiten Durchgang abgeräumt — Politik-first,
+nicht jede Regel sklavisch:
+
+- **`react-hooks/error-boundaries` (50×) → `warn`** in `eslint.config.mjs` (kein
+  Bug, sondern bewusstes Muster: Server-Pages fangen Datenfehler inline per
+  try/catch und rendern maßgeschneiderte Fehler-UI pro Seite). Spätere Umstellung
+  auf `error.tsx`-Boundaries ⇒ Regel wieder auf `error`.
+- **`react-hooks/set-state-in-effect` (21×)** nach Muster gefixt:
+  - „State bei Prop-Wechsel angleichen" (10×, u. a. `meta-edit.tsx`,
+    `project-meta-edit.tsx`, `ticket-detail.tsx`, `search-columns.tsx`,
+    `time-entry-dialog.tsx`, `tickets-list.tsx`) → React-Render-Muster
+    („State aus vorherigem Render", kein Effect) — verhaltensgleich.
+  - `header-search.tsx` (Client-Wert `navigator.platform`) → `useSyncExternalStore`.
+  - Debounced Server-Suchen / Daten-Loads (7×, u. a. `command-palette.tsx`,
+    `contacts-table.tsx`, `contact-modal.tsx`, `new-ticket-dialog.tsx`,
+    `bulk-bar.tsx`) + einmalige localStorage-Hydration (`tickets-list.tsx`) →
+    **scoped, dokumentierter `eslint-disable`-Block** (Regel-Fehlalarm bei legitimen
+    Effekten; null Verhaltensänderung).
+- **`react-hooks/purity` (1×) + `set-state-in-effect`** in `time-tracking.tsx`
+  (Stoppuhr) → Redesign: `Date.now()` nur noch im Interval-Callback/Event-Handler
+  (nicht im Render), Auto-Start über initial `running=true`. Einziger sichtbarer
+  Unterschied: Anzeige tickt ab Mount in 1-s-Schritten (statt sofort), Funktion
+  identisch.
+- **`react/no-unescaped-entities` (1×)** `bulk-bar.tsx` → gerades `"` durch
+  typografisches `"` ersetzt (auch CLAUDE.md-konform).
+
+**Ergebnis:** `npm run lint` → **0 Errors** (50 bewusste Warnings), `typecheck` +
+`build` grün. Render-Verifikation: Audit erneut über alle berührten Seiten
+(53 Messungen, 0 Overflow, 0 Fehler) — Ticketdetail mit Inline-Edit/Chat/Stoppuhr
+sauber; „Strg + K"-Kürzel bestätigt `useSyncExternalStore`.
+
+**Gate (Weiche für die Zukunft):**
+- CI (`.github/workflows/ci.yml`): neuer `Lint`-Step vor `Build` → Errors brechen
+  ab, Warnings nicht.
+- Lokaler Pre-Commit-Hook (`.githooks/pre-commit`, dep-frei): lintet nur gestagte
+  `.ts/.tsx/.mjs`; verdrahtet über `prepare`-Script (`scripts/setup-hooks.mjs`,
+  setzt `core.hooksPath`). Notfall-Umgehung: `git commit --no-verify`.
+
+**e2e-Smoke grün:** Playwright-Suite (Mock, `next start`) **9 passed, 1 skipped**
+(Schreibtest) — inkl. Ticketdetail, Zeit-erfassen-Dialog, Neues-Ticket-Dialog,
+Command-Palette-Suche. Der Inline-Edit-Schreibpfad (Status ändern + zurücksetzen am
+Testticket 56313 – genau die umgebaute `meta-edit`-Logik) lief im vollen Erstlauf
+ebenfalls grün. Zwei **vorbestehend kaputte** Tests dabei korrigiert (nicht von
+diesen Änderungen verursacht):
+- „Dashboard rendert KPIs": Assertion prüfte veralteten Text „Meine offenen
+  Tickets" (Dashboard zeigt KPI-Kachel „Meine Tickets") → auf vorhandene Kachel
+  „Nicht zugewiesen" (exact) umgestellt.
+- „Meine Tickets lädt mit Tabelle": `/tickets/my` rendert zwei Listen (Haupt +
+  „Als zusätzlicher Mitarbeiter") → `getByRole("table").first()` statt strict-mode-
+  Konflikt.
+Einzige bewusste Verhaltensänderung (Stoppuhr: Anzeige tickt ab Mount in
+1-s-Schritten statt sofort) noch visuell von Paul zu bestätigen.
+
+### Härtung Stufe 2 + Phase 3 (2026-06-16)
+
+**HSTS preload + CSP Report-Only** ([`next.config.ts`](../next.config.ts), live per
+`curl -I` belegt):
+- `Strict-Transport-Security` jetzt mit `; preload`. **Wichtig:** Der Header allein
+  reicht NICHT – die Domain muss zusätzlich unter https://hstspreload.org
+  eingereicht werden, um in die Browser-Preload-Liste zu kommen (bewusste,
+  schwer rückholbare Verpflichtung).
+- `Content-Security-Policy-Report-Only` ergänzt: blockt nichts, meldet nur (Browser-
+  Konsole). `default-src 'self'` + `frame-ancestors 'none'`; `'unsafe-inline'/'unsafe-eval'`
+  bei script/style, weil Next (Hydration) + Tiptap das brauchen. Echtes Enforcen
+  bräuchte später Nonces (Middleware). Dient zunächst der Sichtbarkeit von
+  Fremd-Origin-Ressourcen vor dem Scharfschalten.
+
+**Phase 3 – error-boundaries-Warnings auf 0, Regel wieder `error`:**
+- Die 50 Warnings kamen aus ~13 Server-Komponenten mit `try/catch` UM JSX (die
+  Regel zählt jedes JSX-Element im try einzeln). Sauber gelöst statt error.tsx
+  (das würde in Prod den 429-/Fehlertext zum Client redigieren):
+  - Neu [`lib/data/load-or-error.ts`](../lib/data/load-or-error.ts) `loadOrError()` –
+    kapselt try/catch um den **Daten-Load** (nicht um JSX), liefert
+    `{ok, data} | {ok:false, rateLimited}`. Seite verzweigt auf das Ergebnis,
+    JSX entsteht außerhalb try/catch. 429-Unterscheidung bleibt server-seitig.
+  - Neu [`components/data-error.tsx`](../components/data-error.tsx) `DataError` –
+    einheitliche Fehler-Kachel (ersetzt die pro Seite duplizierten Alerts +
+    lokale `LoadError`/`ErrorAlert`-Helfer).
+  - Umgebaut: `tickets/my|team|ball`, `companies`, `contacts`, `contacts/[id]`,
+    `projekte`, `search`, `zeiten` (Pages) + `ticket-detail-content`,
+    `company-detail-content`, `project-detail-content` (Komponenten). Das
+    Dashboard (`app/(app)/page.tsx`) nutzte das Muster (.catch→Sentinel) schon.
+  - `eslint.config.mjs`: Override entfernt → `react-hooks/error-boundaries` ist
+    wieder Default `error` (0 Verstöße, künftig blockierend).
+- **Verifikation:** `npm run lint` → **No issues found** (0 Errors, 0 Warnings),
+  `typecheck` + `build` grün, Header live (`curl -I`), Responsive-Audit (53
+  Messungen, 0 Overflow/Fehler) über alle umgebauten Seiten, e2e-Smoke **9/9 grün**
+  (1 Schreibtest übersprungen).
+
+### Rohfehler-Leak: Rest-Pfade geschlossen (Pre-Commit-Review 2026-06-16)
+Ein unabhängiger Review fand, dass der zentrale Helper + Route-Catch zwar den
+TOP-LEVEL-Fehler abdecken, einzelne **Ergebnis-/Teilfehler-Pfade** aber weiter
+`e.message` an den Browser gaben. Gefixt nach demselben Prinzip (AutotaskError =
+kuratiert durchlassen, intern = generisch):
+- [`ticket-merge.ts`](../lib/autotask/entities/ticket-merge.ts) `sources[].error`
+  (Teilfehler je Quellticket) → `AutotaskError ? message : "Fehler beim Zusammenführen."`.
+- [`ticket-chat.ts`](../lib/autotask/entities/ticket-chat.ts): Upload-Teilfehler
+  (`attachmentError`) → `AutotaskError`-gated; Mail-Fehler (`mail.error`) → generisch.
+- [`assignment-notify.ts`](../lib/tickets/assignment-notify.ts): Mail-Fehler →
+  generisch (Resend-Infra nie roh an den Browser).

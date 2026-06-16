@@ -16,13 +16,17 @@ test.describe("Smoke", () => {
   test("Dashboard rendert KPIs", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Übersicht" })).toBeVisible();
-    await expect(page.getByText("Meine offenen Tickets")).toBeVisible();
+    // KPI-Kachel als Beleg, dass die KPI-Sektion rendert. exact, damit nicht der
+    // Filter-Button „Nur nicht zugewiesene" mitmatcht (strict-mode).
+    await expect(page.getByText("Nicht zugewiesen", { exact: true })).toBeVisible();
   });
 
   test("Meine Tickets lädt mit Tabelle", async ({ page }) => {
     await page.goto("/tickets/my");
     await expect(page.getByRole("heading", { name: "Meine Tickets" })).toBeVisible();
-    await expect(page.getByRole("table")).toBeVisible();
+    // /tickets/my kann zwei Listen zeigen (Hauptliste + „Als zusätzlicher
+    // Mitarbeiter") -> erste sichtbare Tabelle prüfen, kein strict-mode-Konflikt.
+    await expect(page.getByRole("table").first()).toBeVisible();
   });
 
   test("Teamtickets lädt", async ({ page }) => {
