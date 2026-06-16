@@ -42,6 +42,8 @@ export function ContactModal() {
 
   React.useEffect(() => subscribeOpenContact((next) => setId(next)), []);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- bewusster, korrekter Effekt
+     (Daten-Load bei ID-Wechsel): synchrones Zurücksetzen vor dem Fetch ist gewollt. */
   React.useEffect(() => {
     if (id == null) return;
     let active = true;
@@ -68,6 +70,7 @@ export function ContactModal() {
       active = false;
     };
   }, [id]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const hasContactData = !!(data && (data.email || data.phone || data.mobilePhone));
 

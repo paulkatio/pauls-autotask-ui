@@ -165,6 +165,8 @@ export function NewTicketDialog({
   const [error, setError] = React.useState<string | null>(null);
 
   // Firmensuche (debounced).
+  /* eslint-disable react-hooks/set-state-in-effect -- bewusster, korrekter Effekt
+     (debounced Server-Suche): synchrones Zurücksetzen/Loading ist gewollt. */
   React.useEffect(() => {
     if (!companyOpen) return;
     const term = q.trim();
@@ -194,6 +196,7 @@ export function NewTicketDialog({
       clearTimeout(t);
     };
   }, [q, companyOpen]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function resetForm() {
     setCompanyId(prefillCompany?.id ?? null);

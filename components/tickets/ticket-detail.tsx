@@ -677,8 +677,13 @@ function ChecklistCard({
   items: TicketChecklistItem[];
 }) {
   const [list, setList] = React.useState(items);
-  // Nach router.refresh() mit den frischen Server-Daten synchronisieren.
-  React.useEffect(() => setList(items), [items]);
+  // Nach router.refresh() mit den frischen Server-Daten synchronisieren – während
+  // des Renders statt im Effect (React-Muster für „State aus vorherigem Render").
+  const [prevItems, setPrevItems] = React.useState(items);
+  if (items !== prevItems) {
+    setPrevItems(items);
+    setList(items);
+  }
   const [busy, setBusy] = React.useState<ReadonlySet<number>>(new Set());
   const done = list.filter((i) => i.isCompleted).length;
 

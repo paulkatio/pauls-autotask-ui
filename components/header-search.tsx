@@ -14,11 +14,13 @@ function openPalette() {
 }
 
 export function HeaderSearch() {
-  // Plattformabhängiges Kürzel (⌘K auf macOS, sonst Strg K) – clientseitig ermittelt.
-  const [isMac, setIsMac] = React.useState(false);
-  React.useEffect(() => {
-    setIsMac(/mac/i.test(navigator.platform));
-  }, []);
+  // Plattformabhängiges Kürzel (⌘K auf macOS, sonst Strg K) – clientseitig, SSR-sicher
+  // ohne setState-im-Effect: useSyncExternalStore (Server-Snapshot = false).
+  const isMac = React.useSyncExternalStore(
+    () => () => {}, // kein Abo nötig (Wert ändert sich zur Laufzeit nicht)
+    () => /mac/i.test(navigator.platform),
+    () => false,
+  );
 
   return (
     <>

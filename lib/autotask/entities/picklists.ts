@@ -17,18 +17,7 @@ function activeOnly(values: PicklistValue[] | null): Picklist {
     .map((v) => ({ value: Number(v.value), label: v.label }));
 }
 
-// Wie activeOnly, behält aber parentValue (für abhängige Picklists wie subIssueType).
-function activeWithParent(values: PicklistValue[] | null): SubPicklist {
-  return (values ?? [])
-    .filter((v) => v.isActive)
-    .map((v) => ({
-      value: Number(v.value),
-      label: v.label,
-      parentValue: v.parentValue != null ? Number(v.parentValue) : null,
-    }));
-}
-
-// Wie oben, aber OHNE Aktiv-Filter: Kategorie/Unterkategorie alter Tickets nutzen
+// OHNE Aktiv-Filter: Kategorie/Unterkategorie alter Tickets nutzen
 // teils inaktive Werte (z. B. „Netzwerk" #11). Damit das Label trotzdem angezeigt
 // werden kann, behalten wir hier alle Werte.
 function allOf(values: PicklistValue[] | null): Picklist {

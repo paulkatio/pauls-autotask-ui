@@ -102,9 +102,13 @@ export function DescriptionEdit({
   const [error, setError] = React.useState<string | null>(null);
   const [expanded, setExpanded] = React.useState(false);
 
-  React.useEffect(() => {
+  // Server-Wert ändert sich (Inline-Edit/Refresh) -> Entwurf angleichen. Während
+  // des Renders statt im Effect (React-Muster für „State aus vorherigem Render").
+  const [prevValue, setPrevValue] = React.useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
     setText(value ?? "");
-  }, [value]);
+  }
 
   async function save() {
     setSaving(true);
@@ -273,9 +277,12 @@ export function TicketFieldSelect({
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
+  // Server-Wert ändert sich -> Auswahl angleichen (Render-Muster, kein Effect).
+  const [prevValue, setPrevValue] = React.useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
     setVal(value == null ? "" : String(value));
-  }, [value]);
+  }
 
   async function onChange(next: string) {
     if (next === val) return;
@@ -598,10 +605,14 @@ export function CategoryEdit({
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
+  // Server-Werte ändern sich -> Auswahl angleichen (Render-Muster, kein Effect).
+  const issKey = `${issueType ?? ""}|${subIssueType ?? ""}`;
+  const [prevIssKey, setPrevIssKey] = React.useState(issKey);
+  if (issKey !== prevIssKey) {
+    setPrevIssKey(issKey);
     setIss(issueType == null ? "" : String(issueType));
     setSub(subIssueType == null ? "" : String(subIssueType));
-  }, [issueType, subIssueType]);
+  }
 
   const subForIssue = iss
     ? subOptions.filter((s) => s.parentValue === Number(iss))
@@ -741,11 +752,14 @@ export function AssignmentEdit({
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
+  // Server-Wert ändert sich -> Auswahl + abhängige States angleichen (Render-Muster).
+  const [prevAssigned, setPrevAssigned] = React.useState(assignedResourceID);
+  if (assignedResourceID !== prevAssigned) {
+    setPrevAssigned(assignedResourceID);
     setRes(assignedResourceID == null ? UNASSIGNED : String(assignedResourceID));
     setRoles([]);
     setPendingResource(null);
-  }, [assignedResourceID]);
+  }
 
   async function loadRoles(
     resourceId: number,
@@ -922,9 +936,12 @@ export function RefCombobox({
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
+  // Server-Label ändert sich -> angleichen (Render-Muster, kein Effect).
+  const [prevLabel, setPrevLabel] = React.useState(valueLabel);
+  if (valueLabel !== prevLabel) {
+    setPrevLabel(valueLabel);
     setLabel(valueLabel);
-  }, [valueLabel]);
+  }
 
   async function choose(id: number | null, lbl: string | null) {
     setOpen(false);
@@ -1008,6 +1025,8 @@ export function CompanyChange({
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- bewusster, korrekter Effekt
+     (debounced Firmensuche): synchrones Zurücksetzen/Loading ist gewollt. */
   React.useEffect(() => {
     if (!open) return;
     const term = q.trim();
@@ -1037,6 +1056,7 @@ export function CompanyChange({
       clearTimeout(t);
     };
   }, [q, open]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   async function confirm() {
     if (!selected) return;

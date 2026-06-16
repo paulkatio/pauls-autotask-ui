@@ -300,6 +300,8 @@ export function BulkBar({
   const mergeCompanyId = selected[0]?.companyID ?? null;
 
   // Ziel-Picker: Tickets der Firma laden (debounced; beim Öffnen + bei Suche).
+  /* eslint-disable react-hooks/set-state-in-effect -- bewusster, korrekter Effekt
+     (debounced Server-Load): synchrones Loading-Setzen ist gewollt. */
   React.useEffect(() => {
     if (!mergeOpen || mergePhase !== "pick" || mergeCompanyId == null) return;
     let cancelled = false;
@@ -326,6 +328,7 @@ export function BulkBar({
       clearTimeout(handle);
     };
   }, [mergeOpen, mergePhase, mergeSearch, mergeCompanyId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function startConfirm(p: Pending) {
     setPending(p);
@@ -1089,7 +1092,7 @@ export function BulkBar({
                 <AlertDialogDescription>
                   Die {count} markierten Tickets werden in das gewählte Ziel-Ticket
                   zusammengeführt — wie bei Autotask: die markierten werden auf
-                  „Abgeschlossen" gesetzt, ihr Titel + Beschreibung landen als Notiz im
+                  „Abgeschlossen“ gesetzt, ihr Titel + Beschreibung landen als Notiz im
                   Ziel. Das Ziel-Ticket ändert seinen Status NICHT. Ziel aus den Tickets
                   dieser Firma wählen.
                 </AlertDialogDescription>

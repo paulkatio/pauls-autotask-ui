@@ -187,9 +187,12 @@ function SelectField({
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
+  // Server-Wert ändert sich -> Auswahl angleichen (Render-Muster, kein Effect).
+  const [prevCurrent, setPrevCurrent] = React.useState(current);
+  if (current !== prevCurrent) {
+    setPrevCurrent(current);
     setValue(current != null ? String(current) : NONE);
-  }, [current]);
+  }
 
   async function onChange(next: string) {
     const prev = value;
@@ -272,9 +275,12 @@ function DateField({
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
+  // Server-Wert ändert sich -> Datum angleichen (Render-Muster, kein Effect).
+  const [prevCurrent, setPrevCurrent] = React.useState(current);
+  if (current !== prevCurrent) {
+    setPrevCurrent(current);
     setValue(isoToDateInput(current));
-  }, [current]);
+  }
 
   async function commit() {
     const nextDate = value;

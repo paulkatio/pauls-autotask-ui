@@ -63,6 +63,8 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
   const [sortDir, setSortDir] = React.useState<SortDir>("asc");
 
   // Kontakte laden: erste Seite (ohne Filter) oder server-gefiltert nach Name/Firma.
+  /* eslint-disable react-hooks/set-state-in-effect -- bewusster, korrekter Effekt
+     (debounced Server-Suche): synchrones Zurücksetzen/Loading ist gewollt. */
   React.useEffect(() => {
     const term = q.trim();
     if (!term && !company) {
@@ -95,6 +97,7 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
       clearTimeout(t);
     };
   }, [q, company, initial]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) {
@@ -332,6 +335,8 @@ function CompanyFilterPicker({
   );
   const [loading, setLoading] = React.useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- bewusster, korrekter Effekt
+     (debounced Server-Suche): synchrones Zurücksetzen/Loading ist gewollt. */
   React.useEffect(() => {
     if (!open) return;
     const term = q.trim();
@@ -361,6 +366,7 @@ function CompanyFilterPicker({
       clearTimeout(t);
     };
   }, [q, open]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

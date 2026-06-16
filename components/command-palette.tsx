@@ -115,6 +115,9 @@ export function CommandPalette() {
   // Vier parallele, begrenzte, debounced Abfragen: Ticket-Name / Ticket-Nummer /
   // Firma / Kontakt. Tickets gehen als 2 Abfragen auf dieselbe Tabelle – der
   // Client-Limiter (max. 2/Entität) hält das Autotask-Thread-Limit ein.
+  /* eslint-disable react-hooks/set-state-in-effect -- bewusster, korrekter Effekt
+     (debounced Server-Suche): synchrones Leeren/Loading beim Eingabewechsel ist
+     gewollt, kein Render-Footgun. */
   React.useEffect(() => {
     const q = query.trim();
     if (!q) {
@@ -161,6 +164,7 @@ export function CommandPalette() {
       clearTimeout(t);
     };
   }, [query]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function go(url: string) {
     setOpen(false);

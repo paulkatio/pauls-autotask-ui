@@ -167,10 +167,14 @@ export function TicketsList({
   const [selectedIds, setSelectedIds] = React.useState<Set<number>>(
     () => new Set(),
   );
+  // Bei Seiten-/Filterwechsel die Auswahl leeren – während des Renders statt im
+  // Effect (React-Muster für „State aus vorherigem Render").
   const pageKey = data.items.map((t) => t.id).join(",");
-  React.useEffect(() => {
+  const [prevPageKey, setPrevPageKey] = React.useState(pageKey);
+  if (pageKey !== prevPageKey) {
+    setPrevPageKey(pageKey);
     setSelectedIds(new Set());
-  }, [pageKey]);
+  }
 
   function toggleRow(id: number, checked: boolean) {
     setSelectedIds((prev) => {
@@ -199,11 +203,14 @@ export function TicketsList({
 
   // Gespeicherte Auswahl laden (erst im Effect -> kein Hydration-Mismatch). Nur wenn
   // der Mitarbeiter-Filter aktiv ist und tatsächlich etwas gespeichert wurde.
+  /* eslint-disable react-hooks/set-state-in-effect -- bewusste, einmalige
+     localStorage-Hydration nach Mount (SSR-sicher), kein Render-Footgun. */
   React.useEffect(() => {
     if (!resourceFilter) return;
     const saved = loadDeselectedResources();
     if (saved) setDeselectedResources(saved);
   }, [resourceFilter]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Auswählbare Mitarbeiter = die in der geladenen Liste tatsächlich vorkommenden
   // Bearbeiter (dedupliziert, alphabetisch). So listet der Filter nur relevante Namen.

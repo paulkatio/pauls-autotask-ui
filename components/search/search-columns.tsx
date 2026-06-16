@@ -53,10 +53,13 @@ export function SearchColumns({
     seed(initial),
   );
 
-  // Neue Suche -> Spalten zurücksetzen (initial ist je Server-Render neu).
-  React.useEffect(() => {
+  // Neue Suche -> Spalten zurücksetzen (initial ist je Server-Render neu). Während
+  // des Renders statt im Effect (React-Muster für „State aus vorherigem Render").
+  const [prevInitial, setPrevInitial] = React.useState(initial);
+  if (initial !== prevInitial) {
+    setPrevInitial(initial);
     setCols(seed(initial));
-  }, [initial]);
+  }
 
   async function loadMore(kind: SearchKind) {
     const col = cols[kind];

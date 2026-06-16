@@ -35,10 +35,12 @@ function fmtElapsed(ms: number): string {
 // der gemessenen Dauer vorbefüllt (Von = jetzt − Dauer, Bis = jetzt). Kein eigener
 // API-Pfad; nach erfolgreichem Speichern wird die Uhr zurückgesetzt.
 export function TimeTracking({ ticketId }: { ticketId: number }) {
-  const [running, setRunning] = React.useState(false);
-  const [startedAt, setStartedAt] = React.useState<number | null>(null);
+  const [running, setRunning] = React.useState(true); // läuft ab Mount
   const [accumulatedMs, setAccumulatedMs] = React.useState(0);
-  const [, setTick] = React.useState(0);
+  const [elapsedMs, setElapsedMs] = React.useState(0); // angezeigte Dauer
+  // Startzeitpunkt der aktuellen Laufphase als Ref: hält Date.now() aus dem Render
+  // heraus (Purity-Regel) – gelesen/gesetzt nur in Event-Handlern + Interval.
+  const startRef = React.useRef<number | null>(null);
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [preset, setPreset] = React.useState<{
@@ -47,38 +49,39 @@ export function TimeTracking({ ticketId }: { ticketId: number }) {
     to: string;
   } | null>(null);
 
-  // Timer startet automatisch beim Öffnen des Tickets (Mount).
-  React.useEffect(() => {
-    setStartedAt(Date.now());
-    setRunning(true);
-  }, []);
-
-  // Tickt sekündlich, solange die Uhr läuft (nur zur Anzeige).
+  // Läuft die Uhr: Startzeit merken und sekündlich die angezeigte Dauer
+  // fortschreiben. setState ausschließlich im Interval-Callback (kein setState im
+  // Effect-Body), Date.now() ebenfalls nur im Callback (kein Date.now im Render).
   React.useEffect(() => {
     if (!running) return;
-    const i = setInterval(() => setTick((t) => t + 1), 1000);
+    if (startRef.current == null) startRef.current = Date.now();
+    const i = setInterval(() => {
+      const start = startRef.current ?? Date.now();
+      setElapsedMs(accumulatedMs + (Date.now() - start));
+    }, 1000);
     return () => clearInterval(i);
-  }, [running]);
-
-  const elapsedMs =
-    accumulatedMs + (running && startedAt != null ? Date.now() - startedAt : 0);
+  }, [running, accumulatedMs]);
 
   // Play/Pause: laufen lassen ⇄ anhalten (Wert akkumulieren).
   function toggle() {
     if (running) {
-      if (startedAt != null) setAccumulatedMs((a) => a + (Date.now() - startedAt));
-      setStartedAt(null);
+      const add = startRef.current != null ? Date.now() - startRef.current : 0;
+      const total = accumulatedMs + add;
+      setAccumulatedMs(total);
+      setElapsedMs(total);
+      startRef.current = null;
       setRunning(false);
     } else {
-      setStartedAt(Date.now());
+      startRef.current = Date.now();
       setRunning(true);
     }
   }
 
   function reset() {
     setRunning(false);
-    setStartedAt(null);
+    startRef.current = null;
     setAccumulatedMs(0);
+    setElapsedMs(0);
   }
 
   // „Zeit erfassen": Uhr anhalten und den Dialog vorbelegen. Mit gemessener Dauer
@@ -86,10 +89,12 @@ export function TimeTracking({ ticketId }: { ticketId: number }) {
   function openDialog() {
     const now = Date.now();
     const total =
-      accumulatedMs + (running && startedAt != null ? now - startedAt : 0);
+      accumulatedMs +
+      (running && startRef.current != null ? now - startRef.current : 0);
     if (running) {
       setAccumulatedMs(total);
-      setStartedAt(null);
+      setElapsedMs(total);
+      startRef.current = null;
       setRunning(false);
     }
     setPreset(

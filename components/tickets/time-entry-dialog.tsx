@@ -153,12 +153,17 @@ export function TimeEntryDialog({
   }, [open, workTypes, ticketId]);
 
   // Vorbelegung (z. B. aus der Stoppuhr): beim Öffnen Datum/Von/Bis übernehmen.
-  React.useEffect(() => {
-    if (!open) return;
-    if (initialDate) setDate(initialDate);
-    if (initialFrom) setFrom(initialFrom);
-    if (initialTo) setTo(initialTo);
-  }, [open, initialDate, initialFrom, initialTo]);
+  // Während des Renders statt im Effect (React-Muster, kein setState-im-Effect).
+  const presetKey = `${open}|${initialDate ?? ""}|${initialFrom ?? ""}|${initialTo ?? ""}`;
+  const [prevPresetKey, setPrevPresetKey] = React.useState(presetKey);
+  if (presetKey !== prevPresetKey) {
+    setPrevPresetKey(presetKey);
+    if (open) {
+      if (initialDate) setDate(initialDate);
+      if (initialFrom) setFrom(initialFrom);
+      if (initialTo) setTo(initialTo);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
