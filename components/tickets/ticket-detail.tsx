@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/empty";
 import { TicketChat } from "@/components/tickets/ticket-chat";
 import { AutotaskOpenButton } from "@/components/autotask-open-button";
+import { TruncatedText } from "@/components/truncated-text";
 import { setHeaderTicketInfo } from "@/components/header-ticket-number";
 import { TimeTracking } from "@/components/tickets/time-tracking";
 import { AttachmentUpload } from "@/components/tickets/attachment-upload";
@@ -556,16 +557,20 @@ export function TicketDetailView({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Desktop-Kopf: „Nummer – Titel" fett, daneben „Erstellt …"; rechts „In Autotask öffnen". */}
-      <div className="hidden flex-wrap items-baseline gap-x-3 gap-y-1 md:flex">
-        <h1 className="text-2xl font-semibold tracking-tight text-balance break-words">
-          <span className="tabular-nums">{ticket.ticketNumber}</span>
-          {ticket.title ? ` – ${ticket.title}` : ""}
+      {/* Desktop-Kopf: „Nummer – Titel" fett – sehr lange Titel werden einzeilig
+          gekürzt und beim Hover als Tooltip voll gezeigt (nur wenn wirklich
+          abgeschnitten). Datum + „In Autotask öffnen" liegen rechts in einer
+          nicht schrumpfenden Zone, damit der Button nie umbricht. */}
+      <div className="hidden items-center gap-3 md:flex">
+        <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight">
+          <TruncatedText>
+            {`${ticket.ticketNumber ?? ""}${ticket.title ? ` – ${ticket.title}` : ""}`}
+          </TruncatedText>
         </h1>
-        <span className="text-muted-foreground text-sm whitespace-nowrap">
+        <span className="text-muted-foreground shrink-0 text-sm whitespace-nowrap">
           Erstellt {fmtDate(ticket.createDate, true)}
         </span>
-        <div className="ml-auto self-center">
+        <div className="shrink-0">
           <AutotaskOpenButton href={autotaskUrl} label="In Autotask öffnen" />
         </div>
       </div>
