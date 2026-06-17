@@ -1,13 +1,17 @@
 "use client";
 
-import { FileSignatureIcon } from "lucide-react";
+import { FileSignatureIcon, FilterIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { TruncatedText } from "@/components/truncated-text";
 import { formatDate, monthKeyOf, monthLabelOf } from "@/lib/format";
 import { quoteStatusLabel, quoteStatusVariant } from "@/lib/autotask/mappers";
 import type { QuoteRow } from "@/lib/autotask/entities/quotes";
-import { GroupedList, type Grouping } from "@/components/vertrieb/grouped-list";
+import {
+  GroupedList,
+  type FilterDef,
+  type Grouping,
+} from "@/components/vertrieb/grouped-list";
 import { VertriebPeriodSelect } from "@/components/vertrieb/period-select";
 import type { Column } from "@/components/searchable-table";
 
@@ -129,16 +133,21 @@ export function QuotesList({
       emptyTitle="Keine Angebote"
       emptyDescription="Im gewählten Zeitraum gibt es keine Angebote."
       groupings={groupings}
-      statusFilter={{
-        options: [
-          { value: "alle", label: "Alle" },
-          { value: "1", label: "Nicht angefordert" },
-          { value: "2", label: "Warten auf Genehmigung" },
-          { value: "3", label: "Genehmigt" },
-          { value: "4", label: "Abgelehnt" },
-        ],
-        predicate: (r, v) => String(r.approvalStatus ?? "") === v,
-      }}
+      filters={[
+        {
+          id: "status",
+          label: "Status",
+          icon: <FilterIcon className="text-muted-foreground" />,
+          options: [
+            { value: "alle", label: "Alle" },
+            { value: "1", label: "Nicht angefordert" },
+            { value: "2", label: "Warten auf Genehmigung" },
+            { value: "3", label: "Genehmigt" },
+            { value: "4", label: "Abgelehnt" },
+          ],
+          predicate: (r, v) => String(r.approvalStatus ?? "") === v,
+        } satisfies FilterDef<QuoteRow>,
+      ]}
       toolbarExtra={<VertriebPeriodSelect value={zeitraum} />}
       note={note}
     />

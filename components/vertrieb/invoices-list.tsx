@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ReceiptEuroIcon } from "lucide-react";
+import { EuroIcon, FilterIcon, ReceiptEuroIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { TruncatedText } from "@/components/truncated-text";
@@ -18,7 +18,11 @@ import {
   type InvoiceUiStatus,
 } from "@/lib/autotask/mappers";
 import type { InvoiceRow } from "@/lib/autotask/entities/invoices";
-import { GroupedList, type Grouping } from "@/components/vertrieb/grouped-list";
+import {
+  GroupedList,
+  type FilterDef,
+  type Grouping,
+} from "@/components/vertrieb/grouped-list";
 import { VertriebPeriodSelect } from "@/components/vertrieb/period-select";
 import type { Column } from "@/components/searchable-table";
 
@@ -140,6 +144,40 @@ export function InvoicesList({
     },
   ];
 
+  const filters: FilterDef<InvoiceRow>[] = [
+    {
+      id: "status",
+      label: "Status",
+      icon: <FilterIcon className="text-muted-foreground" />,
+      options: [
+        { value: "alle", label: "Alle" },
+        { value: "offen", label: "Offen" },
+        { value: "ueberfaellig", label: "Überfällig" },
+        { value: "bezahlt", label: "Bezahlt" },
+        { value: "storniert", label: "Storniert" },
+      ],
+      predicate: (r, v) => st(r) === v,
+    },
+    {
+      id: "betrag",
+      label: "Betrag",
+      icon: <EuroIcon className="text-muted-foreground" />,
+      options: [
+        { value: "alle", label: "Alle Beträge" },
+        { value: "lt1k", label: "< 1.000 €" },
+        { value: "1k10k", label: "1.000–10.000 €" },
+        { value: "gt10k", label: "> 10.000 €" },
+      ],
+      predicate: (r, v) => {
+        const t = r.total ?? 0;
+        if (v === "lt1k") return t < 1000;
+        if (v === "1k10k") return t >= 1000 && t <= 10000;
+        if (v === "gt10k") return t > 10000;
+        return true;
+      },
+    },
+  ];
+
   const note = capped ? (
     <span>
       Liste gekürzt: {total.toLocaleString("de-DE")} Rechnungen im Zeitraum. Über
@@ -161,16 +199,7 @@ export function InvoicesList({
       emptyTitle="Keine Rechnungen"
       emptyDescription="Im gewählten Zeitraum gibt es keine Rechnungen."
       groupings={groupings}
-      statusFilter={{
-        options: [
-          { value: "alle", label: "Alle" },
-          { value: "offen", label: "Offen" },
-          { value: "ueberfaellig", label: "Überfällig" },
-          { value: "bezahlt", label: "Bezahlt" },
-          { value: "storniert", label: "Storniert" },
-        ],
-        predicate: (r, v) => st(r) === v,
-      }}
+      filters={filters}
       toolbarExtra={<VertriebPeriodSelect value={zeitraum} />}
       note={note}
     />

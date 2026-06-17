@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FilterIcon, LayersIcon, SearchIcon } from "lucide-react";
+import { LayersIcon, SearchIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -37,13 +37,28 @@ export interface Grouping<T> {
   ) => number;
 }
 
-export interface StatusFilterDef<T> {
-  // Erste Option sollte „Alle" sein (value "alle" = kein Filter).
+// Ein Filter-Chip. value "alle" (bzw. allValue) = inaktiv. Mehrere Filter werden
+// UND-verknüpft. icon = führendes Symbol im Trigger.
+export interface FilterDef<T> {
+  id: string;
+  label: string; // aria-label + Dropdown-Überschrift
+  icon: React.ReactNode;
   options: { value: string; label: string }[];
   predicate: (row: T, value: string) => boolean;
+  allValue?: string;
 }
 
 const NONE = "none";
+
+function parseValues(raw: string): Record<string, string> {
+  if (!raw) return {};
+  try {
+    const o: unknown = JSON.parse(raw);
+    return o && typeof o === "object" ? (o as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
 
 export function GroupedList<T extends { id: number | string }>({
   rows,
@@ -59,7 +74,7 @@ export function GroupedList<T extends { id: number | string }>({
   emptyDescription,
   minWidthClass,
   groupings,
-  statusFilter,
+  filters = [],
   toolbarExtra,
   note,
 }: {
@@ -70,31 +85,39 @@ export function GroupedList<T extends { id: number | string }>({
   mobileCard?: (row: T) => React.ReactNode;
   hrefFor?: (row: T) => string;
   storageKey: string;
-  // Prefix für die persistierten Toolbar-Einstellungen (Gruppierung/Status).
+  // Prefix für die persistierten Toolbar-Einstellungen (Gruppierung/Filter).
   statePrefix: string;
   emptyIcon: React.ReactNode;
   emptyTitle: string;
   emptyDescription: string;
   minWidthClass?: string;
   groupings: Grouping<T>[];
-  statusFilter?: StatusFilterDef<T>;
-  // Zusätzliche Toolbar-Controls (z. B. Zeitraum-Auswahl) rechts neben den Selects.
+  filters?: FilterDef<T>[];
+  // Zusätzliches Toolbar-Control (z. B. Zeitraum-Auswahl); zählt als weiterer Chip.
   toolbarExtra?: React.ReactNode;
   // Hinweiszeile unter der Toolbar (z. B. „Liste gekürzt").
   note?: React.ReactNode;
 }) {
   const [q, setQ] = React.useState("");
-  // Gruppierung/Status persistiert (localStorage, ohne Lade-Effect/Hydration-Mismatch).
+  // Gruppierung + Filterwerte persistiert (localStorage, ohne Lade-Effect).
   const [groupBy, changeGroup] = usePersistentString(`${statePrefix}:group`, NONE);
-  const [status, changeStatus] = usePersistentString(`${statePrefix}:status`, "alle");
+  const [filtersRaw, setFiltersRaw] = usePersistentString(
+    `${statePrefix}:filters`,
+    "",
+  );
+  const filterValues = parseValues(filtersRaw);
+  const valueOf = (f: FilterDef<T>) => filterValues[f.id] ?? f.allValue ?? "alle";
+  const setFilter = (f: FilterDef<T>, v: string) =>
+    setFiltersRaw(JSON.stringify({ ...filterValues, [f.id]: v }));
 
   const groupItems = [{ value: NONE, label: "Keine" }, ...groupings];
   const active = groupings.find((g) => g.value === groupBy);
 
-  const statusFiltered =
-    statusFilter && status !== "alle"
-      ? rows.filter((r) => statusFilter.predicate(r, status))
-      : rows;
+  // Aktive Filter (Wert ≠ „alle") UND-verknüpft anwenden.
+  const activeFilters = filters.filter((f) => valueOf(f) !== (f.allValue ?? "alle"));
+  const filteredRows = activeFilters.length
+    ? rows.filter((r) => activeFilters.every((f) => f.predicate(r, valueOf(f))))
+    : rows;
 
   const sharedTable = {
     columns,
@@ -114,8 +137,8 @@ export function GroupedList<T extends { id: number | string }>({
   let grouped: { key: string; label: string; rows: T[] }[] = [];
   if (active) {
     const searchFiltered = term
-      ? statusFiltered.filter((r) => searchText(r).toLowerCase().includes(term))
-      : statusFiltered;
+      ? filteredRows.filter((r) => searchText(r).toLowerCase().includes(term))
+      : filteredRows;
     const map = new Map<string, { label: string; rows: T[] }>();
     for (const r of searchFiltered) {
       const key = active.keyOf(r);
@@ -147,8 +170,8 @@ export function GroupedList<T extends { id: number | string }>({
           />
         </div>
 
-        {/* Filter: mobil gleichmäßiges 2-Spalten-Grid (keine random-Verteilung),
-            ab sm inline. Zeitraum bekommt mobil eine eigene volle Zeile. */}
+        {/* Filter-Chips: mobil sauberes 2-Spalten-Grid (so breit wie die Suche),
+            ab sm inline. Reihenfolge: Gruppe, Filter…, Zeitraum. */}
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
           <Select
             items={groupItems}
@@ -175,24 +198,25 @@ export function GroupedList<T extends { id: number | string }>({
             </SelectContent>
           </Select>
 
-          {statusFilter && (
+          {filters.map((f) => (
             <Select
-              items={statusFilter.options}
-              value={status}
-              onValueChange={(v) => changeStatus(String(v))}
+              key={f.id}
+              items={f.options}
+              value={valueOf(f)}
+              onValueChange={(v) => setFilter(f, String(v))}
             >
               <SelectTrigger
                 size="sm"
                 className="h-10 w-full min-w-0 sm:h-9 sm:w-auto"
-                aria-label="Status filtern"
+                aria-label={f.label}
               >
-                <FilterIcon className="text-muted-foreground" />
+                {f.icon}
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="w-auto min-w-48">
                 <SelectGroup>
-                  <SelectLabel>Status</SelectLabel>
-                  {statusFilter.options.map((i) => (
+                  <SelectLabel>{f.label}</SelectLabel>
+                  {f.options.map((i) => (
                     <SelectItem key={i.value} value={i.value}>
                       {i.label}
                     </SelectItem>
@@ -200,17 +224,15 @@ export function GroupedList<T extends { id: number | string }>({
                 </SelectGroup>
               </SelectContent>
             </Select>
-          )}
+          ))}
 
-          {toolbarExtra && (
-            <div className="col-span-2 sm:col-span-1">{toolbarExtra}</div>
-          )}
+          {toolbarExtra}
         </div>
         {note && <div className="text-muted-foreground text-xs">{note}</div>}
       </div>
 
       {!active ? (
-        <SearchableTable rows={statusFiltered} externalTerm={q} hideSearch {...sharedTable} />
+        <SearchableTable rows={filteredRows} externalTerm={q} hideSearch {...sharedTable} />
       ) : grouped.length === 0 ? (
         <Empty>
           <EmptyHeader>

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileTextIcon } from "lucide-react";
+import { FileTextIcon, FilterIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { TruncatedText } from "@/components/truncated-text";
@@ -11,7 +11,11 @@ import {
   contractTypeLabel,
 } from "@/lib/autotask/mappers";
 import type { ContractListRow } from "@/lib/autotask/entities/contracts";
-import { GroupedList, type Grouping } from "@/components/vertrieb/grouped-list";
+import {
+  GroupedList,
+  type FilterDef,
+  type Grouping,
+} from "@/components/vertrieb/grouped-list";
 import type { Column } from "@/components/searchable-table";
 
 function zeitraum(r: ContractListRow): string {
@@ -105,14 +109,19 @@ export function ContractsList({ rows }: { rows: ContractListRow[] }) {
       emptyTitle="Keine Verträge"
       emptyDescription="Es sind keine Verträge vorhanden."
       groupings={groupings}
-      statusFilter={{
-        options: [
-          { value: "alle", label: "Alle" },
-          { value: "1", label: "Aktiv" },
-          { value: "0", label: "Inaktiv" },
-        ],
-        predicate: (r, v) => String(r.status ?? "") === v,
-      }}
+      filters={[
+        {
+          id: "status",
+          label: "Status",
+          icon: <FilterIcon className="text-muted-foreground" />,
+          options: [
+            { value: "alle", label: "Alle" },
+            { value: "1", label: "Aktiv" },
+            { value: "0", label: "Inaktiv" },
+          ],
+          predicate: (r, v) => String(r.status ?? "") === v,
+        } satisfies FilterDef<ContractListRow>,
+      ]}
     />
   );
 }
