@@ -2326,3 +2326,25 @@ Ticket/Rahmen), `contractPeriodType` (PICK Monthly…Yearly), `estimatedRevenue`
 
 **Berechtigung:** `Invoices/query` liefert **HTTP 200** mit Daten (API-User darf
 Rechnungen lesen) – das vorab geflaggte Berechtigungsrisiko ist **entschärft**.
+
+### [2026-06-17] Vertrieb – Erstellt-von, Zahlungsart-UDF, Filter-Sheet (verifiziert Sandbox)
+
+- **„Erstellt von" (Mitarbeitername):** `Invoices.creatorResourceID` und
+  `Quotes.creatorResourceID` (beide RO →Resource) sind befüllt → Spalte zeigt den
+  Ersteller. Auflösung via `resources.namesByIds` (in-Operator, kein N+1).
+  **`Contracts` hat KEIN Creator-Feld** → bei Verträgen nicht darstellbar (bewusst weggelassen).
+- **Zahlungsart = Firmen-UDF (Freitext) „Zahlungsart"** (nicht der Dropdown „Auswahl
+  Zahlungsart", der abgeschafft wird). Werte z. B. „SEPA"/leer.
+  - **`userDefinedFields` NICHT über `IncludeFields` abrufbar** → `Companies/query` mit
+    `IncludeFields:[…,"userDefinedFields"]` ⇒ **HTTP 500** („Unable to find
+    userDefinedFields in the Company Entity"). UDFs kommen nur im Vollabruf (ohne
+    IncludeFields) als `userDefinedFields:[{name,value}]`.
+  - **Aber server-seitiger UDF-Filter funktioniert:** Filter `{op:"contains",
+    field:"Zahlungsart", value:"SEPA", udf:true}` → 9 SEPA-Firmen (Sandbox).
+    Lean-Ansatz: `companies.sepaCompanyIds()` (gecachtes Set der companyIDs), Rechnung
+    ist SEPA wenn `companyID ∈ Set` (kein Firmen-Vollabruf). Filter SEPA/Nicht-SEPA.
+- **Filter-UI = „Filter"-Sheet (Vorschlag 3, best practice mobile+desktop):** sichtbar
+  bleiben nur **Gruppe** (Ansicht) + **Zeitraum** (Scope); die Filter (Status/Betrag/
+  Zahlungsart) stecken gebündelt in einem `Sheet` mit Aktiv-Zähler-Badge. Skaliert,
+  bleibt mobil ruhig (kein Chip-Overflow). Nested base-ui Select im Sheet rendert korrekt
+  über dem Overlay (kein z-index-Problem). `GroupedList` nimmt jetzt `filters: FilterDef[]`.

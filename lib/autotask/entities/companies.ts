@@ -76,10 +76,33 @@ const ownCompanyNameCached = unstable_cache(
   { revalidate: 86400 },
 );
 
+// Firmen mit Zahlungsart „SEPA" (Freitext-UDF „Zahlungsart" enthält SEPA;
+// verifiziert 2026-06-17). Server-seitiger UDF-Filter (udf:true). Als ID-Array
+// gecacht (Set ist nicht serialisierbar) und 5 min vorgehalten.
+const sepaCompanyIdsCached = unstable_cache(
+  async (): Promise<number[]> => {
+    const rows = await autotask.query<Company>("Companies", {
+      MaxRecords: 500,
+      IncludeFields: ["id"],
+      Filter: [
+        { op: "contains", field: "Zahlungsart", value: "SEPA", udf: true },
+      ],
+    });
+    return rows.map((c) => c.id);
+  },
+  ["companies-sepa-ids"],
+  { revalidate: 300 },
+);
+
 export const companies = {
   // Einzelne Firma inkl. Anschrift/Telefon (lesend, fürs Kontextpanel).
   get: (id: number): Promise<Company | null> =>
     autotask.get<Company>("Companies", id),
+
+  // Set der companyIDs mit Zahlungsart SEPA (für den Rechnungs-Filter).
+  async sepaCompanyIds(): Promise<Set<number>> {
+    return new Set(await sepaCompanyIdsCached());
+  },
 
   // Name der eigenen Firma (companyID 0), gecacht. null bei Fehler/leer.
   ownName: (): Promise<string | null> => ownCompanyNameCached(),

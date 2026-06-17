@@ -1,10 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { LayersIcon, SearchIcon } from "lucide-react";
+import {
+  FilterXIcon,
+  LayersIcon,
+  RotateCcwIcon,
+  SearchIcon,
+  SlidersHorizontalIcon,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useColumnOrder } from "@/hooks/use-column-order";
 import {
   Select,
   SelectContent,
@@ -14,6 +22,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   Empty,
   EmptyDescription,
@@ -37,11 +54,11 @@ export interface Grouping<T> {
   ) => number;
 }
 
-// Ein Filter-Chip. value "alle" (bzw. allValue) = inaktiv. Mehrere Filter werden
-// UND-verknüpft. icon = führendes Symbol im Trigger.
+// Ein Filter. value "alle" (bzw. allValue) = inaktiv. Mehrere Filter werden
+// UND-verknüpft und stecken im Filter-Sheet.
 export interface FilterDef<T> {
   id: string;
-  label: string; // aria-label + Dropdown-Überschrift
+  label: string;
   icon: React.ReactNode;
   options: { value: string; label: string }[];
   predicate: (row: T, value: string) => boolean;
@@ -75,7 +92,9 @@ export function GroupedList<T extends { id: number | string }>({
   minWidthClass,
   groupings,
   filters = [],
+  filterTitle = "Filter",
   toolbarExtra,
+  scopeLabel,
   note,
 }: {
   rows: T[];
@@ -93,12 +112,21 @@ export function GroupedList<T extends { id: number | string }>({
   minWidthClass?: string;
   groupings: Grouping<T>[];
   filters?: FilterDef<T>[];
-  // Zusätzliches Toolbar-Control (z. B. Zeitraum-Auswahl); zählt als weiterer Chip.
+  filterTitle?: string;
+  // Scope-Control (z. B. Zeitraum). Desktop = eigener Chip; mobil im Filter-Sheet.
   toolbarExtra?: React.ReactNode;
+  scopeLabel?: string;
   // Hinweiszeile unter der Toolbar (z. B. „Liste gekürzt").
   note?: React.ReactNode;
 }) {
   const [q, setQ] = React.useState("");
+  // Spaltenreihenfolge teilt sich denselben Store (storageKey) mit der SearchableTable
+  // -> der „Spalten zurücksetzen"-Button lebt hier oben in der Toolbar (rechts), nicht
+  // als eigene Zeile in der Tabelle.
+  const { customized, reset: resetColumns } = useColumnOrder(
+    storageKey,
+    columns.map((c) => c.key),
+  );
   // Gruppierung + Filterwerte persistiert (localStorage, ohne Lade-Effect).
   const [groupBy, changeGroup] = usePersistentString(`${statePrefix}:group`, NONE);
   const [filtersRaw, setFiltersRaw] = usePersistentString(
@@ -109,6 +137,7 @@ export function GroupedList<T extends { id: number | string }>({
   const valueOf = (f: FilterDef<T>) => filterValues[f.id] ?? f.allValue ?? "alle";
   const setFilter = (f: FilterDef<T>, v: string) =>
     setFiltersRaw(JSON.stringify({ ...filterValues, [f.id]: v }));
+  const resetFilters = () => setFiltersRaw("");
 
   const groupItems = [{ value: NONE, label: "Keine" }, ...groupings];
   const active = groupings.find((g) => g.value === groupBy);
@@ -158,21 +187,22 @@ export function GroupedList<T extends { id: number | string }>({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        {/* Suche zuerst (content-priority), volle Breite mobil. */}
-        <div className="relative w-full sm:max-w-xs">
-          <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={searchPlaceholder}
-            className="h-10 pl-9 sm:h-9"
-            aria-label={searchPlaceholder}
-          />
-        </div>
+        {/* Desktop: Suche + Steuerung nebeneinander in EINER Zeile (kein verschenkter
+            Platz rechts); mobil gestapelt. */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+          <div className="relative w-full sm:w-64 sm:flex-none">
+            <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="h-11 pl-9 sm:h-9"
+              aria-label={searchPlaceholder}
+            />
+          </div>
 
-        {/* Filter-Chips: mobil sauberes 2-Spalten-Grid (so breit wie die Suche),
-            ab sm inline. Reihenfolge: Gruppe, Filter…, Zeitraum. */}
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          {/* Ansicht (Gruppe) + Filter-Sheet + Zeitraum. */}
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center">
           <Select
             items={groupItems}
             value={groupBy}
@@ -180,7 +210,7 @@ export function GroupedList<T extends { id: number | string }>({
           >
             <SelectTrigger
               size="sm"
-              className="h-10 w-full min-w-0 sm:h-9 sm:w-auto"
+              className="h-11 w-full min-w-0 sm:h-9! sm:w-auto"
               aria-label="Gruppieren nach"
             >
               <LayersIcon className="text-muted-foreground" />
@@ -198,35 +228,116 @@ export function GroupedList<T extends { id: number | string }>({
             </SelectContent>
           </Select>
 
-          {filters.map((f) => (
-            <Select
-              key={f.id}
-              items={f.options}
-              value={valueOf(f)}
-              onValueChange={(v) => setFilter(f, String(v))}
-            >
-              <SelectTrigger
-                size="sm"
-                className="h-10 w-full min-w-0 sm:h-9 sm:w-auto"
-                aria-label={f.label}
+          {filters.length > 0 && (
+            <Sheet>
+              <SheetTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-11 w-full min-w-0 justify-start gap-1.5 sm:h-9 sm:w-auto"
+                  />
+                }
+                aria-label="Filter öffnen"
               >
-                {f.icon}
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="w-auto min-w-48">
-                <SelectGroup>
-                  <SelectLabel>{f.label}</SelectLabel>
-                  {f.options.map((i) => (
-                    <SelectItem key={i.value} value={i.value}>
-                      {i.label}
-                    </SelectItem>
+                <SlidersHorizontalIcon className="text-muted-foreground" />
+                {filterTitle}
+                {activeFilters.length > 0 && (
+                  <Badge variant="secondary" className="ml-auto tabular-nums sm:ml-1">
+                    {activeFilters.length}
+                  </Badge>
+                )}
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full gap-0 sm:max-w-sm">
+                <SheetHeader>
+                  <SheetTitle>{filterTitle}</SheetTitle>
+                  <SheetDescription>Liste eingrenzen.</SheetDescription>
+                </SheetHeader>
+                <div className="flex flex-col gap-4 overflow-y-auto px-4 pb-4">
+                  {/* Scope (Zeitraum) mobil im Sheet; auf Desktop ist es ein Chip. */}
+                  {toolbarExtra && (
+                    <div className="flex flex-col gap-1.5 sm:hidden">
+                      <span className="text-sm font-medium">
+                        {scopeLabel ?? "Zeitraum"}
+                      </span>
+                      {toolbarExtra}
+                    </div>
+                  )}
+                  {filters.map((f) => (
+                    <div key={f.id} className="flex flex-col gap-1.5">
+                      <span className="flex items-center gap-1.5 text-sm font-medium [&_svg]:size-4">
+                        {f.icon}
+                        {f.label}
+                      </span>
+                      <Select
+                        items={f.options}
+                        value={valueOf(f)}
+                        onValueChange={(v) => setFilter(f, String(v))}
+                      >
+                        <SelectTrigger
+                          size="sm"
+                          className="h-11 w-full sm:h-9!"
+                          aria-label={f.label}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="w-(--anchor-width)">
+                          <SelectGroup>
+                            {f.options.map((i) => (
+                              <SelectItem key={i.value} value={i.value}>
+                                {i.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          ))}
+                </div>
+                <SheetFooter>
+                  <Button
+                    variant="outline"
+                    onClick={resetFilters}
+                    disabled={activeFilters.length === 0}
+                  >
+                    Filter zurücksetzen
+                  </Button>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
+          )}
 
-          {toolbarExtra}
+          {/* Zeitraum-Chip nur auf Desktop; mobil steckt er im Filter-Sheet. */}
+          {toolbarExtra && (
+            <div className="hidden sm:col-span-1 sm:block">{toolbarExtra}</div>
+          )}
+
+          {/* „Filter zurücksetzen" rechts neben den Chips, sobald ein Filter aktiv ist
+              (nur Desktop – mobil sitzt der Reset im Sheet). */}
+          {activeFilters.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetFilters}
+              className="text-muted-foreground hidden sm:inline-flex"
+            >
+              <FilterXIcon />
+              Filter zurücksetzen
+            </Button>
+          )}
+          </div>
+
+          {customized && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetColumns}
+              className="w-full justify-start text-muted-foreground sm:ml-auto sm:w-auto"
+            >
+              <RotateCcwIcon />
+              Spalten zurücksetzen
+            </Button>
+          )}
         </div>
         {note && <div className="text-muted-foreground text-xs">{note}</div>}
       </div>

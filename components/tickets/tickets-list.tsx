@@ -578,7 +578,7 @@ export function TicketsList({
               >
                 <SelectTrigger
                   size="sm"
-                  className={cn("h-11 w-full min-w-0 sm:h-9", chipState(statusActive))}
+                  className={cn("h-11 w-full min-w-0 sm:h-9!", chipState(statusActive))}
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -600,7 +600,7 @@ export function TicketsList({
               >
                 <SelectTrigger
                   size="sm"
-                  className={cn("h-11 w-full min-w-0 sm:h-9", chipState(priorityActive))}
+                  className={cn("h-11 w-full min-w-0 sm:h-9!", chipState(priorityActive))}
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -630,7 +630,7 @@ export function TicketsList({
                 >
                   <SelectTrigger
                     size="sm"
-                    className={cn("h-11 w-full min-w-0 sm:h-9", chipState(queueActive))}
+                    className={cn("h-11 w-full min-w-0 sm:h-9!", chipState(queueActive))}
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -654,7 +654,7 @@ export function TicketsList({
                 >
                   <SelectTrigger
                     size="sm"
-                    className={cn("h-11 w-full min-w-0 sm:h-9", chipState(assignedActive))}
+                    className={cn("h-11 w-full min-w-0 sm:h-9!", chipState(assignedActive))}
                   >
                     <SelectValue />
                   </SelectTrigger>

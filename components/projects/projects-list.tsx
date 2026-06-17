@@ -310,11 +310,14 @@ export function ProjectsList({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
+      {/* Einheitliche Toolbar (wie Firmen/Vertrieb): Scope · Suche · Filter in EINER
+          Zeile auf Desktop (Chips inhaltsbreit, nicht volle Breite); mobil gestapelt.
+          Alle Controls einheitlich h-9 (Desktop) / h-11 (Mobile, Touch). */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
           <Button
             size="sm"
-            className="h-11 sm:h-7"
+            className="h-11 w-full sm:h-9 sm:w-auto"
             variant={scope === "mine" ? "secondary" : "outline"}
             onClick={() => selectScope("mine")}
           >
@@ -328,7 +331,7 @@ export function ProjectsList({
           </Button>
           <Button
             size="sm"
-            className="h-11 sm:h-7"
+            className="h-11 w-full sm:h-9 sm:w-auto"
             variant={scope === "all" ? "secondary" : "outline"}
             onClick={() => selectScope("all")}
           >
@@ -336,42 +339,40 @@ export function ProjectsList({
           </Button>
         </div>
 
-        <div className="relative w-full min-w-48 sm:max-w-xs">
+        <div className="relative w-full min-w-48 sm:w-64 sm:flex-none">
           <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             placeholder="Projekt, Nummer oder Firma suchen …"
-            className="h-11 pl-9 sm:h-7"
+            className="h-11 pl-9 sm:h-9"
             aria-label="Projekte suchen"
           />
         </div>
-      </div>
 
-      {/* Filterleiste: Status / Leiter / Firma. Werte aus den geladenen Zeilen.
-          Immer drei nebeneinander (je ein Drittel der Suchleistenbreite) – auch mobil. */}
-      <div className="grid grid-cols-3 gap-2">
-        <FilterSelect
-          label="Status"
-          value={statusFilter}
-          options={statusOptions}
-          allLabel="Alle Status"
-          onChange={(v) => setParam("status", v)}
-        />
-        <FilterSelect
-          label="Leiter"
-          value={leadFilter}
-          options={leadOptions}
-          allLabel="Alle Leiter"
-          onChange={(v) => setParam("lead", v)}
-        />
-        <FilterSelect
-          label="Firma"
-          value={companyFilter}
-          options={companyOptions}
-          allLabel="Alle Firmen"
-          onChange={(v) => setParam("company", v)}
-        />
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-row sm:flex-wrap sm:gap-2">
+          <FilterSelect
+            label="Status"
+            value={statusFilter}
+            options={statusOptions}
+            allLabel="Alle Status"
+            onChange={(v) => setParam("status", v)}
+          />
+          <FilterSelect
+            label="Leiter"
+            value={leadFilter}
+            options={leadOptions}
+            allLabel="Alle Leiter"
+            onChange={(v) => setParam("lead", v)}
+          />
+          <FilterSelect
+            label="Firma"
+            value={companyFilter}
+            options={companyOptions}
+            allLabel="Alle Firmen"
+            onChange={(v) => setParam("company", v)}
+          />
+        </div>
       </div>
 
       {capped && (
@@ -594,7 +595,7 @@ function FilterSelect({
       value={value}
       onValueChange={(v) => onChange(v ?? ALL)}
     >
-      <SelectTrigger className="h-11 w-full min-w-0 sm:h-9" aria-label={label}>
+      <SelectTrigger className="h-11 w-full min-w-0 sm:h-9! sm:w-auto sm:min-w-36" aria-label={label}>
         <SelectValue placeholder={allLabel} />
       </SelectTrigger>
       <SelectContent>

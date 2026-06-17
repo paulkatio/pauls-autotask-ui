@@ -375,7 +375,7 @@ function CompanyFilterPicker({
           <Button
             variant="outline"
             size="sm"
-            className="h-11 w-full justify-between font-normal sm:h-7 sm:w-56"
+            className="h-11 w-full justify-between font-normal sm:h-9 sm:w-56"
             aria-label="Nach Firma filtern"
           />
         }

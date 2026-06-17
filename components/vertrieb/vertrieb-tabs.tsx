@@ -26,9 +26,15 @@ export function VertriebTabs({ heading }: { heading?: string }) {
   return (
     <Tabs value={active} onValueChange={(v) => router.push(`/vertrieb/${String(v)}`)}>
       {heading && <h1 className="sr-only">{heading}</h1>}
-      <TabsList variant="line" className="flex-wrap">
+      {/* Segmentiert (aktiver Tab im Vordergrund = erhabener Pill). h-auto + flex-wrap:
+          mehrere Tabs brechen sauber in eine zweite Zeile um, statt zu überlaufen. */}
+      <TabsList className="group-data-horizontal/tabs:h-auto max-w-full flex-wrap justify-start gap-1">
         {TABS.map((t) => (
-          <TabsTrigger key={t.value} value={t.value}>
+          <TabsTrigger
+            key={t.value}
+            value={t.value}
+            className="h-11 flex-1 sm:h-8 sm:flex-none"
+          >
             {t.label}
           </TabsTrigger>
         ))}

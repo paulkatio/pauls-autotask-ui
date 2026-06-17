@@ -108,8 +108,10 @@ export function SearchableTable<T extends { id: number | string }>({
       ? (row: T) => router.push(hrefFor(row))
       : undefined;
 
-  // Toolbar zeigen, solange eine eigene Suche sichtbar ist ODER ein Reset nötig wäre.
-  const showToolbar = !hideSearch || customized;
+  // Eigene Toolbar (Suche + Spalten-Reset) nur im Standalone-Einsatz. Wird die Suche
+  // extern gestellt (hideSearch, z. B. in GroupedList), übernimmt der Wrapper auch den
+  // „Spalten zurücksetzen"-Button -> hier keine eigene Toolbar-Zeile.
+  const showToolbar = !hideSearch;
 
   return (
     <div className="flex flex-col gap-3">
@@ -122,7 +124,7 @@ export function SearchableTable<T extends { id: number | string }>({
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="h-10 pl-9 sm:h-9"
+                className="h-11 pl-9 sm:h-9"
                 aria-label={searchPlaceholder}
               />
             </div>

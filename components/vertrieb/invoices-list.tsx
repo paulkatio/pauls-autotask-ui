@@ -1,7 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { EuroIcon, FilterIcon, ReceiptEuroIcon } from "lucide-react";
+import {
+  EuroIcon,
+  FilterIcon,
+  LandmarkIcon,
+  ReceiptEuroIcon,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { TruncatedText } from "@/components/truncated-text";
@@ -52,20 +57,9 @@ export function InvoicesList({
     [nowMs],
   );
 
+  // Standard-Spaltenreihenfolge (Paul): Datum, Firma, Erstellt von, Nummer, Betrag,
+  // dann Fällig, Status. Nutzer können per Drag umsortieren (überschreibt den Default).
   const columns: Column<InvoiceRow>[] = [
-    {
-      key: "number",
-      header: "Nummer",
-      sortValue: (r) => r.number,
-      cellClassName: "font-medium tabular-nums whitespace-nowrap",
-      cell: (r) => r.number,
-    },
-    {
-      key: "company",
-      header: "Firma",
-      sortValue: (r) => r.companyName,
-      cell: (r) => <TruncatedText className="max-w-xs">{r.companyName || "—"}</TruncatedText>,
-    },
     {
       key: "date",
       header: "Datum",
@@ -74,11 +68,23 @@ export function InvoicesList({
       cell: (r) => formatDate(r.date),
     },
     {
-      key: "due",
-      header: "Fällig",
-      sortValue: (r) => r.dueDate ?? "",
-      cellClassName: "whitespace-nowrap tabular-nums",
-      cell: (r) => formatDate(r.dueDate),
+      key: "company",
+      header: "Firma",
+      sortValue: (r) => r.companyName,
+      cell: (r) => <TruncatedText className="max-w-xs">{r.companyName || "—"}</TruncatedText>,
+    },
+    {
+      key: "creator",
+      header: "Erstellt von",
+      sortValue: (r) => r.creatorName,
+      cell: (r) => <TruncatedText className="max-w-40">{r.creatorName || "—"}</TruncatedText>,
+    },
+    {
+      key: "number",
+      header: "Nummer",
+      sortValue: (r) => r.number,
+      cellClassName: "font-medium tabular-nums whitespace-nowrap",
+      cell: (r) => r.number,
     },
     {
       key: "total",
@@ -87,6 +93,13 @@ export function InvoicesList({
       cellClassName: "text-right tabular-nums whitespace-nowrap",
       sortValue: (r) => r.total ?? null,
       cell: (r) => formatCurrency(r.total),
+    },
+    {
+      key: "due",
+      header: "Fällig",
+      sortValue: (r) => r.dueDate ?? "",
+      cellClassName: "whitespace-nowrap tabular-nums",
+      cell: (r) => formatDate(r.dueDate),
     },
     {
       key: "status",
@@ -113,6 +126,11 @@ export function InvoicesList({
       <div className="text-muted-foreground text-xs">
         {(r.companyName || "—") + " · " + formatDate(r.date)}
       </div>
+      {r.creatorName && (
+        <div className="text-muted-foreground text-xs">
+          Erstellt von {r.creatorName}
+        </div>
+      )}
       <div className="text-right text-sm font-medium tabular-nums">
         {formatCurrency(r.total)}
       </div>
@@ -176,6 +194,18 @@ export function InvoicesList({
         return true;
       },
     },
+    {
+      id: "zahlungsart",
+      label: "Zahlungsart",
+      icon: <LandmarkIcon className="text-muted-foreground" />,
+      options: [
+        { value: "alle", label: "Alle" },
+        { value: "sepa", label: "SEPA" },
+        { value: "nichtsepa", label: "Nicht-SEPA" },
+      ],
+      predicate: (r, v) =>
+        v === "sepa" ? r.isSepa : v === "nichtsepa" ? !r.isSepa : true,
+    },
   ];
 
   const note = capped ? (
@@ -195,12 +225,14 @@ export function InvoicesList({
       hrefFor={(r) => `/vertrieb/rechnungen/${r.id}`}
       storageKey="vertrieb-rechnungen-cols"
       statePrefix="vertrieb:rechnungen"
+      minWidthClass="min-w-4xl"
       emptyIcon={<ReceiptEuroIcon />}
       emptyTitle="Keine Rechnungen"
       emptyDescription="Im gewählten Zeitraum gibt es keine Rechnungen."
       groupings={groupings}
       filters={filters}
       toolbarExtra={<VertriebPeriodSelect value={zeitraum} />}
+      scopeLabel="Zeitraum"
       note={note}
     />
   );

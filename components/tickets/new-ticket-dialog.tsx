@@ -355,7 +355,7 @@ export function NewTicketDialog({
         }
       }}
     >
-      <ResponsiveDialogTrigger render={<Button size="sm" className="h-11 sm:h-7" />}>
+      <ResponsiveDialogTrigger render={<Button size="sm" className="h-11 sm:h-9" />}>
         <PlusIcon />
         {triggerLabel ?? "Neues Ticket"}
       </ResponsiveDialogTrigger>

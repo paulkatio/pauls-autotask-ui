@@ -401,11 +401,18 @@ export function TicketDetailView({
 
             {/* Leicht abgetrennt darunter die Tabs – gleicher Kasten. */}
             <div className="flex flex-col gap-4 border-t pt-4">
-              <TabsList variant="line">
-                <TabsTrigger value="zeiten" className="min-h-11 sm:min-h-0">
+              {/* Einheitlicher segmentierter Tab-Stil (siehe vertrieb-tabs/url-tabs). */}
+              <TabsList className="group-data-horizontal/tabs:h-auto max-w-full flex-wrap justify-start gap-1">
+                <TabsTrigger
+                  value="zeiten"
+                  className="h-11 flex-1 sm:h-8 sm:flex-none"
+                >
                   Zeiten
                 </TabsTrigger>
-                <TabsTrigger value="anhaenge" className="min-h-11 sm:min-h-0">
+                <TabsTrigger
+                  value="anhaenge"
+                  className="h-11 flex-1 sm:h-8 sm:flex-none"
+                >
                   Anhänge ({detail.attachments.length})
                 </TabsTrigger>
               </TabsList>

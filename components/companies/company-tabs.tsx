@@ -32,9 +32,18 @@ export function CompanyTabs({
       value={active}
       onValueChange={(v) => router.push(`${pathname}?tab=${String(v)}`)}
     >
-      <TabsList variant="line" className="flex-wrap">
+      {/* Segmentiert (aktiver Tab im Vordergrund). h-auto + flex-wrap: die 5 Tabs
+          brechen mobil sauber um (alle sichtbar), statt überlappend zu überlaufen. */}
+      {/* Einheitlicher Tab-Stil (siehe vertrieb-tabs/url-tabs): segmentiert, mobil
+          touch-hoch (h-11) + flex-1 → füllt umbrechende Zeilen gleichmäßig; Desktop
+          kompakt (h-8) inhaltsbreit. */}
+      <TabsList className="group-data-horizontal/tabs:h-auto max-w-full flex-wrap justify-start gap-1">
         {TABS.map((t) => (
-          <TabsTrigger key={t.value} value={t.value}>
+          <TabsTrigger
+            key={t.value}
+            value={t.value}
+            className="h-11 flex-1 sm:h-8 sm:flex-none"
+          >
             {t.label}
           </TabsTrigger>
         ))}

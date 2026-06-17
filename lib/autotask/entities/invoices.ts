@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { autotask } from "@/lib/autotask/client";
 import type { AutotaskFilter } from "@/lib/autotask/client";
 import { companies } from "@/lib/autotask/entities/companies";
+import { resources } from "@/lib/autotask/entities/resources";
 
 // Autotask `Invoices` – Felder verifiziert 2026-06-17 (Sandbox), alle read-only.
 // KEIN Währungsfeld an der Rechnung (Tenant DE) -> Anzeige EUR.
@@ -12,6 +13,7 @@ interface Invoice {
   id: number;
   invoiceNumber?: string | null;
   companyID?: number | null;
+  creatorResourceID?: number | null;
   invoiceDateTime?: string | null;
   dueDate?: string | null;
   paidDate?: string | null;
@@ -32,11 +34,14 @@ export interface InvoiceRow {
   number: string;
   companyId: number | null;
   companyName: string;
+  creatorName: string;
   date: string | null; // invoiceDateTime (ISO)
   dueDate: string | null;
   paidDate: string | null;
   isVoided: boolean;
   total: number | null;
+  // Zahlstil der Firma: true = SEPA (Firmen-UDF „Zahlungsart" enthält SEPA).
+  isSepa: boolean;
 }
 
 // 2679 Rechnungen gesamt -> nie alle ungefiltert (Server sortiert NICHT, DECISIONS
@@ -70,6 +75,7 @@ const listCached = unstable_cache(
           "id",
           "invoiceNumber",
           "companyID",
+          "creatorResourceID",
           "invoiceDateTime",
           "dueDate",
           "paidDate",
@@ -81,9 +87,16 @@ const listCached = unstable_cache(
       { maxItems: INVOICES_CAP },
     );
 
-    const names = await companies.namesByIds(
-      raw.map((r) => r.companyID).filter((n): n is number => n != null),
-    );
+    // Firmennamen, Ersteller-Namen und SEPA-Firmen-Set – je ein gebündelter Call.
+    const [names, creators, sepaSet] = await Promise.all([
+      companies.namesByIds(
+        raw.map((r) => r.companyID).filter((n): n is number => n != null),
+      ),
+      resources.namesByIds(
+        raw.map((r) => r.creatorResourceID).filter((n): n is number => n != null),
+      ),
+      companies.sepaCompanyIds(),
+    ]);
 
     const rows: InvoiceRow[] = raw
       .map((r) => ({
@@ -91,11 +104,16 @@ const listCached = unstable_cache(
         number: r.invoiceNumber ?? `#${r.id}`,
         companyId: r.companyID ?? null,
         companyName: r.companyID != null ? (names.get(r.companyID) ?? "") : "",
+        creatorName:
+          r.creatorResourceID != null
+            ? (creators.get(r.creatorResourceID) ?? "")
+            : "",
         date: r.invoiceDateTime ?? null,
         dueDate: r.dueDate ?? null,
         paidDate: r.paidDate ?? null,
         isVoided: Boolean(r.isVoided),
         total: r.invoiceTotal ?? null,
+        isSepa: r.companyID != null && sepaSet.has(r.companyID),
       }))
       // Neueste zuerst (Rechnungsdatum absteigend); leere Daten ans Ende.
       .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));

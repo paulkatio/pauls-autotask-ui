@@ -31,6 +31,9 @@ export function AutotaskOpenButton({
       className={cn(
         buttonVariants({ variant: "outline", size: iconOnly ? "icon" : "sm" }),
         iconOnly && "size-11 sm:size-9",
+        // Voll-Button (mit Label) einheitlich h-11 (Mobile) / h-9 (Desktop) wie die
+        // benachbarten Aktionen („Neues Ticket", Suche, Filter).
+        !iconOnly && "h-11 sm:h-9",
         className,
       )}
     >

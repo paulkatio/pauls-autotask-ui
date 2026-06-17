@@ -63,6 +63,12 @@ export function QuotesList({
       cell: (r) => formatDate(r.expirationDate),
     },
     {
+      key: "creator",
+      header: "Erstellt von",
+      sortValue: (r) => r.creatorName,
+      cell: (r) => <TruncatedText className="max-w-40">{r.creatorName || "—"}</TruncatedText>,
+    },
+    {
       key: "status",
       header: "Status",
       sortValue: (r) => quoteStatusLabel(r.approvalStatus),
@@ -85,6 +91,11 @@ export function QuotesList({
       <div className="text-muted-foreground text-xs">
         {`Nr. ${r.number} · ${r.companyName || "—"} · ${formatDate(r.date)}`}
       </div>
+      {r.creatorName && (
+        <div className="text-muted-foreground text-xs">
+          Erstellt von {r.creatorName}
+        </div>
+      )}
     </>
   );
 
@@ -129,6 +140,7 @@ export function QuotesList({
       hrefFor={(r) => `/vertrieb/angebote/${r.id}`}
       storageKey="vertrieb-angebote-cols"
       statePrefix="vertrieb:angebote"
+      minWidthClass="min-w-4xl"
       emptyIcon={<FileSignatureIcon />}
       emptyTitle="Keine Angebote"
       emptyDescription="Im gewählten Zeitraum gibt es keine Angebote."
@@ -149,6 +161,7 @@ export function QuotesList({
         } satisfies FilterDef<QuoteRow>,
       ]}
       toolbarExtra={<VertriebPeriodSelect value={zeitraum} />}
+      scopeLabel="Zeitraum"
       note={note}
     />
   );

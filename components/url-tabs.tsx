@@ -33,9 +33,15 @@ export function UrlTabs({
 
   return (
     <Tabs value={active} onValueChange={(v) => go(String(v))}>
-      <TabsList variant="line" className="flex-wrap">
+      {/* Segmentiert (aktiver Tab im Vordergrund). h-auto + flex-wrap: saubere zweite
+          Zeile bei vielen/langen Tabs statt Überlauf. */}
+      <TabsList className="group-data-horizontal/tabs:h-auto max-w-full flex-wrap justify-start gap-1">
         {tabs.map((t) => (
-          <TabsTrigger key={t.value} value={t.value}>
+          <TabsTrigger
+            key={t.value}
+            value={t.value}
+            className="h-11 flex-1 sm:h-8 sm:flex-none"
+          >
             {t.label}
           </TabsTrigger>
         ))}

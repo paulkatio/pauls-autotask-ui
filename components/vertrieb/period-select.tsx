@@ -42,7 +42,7 @@ export function VertriebPeriodSelect({ value }: { value: string }) {
     >
       <SelectTrigger
         size="sm"
-        className="h-10 w-full min-w-0 sm:h-9 sm:w-auto"
+        className="h-11 w-full min-w-0 sm:h-9! sm:w-auto"
         aria-label="Zeitraum"
       >
         <CalendarRangeIcon className="text-muted-foreground" />

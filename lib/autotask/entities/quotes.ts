@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { autotask } from "@/lib/autotask/client";
 import type { AutotaskFilter } from "@/lib/autotask/client";
 import { companies } from "@/lib/autotask/entities/companies";
+import { resources } from "@/lib/autotask/entities/resources";
 
 // Autotask `Quotes` – Felder verifiziert 2026-06-17 (Sandbox). KEIN gespeicherter
 // Gesamtbetrag -> Betrag nur im Detail aus QuoteItems summieren (nicht in der Liste).
@@ -16,6 +17,7 @@ interface Quote {
   companyID?: number | null;
   contactID?: number | null;
   opportunityID?: number | null;
+  creatorResourceID?: number | null;
   createDate?: string | null;
   effectiveDate?: string | null;
   expirationDate?: string | null;
@@ -30,6 +32,7 @@ export interface QuoteRow {
   name: string;
   companyId: number | null;
   companyName: string;
+  creatorName: string;
   date: string | null; // createDate (ISO)
   effectiveDate: string | null;
   expirationDate: string | null;
@@ -66,6 +69,7 @@ const listCached = unstable_cache(
           "quoteNumber",
           "name",
           "companyID",
+          "creatorResourceID",
           "createDate",
           "effectiveDate",
           "expirationDate",
@@ -77,9 +81,14 @@ const listCached = unstable_cache(
       { maxItems: QUOTES_CAP },
     );
 
-    const names = await companies.namesByIds(
-      raw.map((r) => r.companyID).filter((n): n is number => n != null),
-    );
+    const [names, creators] = await Promise.all([
+      companies.namesByIds(
+        raw.map((r) => r.companyID).filter((n): n is number => n != null),
+      ),
+      resources.namesByIds(
+        raw.map((r) => r.creatorResourceID).filter((n): n is number => n != null),
+      ),
+    ]);
 
     const rows: QuoteRow[] = raw
       .map((r) => ({
@@ -88,6 +97,10 @@ const listCached = unstable_cache(
         name: r.name ?? `#${r.id}`,
         companyId: r.companyID ?? null,
         companyName: r.companyID != null ? (names.get(r.companyID) ?? "") : "",
+        creatorName:
+          r.creatorResourceID != null
+            ? (creators.get(r.creatorResourceID) ?? "")
+            : "",
         date: r.createDate ?? null,
         effectiveDate: r.effectiveDate ?? null,
         expirationDate: r.expirationDate ?? null,

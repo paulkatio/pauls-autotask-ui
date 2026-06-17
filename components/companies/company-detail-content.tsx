@@ -210,8 +210,8 @@ export async function CompanyDetailContent({
             <AutotaskOpenButton
               href={autotaskCompanyUrl(companyId)}
               label="Autotask"
-              /* gleiche Maße wie „Neues Ticket" (h-11 sm:h-7), da nebeneinander */
-              className="h-11 sm:h-7 md:hidden"
+              /* gleiche Maße wie „Neues Ticket" (h-11 sm:h-9), da nebeneinander */
+              className="h-11 sm:h-9 md:hidden"
             />
           )}
           <NewTicketDialog
