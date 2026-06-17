@@ -54,6 +54,8 @@ export function SearchableTable<T extends { id: number | string }>({
   minWidthClass = "min-w-2xl",
   storageKey,
   mobileCard,
+  hideSearch = false,
+  externalTerm,
 }: {
   rows: T[];
   columns: Column<T>[];
@@ -71,10 +73,17 @@ export function SearchableTable<T extends { id: number | string }>({
   // Optionaler, massgeschneiderter Karteninhalt für Mobile. Ohne Angabe wird aus
   // den Spalten eine generische Karte gebaut (erste Spalte = Titel, Rest Label/Wert).
   mobileCard?: (row: T) => React.ReactNode;
+  // Interne Suchleiste ausblenden (z. B. wenn ein Wrapper wie GroupedList die Suche
+  // einmal zentral oben anbietet). Default: eigene Suche sichtbar (unverändert).
+  hideSearch?: boolean;
+  // Von außen gesteuerter Suchbegriff. Ist er gesetzt, filtert die Tabelle danach
+  // (controlled) statt nach dem internen Eingabefeld.
+  externalTerm?: string;
 }) {
   const router = useRouter();
   const [q, setQ] = React.useState("");
-  const term = q.trim().toLowerCase();
+  const effectiveQ = externalTerm != null ? externalTerm : q;
+  const term = effectiveQ.trim().toLowerCase();
   const filtered = term
     ? rows.filter((r) => searchText(r).toLowerCase().includes(term))
     : rows;
@@ -99,31 +108,38 @@ export function SearchableTable<T extends { id: number | string }>({
       ? (row: T) => router.push(hrefFor(row))
       : undefined;
 
+  // Toolbar zeigen, solange eine eigene Suche sichtbar ist ODER ein Reset nötig wäre.
+  const showToolbar = !hideSearch || customized;
+
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full min-w-48 flex-1 sm:max-w-xs">
-          <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={searchPlaceholder}
-            className="h-10 pl-9 sm:h-9"
-            aria-label={searchPlaceholder}
-          />
+      {showToolbar && (
+        <div className="flex flex-wrap items-center gap-2">
+          {!hideSearch && (
+            <div className="relative w-full min-w-48 flex-1 sm:max-w-xs">
+              <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="h-10 pl-9 sm:h-9"
+                aria-label={searchPlaceholder}
+              />
+            </div>
+          )}
+          {customized && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={reset}
+              className="text-muted-foreground"
+            >
+              <RotateCcwIcon />
+              Spalten zurücksetzen
+            </Button>
+          )}
         </div>
-        {customized && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={reset}
-            className="text-muted-foreground"
-          >
-            <RotateCcwIcon />
-            Spalten zurücksetzen
-          </Button>
-        )}
-      </div>
+      )}
 
       {filtered.length === 0 ? (
         <Empty>

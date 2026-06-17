@@ -93,6 +93,140 @@ export function projectStatusVariant(id: number | null | undefined): BadgeVarian
   }
 }
 
+// --- Vertrieb: Rechnungen ---------------------------------------------------
+// Autotask `Invoices` hat KEINEN Zahlstatus-Picklist. Der für die UI nützliche
+// Status wird abgeleitet (DECISIONS.md 2026-06-17): isVoided -> Storniert;
+// paidDate gesetzt -> Bezahlt; sonst dueDate < jetzt -> Überfällig; sonst Offen.
+export type InvoiceUiStatus = "storniert" | "bezahlt" | "ueberfaellig" | "offen";
+
+export function deriveInvoiceStatus(
+  inv: {
+    isVoided?: boolean | null;
+    paidDate?: string | null;
+    dueDate?: string | null;
+  },
+  nowMs: number,
+): InvoiceUiStatus {
+  if (inv.isVoided) return "storniert";
+  if (inv.paidDate) return "bezahlt";
+  if (inv.dueDate) {
+    const due = new Date(inv.dueDate).getTime();
+    if (Number.isFinite(due) && due < nowMs) return "ueberfaellig";
+  }
+  return "offen";
+}
+
+export function invoiceStatusLabel(s: InvoiceUiStatus): string {
+  switch (s) {
+    case "storniert":
+      return "Storniert";
+    case "bezahlt":
+      return "Bezahlt";
+    case "ueberfaellig":
+      return "Überfällig";
+    case "offen":
+      return "Offen";
+  }
+}
+
+export function invoiceStatusVariant(s: InvoiceUiStatus): BadgeVariant {
+  switch (s) {
+    case "bezahlt":
+      return "success";
+    case "ueberfaellig":
+      return "destructive"; // einziger lauter Zustand
+    case "offen":
+      return "outline";
+    case "storniert":
+      return "secondary";
+  }
+}
+
+// --- Vertrieb: Angebote -----------------------------------------------------
+// Quotes.approvalStatus (verifiziert 2026-06-17): 1=Nicht angefordert,
+// 2=Warten auf Genehmigung, 3=Genehmigt, 4=Abgelehnt.
+export function quoteStatusVariant(id: number | null | undefined): BadgeVariant {
+  switch (id) {
+    case 3: // Genehmigt
+      return "success";
+    case 4: // Abgelehnt
+      return "destructive";
+    case 2: // Warten auf Genehmigung
+      return "outline";
+    case 1: // Nicht angefordert
+    default:
+      return "secondary";
+  }
+}
+
+export function quoteStatusLabel(id: number | null | undefined): string {
+  switch (id) {
+    case 1:
+      return "Nicht angefordert";
+    case 2:
+      return "Warten auf Genehmigung";
+    case 3:
+      return "Genehmigt";
+    case 4:
+      return "Abgelehnt";
+    default:
+      return "—";
+  }
+}
+
+// Zahlungsziel (paymentTerm) – Picklist identisch bei Invoices & Quotes
+// (verifiziert 2026-06-17).
+const PAYMENT_TERMS: Record<number, string> = {
+  1: "30 Tage netto",
+  2: "45 Tage netto",
+  3: "60 Tage netto",
+  4: "Fällig bei Erhalt",
+  5: "15 Tage 2% Skonto",
+  6: "7 Tage 3% Skonto, 30 Tage netto",
+  7: "7 Tage 3% Skonto, 60 Tage netto",
+  8: "10 Tage 4% Skonto, 30 Tage netto",
+  9: "7 Tage 5% Skonto, 60 Tage netto",
+  10: "SEPA-Lastschrift",
+  11: "7 Tage netto",
+};
+export function paymentTermLabel(id: number | null | undefined): string {
+  return id != null ? (PAYMENT_TERMS[id] ?? String(id)) : "—";
+}
+
+// --- Vertrieb: Verträge -----------------------------------------------------
+// Contracts.status (verifiziert 2026-06-17): 0=Inactive, 1=Active.
+export function contractStatusVariant(id: number | null | undefined): BadgeVariant {
+  return id === 1 ? "success" : "secondary";
+}
+
+export function contractStatusLabel(id: number | null | undefined): string {
+  return id === 1 ? "Aktiv" : id === 0 ? "Inaktiv" : "—";
+}
+
+// Contracts.contractType / contractCategory (verifiziert 2026-06-17).
+const CONTRACT_TYPES: Record<number, string> = {
+  1: "Individual",
+  3: "Pauschal",
+  4: "Stundenkontingent",
+  6: "Vorauszahlung",
+  7: "Service",
+  8: "Ticket",
+  9: "Rahmen",
+};
+export function contractTypeLabel(id: number | null | undefined): string {
+  return id != null ? (CONTRACT_TYPES[id] ?? String(id)) : "—";
+}
+
+const CONTRACT_CATEGORIES: Record<number, string> = {
+  11: "Serviceverträge – Gold",
+  14: "Serviceverträge – Silber",
+  15: "Serviceverträge – Bronze",
+  16: "WaaS Client",
+};
+export function contractCategoryLabel(id: number | null | undefined): string {
+  return id != null ? (CONTRACT_CATEGORIES[id] ?? String(id)) : "—";
+}
+
 // Priorität (Farbsystem v2): Kritisch=rot, Hoch=schwarz (selten+bedeutsam),
 // Mittel=grau, Niedrig=outline. Quiet-Scale — nur Kritisch ist "laut".
 export function priorityVariant(id: number | null | undefined): BadgeVariant {

@@ -2248,3 +2248,81 @@ kuratiert durchlassen, intern = generisch):
   (`attachmentError`) → `AutotaskError`-gated; Mail-Fehler (`mail.error`) → generisch.
 - [`assignment-notify.ts`](../lib/tickets/assignment-notify.ts): Mail-Fehler →
   generisch (Resend-Infra nie roh an den Browser).
+
+### [2026-06-17] Bereich „Vertrieb" – Phase 0 (Invoices/Quotes/Contracts) + Zugriffs-Gate
+
+> Verifiziert mit echten Calls gegen die **SANDBOX** (`webservices18` /
+> Tenant `ssig-itSB021825`, Creds in `.env.sandbox.local`). **Nicht** Prod, **nicht** MCP.
+> Probe-Loader `scripts/sbx.mjs` (Wegwerf, danach gelöscht) wegen `--env-file`-Bug:
+> **node `--env-file` verschluckt den Secret am inline `#`** (Secret endet auf
+> `…Jr#7@…` → wird auf 14 Zeichen abgeschnitten → HTTP 401). Korrekt parsen (inline
+> `#` ist KEIN Kommentar) oder Vars in der Shell single-quoted setzen.
+
+**Zugriffsbeschränkung (bewusste Ausnahme zur „keine rollenbasierte UI"-Regel von
+B12, Eintrag 2026-06-03):** Der neue Bereich `/vertrieb` (Rechnungen/Verträge/
+Angebote) ist **nur für 4 Personen** sichtbar. Gate über `session.autotaskResourceId`
+gegen Env-Allowlist **`SALES_ALLOWED_RESOURCE_IDS`** (CSV, fail-closed: leer = niemand).
+Nav-Eintrag nur bei `canAccessSales` (Server-Flag → Sidebar); Route-Guard im
+Section-`layout.tsx` via **`notFound()`** (diskret, nicht `/no-access` – das ist
+fachlich „Entra ohne Resource"). Command-Palette-NAV (statisch) bekommt den Eintrag
+**nicht**. Die 4 **Prod**-Resource-IDs sind separat/kontrolliert zu beschaffen
+(Paul liefert oder read-only Prod-Lookup) – NICHT aus der Sandbox (andere IDs).
+Bereich ist **read-only** (nur `query`/`get`, keine Schreibpfade).
+
+**Invoices (Entity `Invoices`)** – verifizierte Felder (alle RO außer wo notiert):
+`id` (long), `invoiceNumber` (string, schreibbar laut Schema – hier irrelevant),
+`companyID` (→Company), `invoiceDateTime` (datetime, **Rechnungsdatum**, REQ),
+`dueDate`, `paidDate`, `invoiceTotal` (decimal, **Bruttosumme inkl. Steuer**),
+`totalTaxValue` (decimal), `isVoided` (boolean), `invoiceStatus` (PICK
+**1=Success, -3=Waiting For External Taxes**), `paymentTerm` (PICK 30/45/60 Tage
+netto, Fällig bei Erhalt, Skonto-Varianten, SEPA …), `taxGroup` (PICK 2=Deutschland),
+`orderNumber`, `fromDate`/`toDate`, `createDateTime`, `comments`.
+- **KEIN Währungsfeld** an der Rechnung → einheitlich **EUR** (`formatCurrency` Default EUR ok).
+- **Status für die UI** = abgeleitet: `isVoided` → „Storniert"; `paidDate` gesetzt →
+  „Bezahlt"; sonst `dueDate < jetzt` → „Überfällig", sonst „Offen". (`invoiceStatus`
+  ist Steuer-Verarbeitungsstatus, **nicht** Zahlstatus.)
+- **Menge:** `Invoices` gesamt **2679** (id ≈ chronologisch, aber Server liefert
+  **id-Reihenfolge**; Server-Sort wird ignoriert, vgl. B13). Count `invoiceDateTime ≥
+  2025-01-01` = **137** → Default-**Zeitfenster** „laufendes + letztes Jahr" liegt klar
+  unter Cap (500); Vollabruf im Fenster + client-seitig `invoiceDateTime` desc sortieren.
+  Paging-Token (`nextPageUrl` mit `previousIds`/`nextIds`) vorhanden → `queryPageToken`/autoPage nutzbar.
+
+**Rechnungspositionen = Entity `BillingItems`** gefiltert `eq invoiceID` (bestätigt:
+Rechnung 23 → 3 Positionen). Felder fürs Detail: `itemName` (string), `description`/
+`lineItemFullDescription`/`lineItemGroupDescription`, `quantity` (decimal), `rate`
+(decimal, **Einzelpreis**), `extendedPrice`/`totalAmount` (decimal, **Zeilensumme
+netto**), `taxDollars`, `itemDate`, `billingItemType` (PICK Labor/Cost/Expense/…),
+`invoiceID` (→Invoice). KEIN Markup-Endpoint nötig.
+
+**Quotes (Entity `Quotes`)** – Felder: `id`, `quoteNumber` (integer RO), `name`
+(string REQ), `description`, `companyID` (→Company), `contactID`, `opportunityID`
+(→Opportunity, REQ), `createDate` (datetime RO), `effectiveDate`/`expirationDate`
+(REQ), `lastActivityDate`, `isActive` (boolean), `primaryQuote` (boolean),
+`approvalStatus` (PICK **1=Nicht angefordert, 2=Warten auf Genehmigung, 3=Genehmigt,
+4=Abgelehnt** → UI-Status), `paymentTerm`/`paymentType`/`taxRegionID` (PICKs).
+- **KEIN gespeicherter Gesamtbetrag** an `Quotes`. Betrag = **Σ der QuoteItems**
+  (`quantity × unitPrice`) → nur im **Detail** berechnen, **nicht** in der Liste
+  (N+1 bei 579 Angeboten vermeiden; Liste ohne Betrag-Spalte).
+- **Menge:** gesamt **579**; `createDate ≥ 2025-01-01` = **27** → Zeitfenster trivial.
+
+**Angebotspositionen = Entity `QuoteItems`** gefiltert `eq quoteID` (bestätigt:
+Quote 2 → 3 Positionen). Felder: `name`, `description`, `quantity` (decimal REQ),
+`unitPrice` (decimal), `unitCost`, `unitDiscount`/`lineDiscount`/`percentageDiscount`,
+`quoteItemType` (PICK Product/Cost/Labor/…), `periodType` (PICK). Zeilensumme fürs
+Detail = `quantity × unitPrice` (Rabatte/Steuer **nicht** eingerechnet – dokumentierter
+Vereinfacht-Wert für die Lese-Übersicht).
+
+**Contracts (Entity `Contracts`)** – Felder: `id`, `contractName` (string REQ),
+`contractNumber` (string), `companyID` (→Company REQ), `startDate`/`endDate` (REQ,
+**Zeitraum**), `status` (PICK **0=Inactive, 1=Active**, deckt sich mit bestehendem
+`contracts.ts`), `contractCategory` (PICK Gold/Silber/Bronze/WaaS),
+`contractType` (PICK Individual/Pauschal/Stundenkontingent/Vorauszahlung/Service/
+Ticket/Rahmen), `contractPeriodType` (PICK Monthly…Yearly), `estimatedRevenue`/
+`estimatedCost`/`setupFee` (decimal), `description`, `opportunityID`, `lastModifiedDateTime`.
+- **Menge:** gesamt **444** → unter Cap, **kein Zeitfenster** nötig; Vollabruf +
+  client-seitig `startDate` desc sortieren.
+- Vertrags-**Detail v1 = nur Kopf** (keine klassischen Positionen; `ContractServices`
+  als möglicher Follow-up, nicht v1).
+
+**Berechtigung:** `Invoices/query` liefert **HTTP 200** mit Daten (API-User darf
+Rechnungen lesen) – das vorab geflaggte Berechtigungsrisiko ist **entschärft**.

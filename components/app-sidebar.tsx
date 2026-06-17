@@ -18,6 +18,7 @@ import {
   Building2Icon,
   ContactIcon,
   ClockIcon,
+  BriefcaseBusinessIcon,
 } from "lucide-react"
 
 import { NavMain, type NavItem } from "@/components/nav-main"
@@ -51,6 +52,7 @@ export function AppSidebar({
   user,
   orgName,
   ticketCounts,
+  showSales,
   ...props
 }: {
   user: SessionUser
@@ -58,6 +60,9 @@ export function AppSidebar({
   // Offene-Tickets-Zähler für die Badges (mir zugewiesen / Team). Optional –
   // schlägt die Zählung fehl, bleibt die Sidebar einfach ohne Badge.
   ticketCounts?: { mine: number; team: number }
+  // Zugriff auf den Vertriebsbereich (Rechnungen/Verträge/Angebote). Server berechnet
+  // das Flag (lib/auth/sales-access); nur dann erscheint der Nav-Eintrag.
+  showSales?: boolean
 } & React.ComponentProps<typeof Sidebar>) {
   const items: NavItem[] = navItems.map((it) =>
     it.url === "/tickets/my"
@@ -66,6 +71,16 @@ export function AppSidebar({
         ? { ...it, badge: ticketCounts?.team }
         : it,
   )
+  if (showSales) {
+    // Direkt nach „Projekte" einsortieren (vor Firmen/Kontakte/Zeiten).
+    const at = items.findIndex((it) => it.url === "/projekte")
+    const entry: NavItem = {
+      title: "Vertrieb",
+      url: "/vertrieb",
+      icon: BriefcaseBusinessIcon,
+    }
+    items.splice(at >= 0 ? at + 1 : items.length, 0, entry)
+  }
   return (
     <Sidebar collapsible="icon" mobileSide="right" {...props}>
       <SidebarHeader>

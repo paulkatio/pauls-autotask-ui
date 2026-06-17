@@ -16,6 +16,13 @@ function titleFor(pathname: string): string {
   if (pathname.startsWith("/zeiten")) return "Meine Zeiten";
   if (pathname.startsWith("/companies")) return "Firmen";
   if (pathname.startsWith("/contacts")) return "Kontakte";
+  if (/^\/vertrieb\/rechnungen\/\d+/.test(pathname)) return "Rechnung";
+  if (/^\/vertrieb\/vertraege\/\d+/.test(pathname)) return "Vertrag";
+  if (/^\/vertrieb\/angebote\/\d+/.test(pathname)) return "Angebot";
+  if (pathname.startsWith("/vertrieb/rechnungen")) return "Rechnungen";
+  if (pathname.startsWith("/vertrieb/vertraege")) return "Verträge";
+  if (pathname.startsWith("/vertrieb/angebote")) return "Angebote";
+  if (pathname.startsWith("/vertrieb")) return "Vertrieb";
   if (pathname.startsWith("/search")) return "Suche";
   if (pathname.startsWith("/admin")) return "Admin";
   return "Autotask UI";

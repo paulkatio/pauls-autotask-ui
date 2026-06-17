@@ -17,6 +17,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { requireSession, authMode } from "@/lib/auth";
+import { canAccessSales } from "@/lib/auth/sales-access";
 import { mockUsers } from "@/lib/auth/mock-users";
 import { getOrgName } from "@/lib/branding-server";
 import { autotaskWebBase } from "@/lib/autotask/links";
@@ -31,6 +32,8 @@ export default async function AppLayout({
 
   const isMock = authMode() === "mock";
   const webBase = autotaskWebBase();
+  // Vertriebsbereich nur für berechtigte Resourcen (siehe lib/auth/sales-access).
+  const showSales = canAccessSales(session);
 
   // Offene-Tickets-Zähler für die Sidebar-Badges (best effort: nie die App kippen).
   let ticketCounts: { mine: number; team: number } | undefined;
@@ -46,7 +49,12 @@ export default async function AppLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar user={session} orgName={orgName} ticketCounts={ticketCounts} />
+      <AppSidebar
+        user={session}
+        orgName={orgName}
+        ticketCounts={ticketCounts}
+        showSales={showSales}
+      />
       <SidebarInset className="min-w-0">
 
         <header className="bg-background/80 supports-[backdrop-filter]:bg-background/65 sticky top-0 z-30 flex min-h-16 shrink-0 items-center gap-2 border-b pt-[env(safe-area-inset-top)] backdrop-blur">

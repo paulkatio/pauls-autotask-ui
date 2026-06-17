@@ -27,6 +27,9 @@ AUTH_URL=https://<DOMAIN>          # öffentliche https-Domain
 AUTH_TRUST_HOST=true               # nötig hinter Caddy/Non-Vercel
 # ENTRA_EMAIL_LOOSE_MATCH=1        # NUR Sandbox (+psasandbox-Tag); in Prod weglassen
 
+# Vertriebsbereich /vertrieb (Rechnungen/Verträge/Angebote): Zugriffs-Allowlist
+SALES_ALLOWED_RESOURCE_IDS=...               # PROD-Resource-IDs (CSV), fail-closed: leer = niemand
+
 # Kundenmail (Resend)
 RESEND_API_KEY=... RESEND_FROM=...           # RESEND_FROM = verifizierte Domain
 AUTOTASK_INBOUND_MAILBOX=...                 # Reply-To = Autotask-Eingangspostfach
