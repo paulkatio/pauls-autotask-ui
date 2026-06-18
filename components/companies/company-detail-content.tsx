@@ -177,7 +177,7 @@ export async function CompanyDetailContent({
             {company.companyName ?? `Firma ${companyId}`}
           </h1>
           {addressLine || company.phone || company.webAddress ? (
-            <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               {addressLine ? (
                 <span className="inline-flex items-center gap-1.5">
                   <MapPinIcon className="size-4 shrink-0" />

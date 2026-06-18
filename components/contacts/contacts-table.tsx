@@ -263,7 +263,7 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
                   openContactModal(c.id);
                 }
               }}
-              className="hover:bg-muted/50 active:bg-muted flex flex-col gap-1 rounded-lg border p-3 transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="hover:bg-muted/50 active:bg-muted flex flex-col gap-1.5 rounded-lg border p-3 transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <span className="text-sm font-medium break-words">{c.name}</span>
               {c.companyName && (
