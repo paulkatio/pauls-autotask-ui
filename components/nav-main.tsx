@@ -6,6 +6,7 @@ import type { Icon } from "@phosphor-icons/react"
 
 import {
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuBadge,
   SidebarMenuButton,
@@ -31,26 +32,31 @@ export function isActiveRoute(pathname: string, url: string) {
   return url === "/" ? pathname === "/" : pathname.startsWith(url)
 }
 
-export function NavMain({ items }: { items: NavItem[] }) {
+export function NavMain({ items, label }: { items: NavItem[]; label?: string }) {
   const pathname = usePathname()
   const { setOpenMobile } = useSidebar()
 
   return (
     <SidebarGroup>
+      {label && (
+        // Gruppen-Label: der Primitive liefert schon text-xs / font-medium /
+        // text-sidebar-foreground/70 (gedämpft) + Icon-Modus-Ausblendung; hier nur
+        // etwas Laufweite ergänzt. Im eingeklappten Modus blendet es selbst aus.
+        <SidebarGroupLabel className="tracking-wide">{label}</SidebarGroupLabel>
+      )}
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuItem key={item.url}>
             <SidebarMenuButton
               tooltip={item.title}
               isActive={isActiveRoute(pathname, item.url)}
-              // Aktiv = dezenter neutraler Pill (primary/10 = Warm-Schwarz-Tint)
-              // + Akzent-Icon (primary) + kontraststarke Beschriftung (klar
-              // erkennbar wo man ist, AA-konform in Hell UND Dunkel); Hover bleibt
-              // neutral (sidebar-accent). Nur semantische Tokens + Opacity-
-              // Utilities, kein erfundenes CSS. Farbsystem v2 (warm-achromatisch).
-              // Komfortable Touch-Ziele: etwas höher (h-10) + größeres Icon + mehr
-              // Abstand. Im eingeklappten Icon-Modus erzwingt sidebar.tsx weiter 8er-Quadrate.
-              className="h-10 gap-3 transition-colors data-active:bg-primary/10 data-active:hover:bg-primary/15 [&>svg]:size-5 data-active:[&>svg]:text-primary"
+              // Inaktiv = gedämpfte Sidebar-Vordergrundfarbe (Primitive-Default).
+              // Aktiv = sidebar-accent-Fläche + kräftigere accent-foreground-Schrift
+              // + font-medium + Akzent-Icon (primary = Theme-Hauptakzent). Klar
+              // erkennbar wo man ist, AA in Hell UND Dunkel. Nur semantische Tokens,
+              // kein erfundenes CSS / keine festen Farben. Farbsystem v2.
+              // Im eingeklappten Icon-Modus erzwingt sidebar.tsx weiter 8er-Quadrate.
+              className="h-10 gap-3 transition-colors data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground data-active:font-medium [&>svg]:size-5 data-active:[&>svg]:text-primary"
               onClick={() => setOpenMobile(false)}
               render={<Link href={item.url} />}
             >
@@ -58,9 +64,9 @@ export function NavMain({ items }: { items: NavItem[] }) {
               <span>{item.title}</span>
             </SidebarMenuButton>
             {item.badge != null && item.badge > 0 && (
-              // Dezenter Pill in Sidebar-Tokens; im Icon-Modus blendet der Primitive
-              // den Badge selbst aus (group-data-[collapsible=icon]:hidden).
-              <SidebarMenuBadge className="top-1/2! -translate-y-1/2! bg-chart-2/15 text-chart-2">
+              // Kleiner, neutraler Pill über Token-Farben (muted); im Icon-Modus
+              // blendet der Primitive den Badge selbst aus.
+              <SidebarMenuBadge className="top-1/2! -translate-y-1/2! bg-muted text-muted-foreground tabular-nums">
                 {fmtBadge(item.badge)}
               </SidebarMenuBadge>
             )}

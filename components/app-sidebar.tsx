@@ -35,17 +35,20 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 
-// Navigationsrouten der App. Rollen-Gating ist AUFGESCHOBEN (Entscheidung bei B12):
-// aktuell sehen alle Nutzer dieselbe Ansicht, alle Links sichtbar. `SessionUser.roles`
-// bleibt als Weiche im Datenmodell, wird hier aber (noch) nicht ausgewertet.
-const navItems: NavItem[] = [
+// Navigationsrouten der App, in zwei dezente Gruppen geteilt. Rollen-Gating ist
+// AUFGESCHOBEN (Entscheidung bei B12): aktuell sehen alle Nutzer dieselbe Ansicht,
+// alle Links sichtbar. `SessionUser.roles` bleibt als Weiche im Datenmodell, wird
+// hier aber (noch) nicht ausgewertet.
+const workItems: NavItem[] = [
   { title: "Übersicht", url: "/", icon: SquaresFour },
   { title: "Meine Tickets", url: "/tickets/my", icon: Ticket },
   { title: "Teamtickets", url: "/tickets/team", icon: Users },
   { title: "Projekte", url: "/projekte", icon: Kanban },
+  { title: "Meine Zeiten", url: "/zeiten", icon: Clock },
+]
+const crmItems: NavItem[] = [
   { title: "Firmen", url: "/companies", icon: Buildings },
   { title: "Kontakte", url: "/contacts", icon: AddressBook },
-  { title: "Meine Zeiten", url: "/zeiten", icon: Clock },
 ]
 
 export function AppSidebar({
@@ -64,26 +67,22 @@ export function AppSidebar({
   // das Flag (lib/auth/sales-access); nur dann erscheint der Nav-Eintrag.
   showSales?: boolean
 } & React.ComponentProps<typeof Sidebar>) {
-  const items: NavItem[] = navItems.map((it) =>
+  // Gruppe „Arbeit": Zähler-Badges (mir zugewiesen / Team) anheften.
+  const work: NavItem[] = workItems.map((it) =>
     it.url === "/tickets/my"
       ? { ...it, badge: ticketCounts?.mine }
       : it.url === "/tickets/team"
         ? { ...it, badge: ticketCounts?.team }
         : it,
   )
-  if (showSales) {
-    // Direkt nach „Projekte" einsortieren (vor Firmen/Kontakte/Zeiten).
-    const at = items.findIndex((it) => it.url === "/projekte")
-    const entry: NavItem = {
-      title: "Vertrieb",
-      url: "/vertrieb",
-      icon: Briefcase,
-    }
-    items.splice(at >= 0 ? at + 1 : items.length, 0, entry)
-  }
+  // Gruppe „CRM": Vertrieb nur bei Zugriff, vorangestellt vor Firmen/Kontakte.
+  const crm: NavItem[] = showSales
+    ? [{ title: "Vertrieb", url: "/vertrieb", icon: Briefcase }, ...crmItems]
+    : crmItems
   return (
     <Sidebar collapsible="icon" mobileSide="right" {...props}>
-      <SidebarHeader>
+      {/* Feine Hairline (0,5px) unter dem Logo-Bereich; Farbe über das Border-Token. */}
+      <SidebarHeader className="border-b-[0.5px] border-sidebar-border">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -107,7 +106,8 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={items} />
+        <NavMain label="Arbeit" items={work} />
+        <NavMain label="CRM" items={crm} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser
