@@ -59,7 +59,7 @@ export function ResourceFilter({
         size="sm"
         aria-label="Mitarbeiter filtern"
         className={cn(
-          "h-11 w-full min-w-0 sm:h-9!",
+          "h-11 w-full min-w-0 sm:h-9",
           active
             ? "border-transparent bg-secondary font-medium text-secondary-foreground"
             : "border-input text-foreground",

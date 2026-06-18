@@ -91,7 +91,7 @@ export function ProjectTasksPanel({ rows }: { rows: ProjectTaskRow[] }) {
   return (
     <>
       {/* Mobile/Tablet: Karten (Server-Reihenfolge). */}
-      <div className="grid grid-cols-1 gap-2 md:hidden">
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:hidden">
         {rows.map((t) => (
           <div key={t.id} className="flex flex-col gap-2 rounded-lg border p-3">
             <div className="flex items-start justify-between gap-2">
@@ -113,7 +113,7 @@ export function ProjectTasksPanel({ rows }: { rows: ProjectTaskRow[] }) {
       </div>
 
       {/* Desktop ab md: Tabelle mit sortierbaren Spaltenköpfen. */}
-      <div className="hidden overflow-x-auto rounded-lg border md:block">
+      <div className="hidden overflow-x-auto rounded-lg border xl:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">

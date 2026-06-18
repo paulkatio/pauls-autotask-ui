@@ -210,7 +210,7 @@ export function GroupedList<T extends { id: number | string }>({
           >
             <SelectTrigger
               size="sm"
-              className="h-11 w-full min-w-0 sm:h-9! sm:w-auto"
+              className="h-11 w-full min-w-0 sm:h-9 sm:w-auto"
               aria-label="Gruppieren nach"
             >
               <LayersIcon className="text-muted-foreground" />
@@ -276,7 +276,7 @@ export function GroupedList<T extends { id: number | string }>({
                       >
                         <SelectTrigger
                           size="sm"
-                          className="h-11 w-full sm:h-9!"
+                          className="h-11 w-full sm:h-9"
                           aria-label={f.label}
                         >
                           <SelectValue />

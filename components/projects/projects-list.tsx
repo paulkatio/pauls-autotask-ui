@@ -595,7 +595,7 @@ function FilterSelect({
       value={value}
       onValueChange={(v) => onChange(v ?? ALL)}
     >
-      <SelectTrigger className="h-11 w-full min-w-0 sm:h-9! sm:w-auto sm:min-w-36" aria-label={label}>
+      <SelectTrigger className="h-11 w-full min-w-0 sm:h-9 sm:w-auto sm:min-w-36" aria-label={label}>
         <SelectValue placeholder={allLabel} />
       </SelectTrigger>
       <SelectContent>

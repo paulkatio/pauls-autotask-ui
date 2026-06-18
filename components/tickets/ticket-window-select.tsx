@@ -49,7 +49,7 @@ export function TicketWindowSelect({ value }: { value: string }) {
         <SelectTrigger
           size="sm"
           className={cn(
-            "h-11 w-auto min-w-44 sm:h-9!",
+            "h-11 w-auto min-w-44 sm:h-9",
             active
               ? "border-transparent bg-secondary font-medium text-secondary-foreground"
               : "border-input text-foreground",

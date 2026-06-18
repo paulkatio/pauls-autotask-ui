@@ -578,7 +578,7 @@ export function TicketsList({
               >
                 <SelectTrigger
                   size="sm"
-                  className={cn("h-11 w-full min-w-0 sm:h-9!", chipState(statusActive))}
+                  className={cn("h-11 w-full min-w-0 sm:h-9", chipState(statusActive))}
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -600,7 +600,7 @@ export function TicketsList({
               >
                 <SelectTrigger
                   size="sm"
-                  className={cn("h-11 w-full min-w-0 sm:h-9!", chipState(priorityActive))}
+                  className={cn("h-11 w-full min-w-0 sm:h-9", chipState(priorityActive))}
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -630,7 +630,7 @@ export function TicketsList({
                 >
                   <SelectTrigger
                     size="sm"
-                    className={cn("h-11 w-full min-w-0 sm:h-9!", chipState(queueActive))}
+                    className={cn("h-11 w-full min-w-0 sm:h-9", chipState(queueActive))}
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -654,7 +654,7 @@ export function TicketsList({
                 >
                   <SelectTrigger
                     size="sm"
-                    className={cn("h-11 w-full min-w-0 sm:h-9!", chipState(assignedActive))}
+                    className={cn("h-11 w-full min-w-0 sm:h-9", chipState(assignedActive))}
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -724,7 +724,7 @@ export function TicketsList({
           {/* Mobile-First: unter xl je Ticket eine Karte (kein Querscrollen). Ab xl
               die volle Tabelle mit umsortierbaren Spalten. Die Karte ist die
               gemeinsame TicketCard (Variante "worklist" → "Fällig …"). */}
-          <div className="grid grid-cols-1 gap-2 lg:hidden">
+          <div className="grid grid-cols-1 gap-2 xl:hidden">
             {(mobileLimit ? items.slice(0, mobileLimit) : items).map((t) => (
               <TicketCard
                 key={t.id}
@@ -739,12 +739,12 @@ export function TicketsList({
             ))}
           </div>
           {mobileOverflowHint && mobileLimit && items.length > mobileLimit && (
-            <p className="text-muted-foreground text-center text-xs lg:hidden">
+            <p className="text-muted-foreground text-center text-xs xl:hidden">
               + {items.length - mobileLimit} weitere …
             </p>
           )}
 
-          <div className="hidden overflow-x-auto rounded-lg border lg:block">
+          <div className="hidden overflow-x-auto rounded-lg border xl:block">
             <Table className="min-w-2xl">
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">

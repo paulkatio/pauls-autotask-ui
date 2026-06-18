@@ -91,7 +91,7 @@ export function ProjectPhasesPanel({ rows }: { rows: ProjectPhase[] }) {
   return (
     <>
       {/* Mobile/Tablet: Karten (Server-Reihenfolge). */}
-      <div className="grid grid-cols-1 gap-2 md:hidden">
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:hidden">
         {rows.map((p) => (
           <div
             key={p.id}
@@ -112,7 +112,7 @@ export function ProjectPhasesPanel({ rows }: { rows: ProjectPhase[] }) {
       </div>
 
       {/* Desktop ab md: Tabelle mit sortierbaren Spaltenköpfen. */}
-      <div className="hidden overflow-x-auto rounded-lg border md:block">
+      <div className="hidden overflow-x-auto rounded-lg border xl:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">

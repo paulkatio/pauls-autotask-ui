@@ -244,7 +244,7 @@ export function CompaniesTable({
         >
           <SelectTrigger
             size="sm"
-            className="h-11 w-full min-w-0 sm:h-9! sm:w-auto sm:min-w-40"
+            className="h-11 w-full min-w-0 sm:h-9 sm:w-auto sm:min-w-40"
             aria-label="Kundenart"
           >
             <SelectValue />
