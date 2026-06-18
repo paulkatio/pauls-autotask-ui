@@ -12,24 +12,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { yearOptions } from "@/lib/vertrieb/year-window";
 
-// Zeitraum-Auswahl für Rechnungen/Angebote. Ändert die SERVER-Datenmenge (Zeitfenster),
-// daher Navigation per ?zeitraum=. Werte: "standard" (seit Vorjahr), Jahreszahl
-// (seit JJJJ) oder "alle". Kurze Labels, damit der Trigger auch mobil passt.
-export function periodOptions(nowYear: number) {
-  return [
-    { value: "standard", label: `Seit ${nowYear - 1}` },
-    { value: String(nowYear - 3), label: `Seit ${nowYear - 3}` },
-    { value: String(nowYear - 5), label: `Seit ${nowYear - 5}` },
-    { value: "alle", label: "Alle" },
-  ];
-}
-
+// Zeitraum-Auswahl für Rechnungen/Angebote/Verträge. Ändert die SERVER-Datenmenge
+// (Jahresfenster), daher Navigation per ?zeitraum=. Werte: Jahreszahl (genau dieses
+// Kalenderjahr) oder "alle". Default = aktuelles Jahr -> saubere URL ohne Param.
 export function VertriebPeriodSelect({ value }: { value: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const options = periodOptions(new Date().getFullYear());
-  const current = options.some((o) => o.value === value) ? value : "standard";
+  const nowYear = new Date().getFullYear();
+  const defaultValue = String(nowYear);
+  const options = yearOptions(nowYear);
+  const current = options.some((o) => o.value === value) ? value : defaultValue;
 
   return (
     <Select
@@ -37,7 +31,9 @@ export function VertriebPeriodSelect({ value }: { value: string }) {
       value={current}
       onValueChange={(v) => {
         const next = String(v);
-        router.push(next === "standard" ? pathname : `${pathname}?zeitraum=${next}`);
+        router.push(
+          next === defaultValue ? pathname : `${pathname}?zeitraum=${next}`,
+        );
       }}
     >
       <SelectTrigger

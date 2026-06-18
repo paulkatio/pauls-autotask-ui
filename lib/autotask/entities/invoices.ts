@@ -3,9 +3,12 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { autotask } from "@/lib/autotask/client";
-import type { AutotaskFilter } from "@/lib/autotask/client";
 import { companies } from "@/lib/autotask/entities/companies";
 import { resources } from "@/lib/autotask/entities/resources";
+import {
+  type YearWindow,
+  yearWindowFilter,
+} from "@/lib/vertrieb/year-window";
 
 // Autotask `Invoices` – Felder verifiziert 2026-06-17 (Sandbox), alle read-only.
 // KEIN Währungsfeld an der Rechnung (Tenant DE) -> Anzeige EUR.
@@ -45,27 +48,14 @@ export interface InvoiceRow {
 }
 
 // 2679 Rechnungen gesamt -> nie alle ungefiltert (Server sortiert NICHT, DECISIONS
-// B13). Default-Zeitfenster „seit 1. Jan. Vorjahr" (137 Sätze << Cap). Sicherheits-Cap.
+// B13). Jahresfenster (gte+lt auf invoiceDateTime); "alle" (win=null) gecappt.
 const INVOICES_CAP = 1500;
-
-// Fensterstart: 1. Januar des Vorjahres (relativ zu nowMs). nowMs wird übergeben,
-// damit der unstable_cache-Key vom Aufrufer (Seite) bestimmt wird, nicht von Date.now.
-export function defaultWindowStartISO(nowMs: number): string {
-  const year = new Date(nowMs).getUTCFullYear();
-  return `${year - 1}-01-01T00:00:00`;
-}
-
-function windowFilter(sinceISO: string | null): AutotaskFilter[] {
-  return sinceISO
-    ? [{ op: "gte", field: "invoiceDateTime", value: sinceISO }]
-    : [{ op: "gte", field: "id", value: 0 }];
-}
 
 const listCached = unstable_cache(
   async (
-    sinceISO: string | null,
+    win: YearWindow | null,
   ): Promise<{ rows: InvoiceRow[]; total: number; capped: boolean }> => {
-    const filter = windowFilter(sinceISO);
+    const filter = yearWindowFilter(win, "invoiceDateTime");
     const total = await autotask.count("Invoices", filter);
     const raw = await autotask.query<Invoice>(
       "Invoices",
@@ -125,8 +115,8 @@ const listCached = unstable_cache(
 );
 
 export const invoices = {
-  // Rechnungsliste im Zeitfenster (sinceISO = null -> alle, gecappt).
-  list: (sinceISO: string | null) => listCached(sinceISO),
+  // Rechnungsliste im Jahresfenster (win = null -> alle, gecappt).
+  list: (win: YearWindow | null) => listCached(win),
 
   // Einzelne Rechnung fürs Detail.
   get: (id: number): Promise<Invoice | null> =>

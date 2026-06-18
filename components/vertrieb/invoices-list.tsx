@@ -63,6 +63,7 @@ export function InvoicesList({
     {
       key: "date",
       header: "Datum",
+      width: "w-[11%]",
       sortValue: (r) => r.date ?? "",
       cellClassName: "whitespace-nowrap tabular-nums",
       cell: (r) => formatDate(r.date),
@@ -70,18 +71,21 @@ export function InvoicesList({
     {
       key: "company",
       header: "Firma",
+      width: "w-[24%]",
       sortValue: (r) => r.companyName,
-      cell: (r) => <TruncatedText className="max-w-xs">{r.companyName || "—"}</TruncatedText>,
+      cell: (r) => <TruncatedText>{r.companyName || "—"}</TruncatedText>,
     },
     {
       key: "creator",
       header: "Erstellt von",
+      width: "w-[17%]",
       sortValue: (r) => r.creatorName,
-      cell: (r) => <TruncatedText className="max-w-40">{r.creatorName || "—"}</TruncatedText>,
+      cell: (r) => <TruncatedText>{r.creatorName || "—"}</TruncatedText>,
     },
     {
       key: "number",
       header: "Nummer",
+      width: "w-[11%]",
       sortValue: (r) => r.number,
       cellClassName: "font-medium tabular-nums whitespace-nowrap",
       cell: (r) => r.number,
@@ -89,6 +93,7 @@ export function InvoicesList({
     {
       key: "total",
       header: "Betrag",
+      width: "w-[12%]",
       headClassName: "text-right",
       cellClassName: "text-right tabular-nums whitespace-nowrap",
       sortValue: (r) => r.total ?? null,
@@ -97,6 +102,7 @@ export function InvoicesList({
     {
       key: "due",
       header: "Fällig",
+      width: "w-[11%]",
       sortValue: (r) => r.dueDate ?? "",
       cellClassName: "whitespace-nowrap tabular-nums",
       cell: (r) => formatDate(r.dueDate),
@@ -104,6 +110,7 @@ export function InvoicesList({
     {
       key: "status",
       header: "Status",
+      width: "w-[14%]",
       sortValue: (r) => invoiceStatusLabel(st(r)),
       cell: (r) => (
         <Badge variant={invoiceStatusVariant(st(r))}>

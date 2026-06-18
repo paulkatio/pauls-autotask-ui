@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 
 import { getSession } from "@/lib/auth";
 import { canAccessSales } from "@/lib/auth/sales-access";
-import { invoices, defaultWindowStartISO } from "@/lib/autotask/entities/invoices";
+import { invoices } from "@/lib/autotask/entities/invoices";
+import { normalizeYear, yearWindowOf } from "@/lib/vertrieb/year-window";
 import { currentMs } from "@/lib/format";
 import { loadOrError } from "@/lib/data/load-or-error";
 import { DataError } from "@/components/data-error";
@@ -10,14 +11,6 @@ import { VertriebTabs } from "@/components/vertrieb/vertrieb-tabs";
 import { InvoicesList } from "@/components/vertrieb/invoices-list";
 
 export const dynamic = "force-dynamic";
-
-// ?zeitraum= -> Server-Zeitfenster (Server sortiert NICHT, DECISIONS B13/2026-06-17):
-// "alle" = ungefiltert (gecappt), "JJJJ" = seit Jahresanfang, sonst Default (seit Vorjahr).
-function sinceFrom(zeitraum: string | undefined): string | null {
-  if (zeitraum === "alle") return null;
-  if (zeitraum && /^\d{4}$/.test(zeitraum)) return `${zeitraum}-01-01T00:00:00`;
-  return defaultWindowStartISO(Date.now());
-}
 
 export default async function RechnungenPage({
   searchParams,
@@ -30,9 +23,11 @@ export default async function RechnungenPage({
   // Response-Stream gelangen, bevor der Layout-Guard greift. Vor jedem Datenabruf.
   if (!canAccessSales(session)) notFound();
 
+  // ?zeitraum= -> genau EIN Kalenderjahr (gte+lt) oder "alle". Default = aktuelles
+  // Jahr. Server sortiert NICHT (DECISIONS B13) -> Client-Sort in der Liste.
   const { zeitraum } = await searchParams;
-  const z = typeof zeitraum === "string" ? zeitraum : "standard";
-  const res = await loadOrError(() => invoices.list(sinceFrom(z)));
+  const z = normalizeYear(zeitraum, new Date().getFullYear());
+  const res = await loadOrError(() => invoices.list(yearWindowOf(z)));
   if (!res.ok)
     return (
       <DataError

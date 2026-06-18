@@ -16,31 +16,41 @@ import {
   type FilterDef,
   type Grouping,
 } from "@/components/vertrieb/grouped-list";
+import { VertriebPeriodSelect } from "@/components/vertrieb/period-select";
 import type { Column } from "@/components/searchable-table";
 
-function zeitraum(r: ContractListRow): string {
+function laufzeit(r: ContractListRow): string {
   if (!r.startDate && !r.endDate) return "—";
   return `${formatDate(r.startDate)} – ${formatDate(r.endDate)}`;
 }
 
-export function ContractsList({ rows }: { rows: ContractListRow[] }) {
+export function ContractsList({
+  rows,
+  zeitraum,
+}: {
+  rows: ContractListRow[];
+  zeitraum: string;
+}) {
   const columns: Column<ContractListRow>[] = [
     {
       key: "name",
       header: "Vertrag",
+      width: "w-[28%]",
       sortValue: (r) => r.name,
       cellClassName: "font-medium",
-      cell: (r) => <TruncatedText className="max-w-xs">{r.name}</TruncatedText>,
+      cell: (r) => <TruncatedText>{r.name}</TruncatedText>,
     },
     {
       key: "company",
       header: "Firma",
+      width: "w-[26%]",
       sortValue: (r) => r.companyName,
-      cell: (r) => <TruncatedText className="max-w-xs">{r.companyName || "—"}</TruncatedText>,
+      cell: (r) => <TruncatedText>{r.companyName || "—"}</TruncatedText>,
     },
     {
       key: "type",
       header: "Typ",
+      width: "w-[12%]",
       sortValue: (r) => contractTypeLabel(r.type),
       cellClassName: "whitespace-nowrap",
       cell: (r) => contractTypeLabel(r.type),
@@ -48,13 +58,15 @@ export function ContractsList({ rows }: { rows: ContractListRow[] }) {
     {
       key: "zeitraum",
       header: "Zeitraum",
+      width: "w-[20%]",
       sortValue: (r) => r.startDate ?? "",
       cellClassName: "whitespace-nowrap tabular-nums",
-      cell: (r) => zeitraum(r),
+      cell: (r) => laufzeit(r),
     },
     {
       key: "status",
       header: "Status",
+      width: "w-[14%]",
       sortValue: (r) => contractStatusLabel(r.status),
       cell: (r) => (
         <Badge variant={contractStatusVariant(r.status)}>
@@ -74,7 +86,7 @@ export function ContractsList({ rows }: { rows: ContractListRow[] }) {
       </div>
       <div className="text-muted-foreground text-xs">{r.companyName || "—"}</div>
       <div className="text-muted-foreground text-xs tabular-nums">
-        {zeitraum(r)}
+        {laufzeit(r)}
       </div>
     </>
   );
@@ -107,7 +119,7 @@ export function ContractsList({ rows }: { rows: ContractListRow[] }) {
       statePrefix="vertrieb:vertraege"
       emptyIcon={<FileTextIcon />}
       emptyTitle="Keine Verträge"
-      emptyDescription="Es sind keine Verträge vorhanden."
+      emptyDescription="Im gewählten Zeitraum gibt es keine Verträge."
       groupings={groupings}
       filters={[
         {
@@ -122,6 +134,8 @@ export function ContractsList({ rows }: { rows: ContractListRow[] }) {
           predicate: (r, v) => String(r.status ?? "") === v,
         } satisfies FilterDef<ContractListRow>,
       ]}
+      toolbarExtra={<VertriebPeriodSelect value={zeitraum} />}
+      scopeLabel="Zeitraum"
     />
   );
 }

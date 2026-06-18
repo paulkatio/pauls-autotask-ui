@@ -4,6 +4,10 @@ import { unstable_cache } from "next/cache";
 
 import { autotask } from "@/lib/autotask/client";
 import { companies } from "@/lib/autotask/entities/companies";
+import {
+  type YearWindow,
+  yearWindowFilter,
+} from "@/lib/vertrieb/year-window";
 
 export interface RefOption {
   id: number;
@@ -47,11 +51,14 @@ export interface ContractListRow {
   type: number | null;
 }
 
-// Verträge gesamt (444 Sätze, < Cap, kein Zeitfenster nötig – DECISIONS 2026-06-17).
+// Verträge gesamt 444 Sätze (< Cap). Jahresfenster (gte+lt auf startDate =
+// Vertragsbeginn); "alle" (win=null) = ungefiltert, gecappt.
 const CONTRACTS_CAP = 1500;
 
-const listAllCached = unstable_cache(
-  async (): Promise<{ rows: ContractListRow[]; capped: boolean }> => {
+const listWindowCached = unstable_cache(
+  async (
+    win: YearWindow | null,
+  ): Promise<{ rows: ContractListRow[]; capped: boolean }> => {
     const raw = await autotask.query<Contract>(
       "Contracts",
       {
@@ -67,7 +74,7 @@ const listAllCached = unstable_cache(
           "contractCategory",
           "contractType",
         ],
-        Filter: [{ op: "gte", field: "id", value: 0 }],
+        Filter: yearWindowFilter(win, "startDate"),
       },
       { maxItems: CONTRACTS_CAP },
     );
@@ -94,7 +101,7 @@ const listAllCached = unstable_cache(
 
     return { rows, capped: raw.length >= CONTRACTS_CAP };
   },
-  ["contracts-list-all"],
+  ["contracts-list-window"],
   { revalidate: 60 },
 );
 
@@ -138,8 +145,8 @@ export const contracts = {
     return c?.contractName ?? null;
   },
 
-  // Alle Verträge firmenübergreifend (Vertriebsbereich), gecacht.
-  listAll: () => listAllCached(),
+  // Verträge firmenübergreifend (Vertriebsbereich) im Jahresfenster, gecacht.
+  list: (win: YearWindow | null) => listWindowCached(win),
 
   // Einzelner Vertrag fürs Detail (Kopf-Felder).
   get: (id: number): Promise<Contract | null> =>

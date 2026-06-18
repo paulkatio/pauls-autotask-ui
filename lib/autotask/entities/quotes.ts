@@ -3,9 +3,12 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { autotask } from "@/lib/autotask/client";
-import type { AutotaskFilter } from "@/lib/autotask/client";
 import { companies } from "@/lib/autotask/entities/companies";
 import { resources } from "@/lib/autotask/entities/resources";
+import {
+  type YearWindow,
+  yearWindowFilter,
+} from "@/lib/vertrieb/year-window";
 
 // Autotask `Quotes` – Felder verifiziert 2026-06-17 (Sandbox). KEIN gespeicherter
 // Gesamtbetrag -> Betrag nur im Detail aus QuoteItems summieren (nicht in der Liste).
@@ -40,25 +43,14 @@ export interface QuoteRow {
   isActive: boolean;
 }
 
-// 579 Angebote gesamt -> Zeitfenster wie bei Rechnungen (27 Sätze seit Vorjahr).
+// 579 Angebote gesamt -> Jahresfenster (gte+lt auf createDate); "alle" gecappt.
 const QUOTES_CAP = 1500;
-
-export function defaultWindowStartISO(nowMs: number): string {
-  const year = new Date(nowMs).getUTCFullYear();
-  return `${year - 1}-01-01T00:00:00`;
-}
-
-function windowFilter(sinceISO: string | null): AutotaskFilter[] {
-  return sinceISO
-    ? [{ op: "gte", field: "createDate", value: sinceISO }]
-    : [{ op: "gte", field: "id", value: 0 }];
-}
 
 const listCached = unstable_cache(
   async (
-    sinceISO: string | null,
+    win: YearWindow | null,
   ): Promise<{ rows: QuoteRow[]; total: number; capped: boolean }> => {
-    const filter = windowFilter(sinceISO);
+    const filter = yearWindowFilter(win, "createDate");
     const total = await autotask.count("Quotes", filter);
     const raw = await autotask.query<Quote>(
       "Quotes",
@@ -117,7 +109,8 @@ const listCached = unstable_cache(
 );
 
 export const quotes = {
-  list: (sinceISO: string | null) => listCached(sinceISO),
+  // Angebotsliste im Jahresfenster (win = null -> alle, gecappt).
+  list: (win: YearWindow | null) => listCached(win),
   get: (id: number): Promise<Quote | null> => autotask.get<Quote>("Quotes", id),
 };
 

@@ -27,15 +27,21 @@ import {
 import { cn } from "@/lib/utils";
 
 // Wiederverwendbare, durchsuchbare Tabelle für vollständig geladene Listen
-// (Paul-Feedback: „immer eine Suche"). Spaltenbreiten **automatisch** (kein
-// table-fixed, keine harten px-Breiten) → Spalten passen sich dem Inhalt an;
-// Textspalten umbrechen, `min-w-*` sorgt fürs saubere Scrollen am Handy.
+// (Paul-Feedback: „immer eine Suche"). Standard: Spaltenbreiten automatisch
+// (table-auto). Wird mindestens EINE Spalte mit `width` versehen, schaltet die
+// Tabelle auf `table-fixed` -> alle Spalten haben feste, inhaltsunabhängige
+// Breiten. Das ist Pflicht bei Gruppierung (GroupedList rendert je Gruppe eine
+// eigene Tabelle; nur feste Breiten richten die Spalten gruppenübergreifend bündig
+// aus). `min-w-*` sorgt fürs saubere Scrollen am Handy.
 export interface Column<T> {
   key: string;
   header: string;
   cell: (row: T) => React.ReactNode;
   headClassName?: string;
   cellClassName?: string;
+  // Feste Spaltenbreite (Tailwind-Breitenklasse, z. B. "w-[22%]" oder "w-44").
+  // Sobald irgendeine Spalte das setzt, läuft die ganze Tabelle in table-fixed.
+  width?: string;
   // Macht die Spalte sortierbar (Klick auf den Kopf). Liefert den Vergleichswert je
   // Zeile (Text -> alphabetisch, Zahl/Datum -> numerisch). Ohne Angabe: nicht sortierbar.
   sortValue?: (row: T) => SortValue;
@@ -97,6 +103,8 @@ export function SearchableTable<T extends { id: number | string }>({
     columns.map((c) => c.key),
   );
   const orderedColumns = order.map((k) => columnMap[k]).filter(Boolean);
+  // Feste Breiten -> table-fixed (sonst autosizen separate Gruppentabellen versetzt).
+  const fixedLayout = columns.some((c) => c.width);
 
   // Klick-zum-Sortieren (Desktop-Tabelle). Sortiert die bereits gefilterten Zeilen.
   const { toggle, sortRows, isSortable, ariaSort, sort } = useTableSort(columns);
@@ -205,7 +213,7 @@ export function SearchableTable<T extends { id: number | string }>({
         </div>
 
         <div className="hidden overflow-x-auto rounded-lg border xl:block">
-          <Table className={cn(minWidthClass)}>
+          <Table className={cn(minWidthClass, fixedLayout && "table-fixed")}>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
                 {orderedColumns.map((c) => {
@@ -219,6 +227,7 @@ export function SearchableTable<T extends { id: number | string }>({
                       className={cn(
                         "group/sorthead data-[dragover]:bg-accent data-[dragging]:opacity-60 cursor-grab transition-colors select-none active:cursor-grabbing",
                         sortable && "cursor-pointer",
+                        c.width,
                         c.headClassName,
                       )}
                       title={

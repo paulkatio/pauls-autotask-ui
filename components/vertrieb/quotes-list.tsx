@@ -32,6 +32,7 @@ export function QuotesList({
     {
       key: "number",
       header: "Nummer",
+      width: "w-[9%]",
       sortValue: (r) => r.number,
       cellClassName: "font-medium tabular-nums whitespace-nowrap",
       cell: (r) => r.number,
@@ -39,18 +40,21 @@ export function QuotesList({
     {
       key: "name",
       header: "Bezeichnung",
+      width: "w-[22%]",
       sortValue: (r) => r.name,
-      cell: (r) => <TruncatedText className="max-w-xs">{r.name}</TruncatedText>,
+      cell: (r) => <TruncatedText>{r.name}</TruncatedText>,
     },
     {
       key: "company",
       header: "Firma",
+      width: "w-[19%]",
       sortValue: (r) => r.companyName,
-      cell: (r) => <TruncatedText className="max-w-xs">{r.companyName || "—"}</TruncatedText>,
+      cell: (r) => <TruncatedText>{r.companyName || "—"}</TruncatedText>,
     },
     {
       key: "date",
       header: "Datum",
+      width: "w-[10%]",
       sortValue: (r) => r.date ?? "",
       cellClassName: "whitespace-nowrap tabular-nums",
       cell: (r) => formatDate(r.date),
@@ -58,6 +62,7 @@ export function QuotesList({
     {
       key: "expires",
       header: "Gültig bis",
+      width: "w-[10%]",
       sortValue: (r) => r.expirationDate ?? "",
       cellClassName: "whitespace-nowrap tabular-nums",
       cell: (r) => formatDate(r.expirationDate),
@@ -65,12 +70,14 @@ export function QuotesList({
     {
       key: "creator",
       header: "Erstellt von",
+      width: "w-[14%]",
       sortValue: (r) => r.creatorName,
-      cell: (r) => <TruncatedText className="max-w-40">{r.creatorName || "—"}</TruncatedText>,
+      cell: (r) => <TruncatedText>{r.creatorName || "—"}</TruncatedText>,
     },
     {
       key: "status",
       header: "Status",
+      width: "w-[16%]",
       sortValue: (r) => quoteStatusLabel(r.approvalStatus),
       cell: (r) => (
         <Badge variant={quoteStatusVariant(r.approvalStatus)}>
