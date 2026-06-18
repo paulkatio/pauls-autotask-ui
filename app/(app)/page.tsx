@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   WarningCircle,
   Kanban,
-  Tray,
+  UserCircleDashed,
   ArrowBendUpLeft,
   Ticket,
 } from "@phosphor-icons/react/ssr";
@@ -59,7 +59,7 @@ function KpiCard({
         <Icon
           aria-hidden
           className={cn(
-            "absolute top-4 right-4 size-4 shrink-0 transition-colors",
+            "absolute top-4 right-4 size-5 shrink-0 transition-colors",
             accent
               ? "text-destructive"
               : "text-muted-foreground group-hover:text-primary",
@@ -158,7 +158,7 @@ export default async function DashboardPage() {
           title="Nicht zugewiesen"
           value={kpis.pool}
           href="/tickets/team?assigned=unassigned"
-          icon={Tray}
+          icon={UserCircleDashed}
           hint="Wartet auf einen Bearbeiter"
         />
         <KpiCard
