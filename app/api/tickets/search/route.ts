@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL } from "@/lib/security/rate-limit";
 import { searchTickets, quickTicketSearch } from "@/lib/autotask/entities/search";
 import { autotaskErrorResponse } from "@/lib/api/error-response";
 
@@ -10,10 +11,8 @@ export const dynamic = "force-dynamic";
 // Nutzt die bestehende Such-Logik (searchTickets, B08): Nummer/Titel/Firma/Kontakt.
 // (Statischer Pfad „search" hat Vorrang vor [id] – kein Routing-Konflikt.)
 export async function GET(req: Request) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.search });
+  if (!g.ok) return g.res;
   const url = new URL(req.url);
   const q = url.searchParams.get("q") ?? "";
   const scope = url.searchParams.get("scope"); // name | number | (default: breit)

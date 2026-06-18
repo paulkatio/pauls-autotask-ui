@@ -11,6 +11,9 @@ const cookieOptions = {
   path: "/",
   httpOnly: true,
   sameSite: "lax" as const,
+  // secure nur in Produktion: lokal (http) würde der Browser ein secure-Cookie
+  // verwerfen und der Mock-Login bräche. Über HTTPS (Prod) ist es Pflicht.
+  secure: process.env.NODE_ENV === "production",
 };
 
 // Login im Mock-Modus: setzt die Auswahl als Cookie und leitet zur App.

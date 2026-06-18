@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL } from "@/lib/security/rate-limit";
 import { contacts } from "@/lib/autotask/entities/contacts";
 import { companies } from "@/lib/autotask/entities/companies";
 import { autotaskErrorResponse } from "@/lib/api/error-response";
@@ -10,13 +11,11 @@ export const dynamic = "force-dynamic";
 // Kompakte Kontaktdetails für das In-App-Overlay (components/contacts/contact-modal).
 // Bewusst schlank (ein Contact + optional Firmenname) – kein Ticketladen.
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.read });
+  if (!g.ok) return g.res;
   const id = Number((await params).id);
   if (!Number.isFinite(id)) {
     return NextResponse.json({ error: "Ungültige ID" }, { status: 400 });

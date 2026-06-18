@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL } from "@/lib/security/rate-limit";
 import { attachments } from "@/lib/autotask/entities/attachments";
 import { autotaskErrorResponse } from "@/lib/api/error-response";
 
@@ -10,13 +11,11 @@ export const dynamic = "force-dynamic";
 // über /TicketAttachments/{id} und streamt sie an den Browser. Zugriffsschutz:
 // der Anhang muss zum Ticket gehören (getForDownload prüft das).
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string; attachmentId: string }> },
 ) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.read });
+  if (!g.ok) return g.res;
   const { id, attachmentId } = await params;
   const ticketId = Number(id);
   const aid = Number(attachmentId);
@@ -37,6 +36,11 @@ export async function GET(
         "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
         "Content-Length": String(bytes.length),
         "Cache-Control": "private, no-store",
+        // Defense-in-depth: kein MIME-Sniffing auf diese (von Autotask gelieferte,
+        // letztlich Uploader-beeinflusste) Content-Type-Angabe; zusätzlich die
+        // Antwort hart sandboxen, falls sie je doch im Browser landet.
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
       },
     });
   } catch (e) {

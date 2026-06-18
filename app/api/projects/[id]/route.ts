@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL } from "@/lib/security/rate-limit";
 import { autotask } from "@/lib/autotask/client";
 import { autotaskErrorResponse } from "@/lib/api/error-response";
 
@@ -28,10 +29,8 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.write });
+  if (!g.ok) return g.res;
   if (!writesEnabled()) {
     return NextResponse.json(
       {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL } from "@/lib/security/rate-limit";
 import { tickets } from "@/lib/autotask/entities/tickets";
 import { type AutotaskFilter } from "@/lib/autotask/client";
 import { autotaskErrorResponse } from "@/lib/api/error-response";
@@ -11,10 +12,8 @@ export const dynamic = "force-dynamic";
 // Tickets einer Firma für den Ziel-Picker der Zusammenführung (B26). Optional nach
 // Nummer/Titel gefiltert. Begrenzte Trefferzahl (50), keine Auto-Paginierung.
 export async function GET(req: Request) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.search });
+  if (!g.ok) return g.res;
   const url = new URL(req.url);
   const companyId = Number(url.searchParams.get("companyId"));
   const q = (url.searchParams.get("q") ?? "").trim();

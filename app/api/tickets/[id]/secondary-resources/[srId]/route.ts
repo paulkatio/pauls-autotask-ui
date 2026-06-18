@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL } from "@/lib/security/rate-limit";
 import { ticketSecondaryResources } from "@/lib/autotask/entities/ticket-secondary-resources";
 import { autotaskErrorResponse } from "@/lib/api/error-response";
 
@@ -8,13 +9,11 @@ export const dynamic = "force-dynamic";
 
 // Einen zusätzlichen Mitarbeiter wieder vom Ticket entfernen (per Datensatz-ID).
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string; srId: string }> },
 ) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.write });
+  if (!g.ok) return g.res;
   const { id, srId } = await params;
   const ticketId = Number(id);
   const secondaryId = Number(srId);

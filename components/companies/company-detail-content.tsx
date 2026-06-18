@@ -266,6 +266,10 @@ export async function CompanyDetailContent({
 // Dokumenttitel (Tab/Taskleiste des Popup-Fensters) = Firmenname.
 export async function companyMetadata(id: number): Promise<Metadata> {
   if (!Number.isFinite(id)) return { title: "Firma" };
+  // Auth-Grenze deckt auch die Metadaten-Generierung ab (siehe ticketMetadata):
+  // ohne Session KEIN Autotask-Read.
+  const session = await getSession();
+  if (!session) return { title: "Firma" };
   try {
     const c = await companies.get(id);
     return { title: c?.companyName ?? `Firma #${id}` };

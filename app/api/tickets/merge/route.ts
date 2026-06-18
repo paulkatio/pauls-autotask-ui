@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL } from "@/lib/security/rate-limit";
 import {
   mergeTickets,
   MergeValidationError,
@@ -18,10 +19,9 @@ const MAX_MERGE_SOURCES = 10;
 // Body: { targetId: number, sourceIds: number[] }. Firmen-Guard server-seitig in
 // mergeTickets erzwungen. KEIN Reparenting (API kann das nicht).
 export async function POST(req: Request) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.merge });
+  if (!g.ok) return g.res;
+  const session = g.session;
 
   const body = (await req.json().catch(() => null)) as {
     targetId?: unknown;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL } from "@/lib/security/rate-limit";
 import { timeEntries } from "@/lib/autotask/entities/time-entries";
 import { tickets } from "@/lib/autotask/entities/tickets";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
@@ -12,13 +13,11 @@ export const dynamic = "force-dynamic";
 // für den Dialog (optionaler Status-Wechsel beim Zeiterfassen). Die Rolle wird
 // NICHT im UI gewählt – sie wird beim POST server-seitig gesetzt.
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.read });
+  if (!g.ok) return g.res;
   const { id } = await params;
   const ticketId = Number(id);
   if (!Number.isFinite(ticketId)) {
@@ -45,10 +44,9 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.write });
+  if (!g.ok) return g.res;
+  const session = g.session;
   const { id } = await params;
   const ticketId = Number(id);
   if (!Number.isFinite(ticketId)) {

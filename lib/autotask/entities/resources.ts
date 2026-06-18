@@ -61,16 +61,33 @@ export const resources = {
 
     if (process.env.ENTRA_EMAIL_LOOSE_MATCH !== "1") return null;
 
+    // Härtung (Sicherheits-Audit I-1): Der tolerante Abgleich ist AUSSCHLIESSLICH
+    // für die Sandbox gedacht (deren Refresh den Mails ein „+tag" anhängt). Das
+    // gemappte `autotaskResourceId` ist das einzige Autorisierungs-Prinzip der App
+    // (auch für die /vertrieb-Allowlist) – ein falsches Mapping wäre folgenreich.
+    // Darum in Produktion NIE greifen lassen, selbst wenn das Flag versehentlich
+    // gesetzt ist (Doku: „in Prod weglassen").
+    if (process.env.NODE_ENV === "production") {
+      console.warn(
+        "[auth] ENTRA_EMAIL_LOOSE_MATCH ist in Produktion gesetzt – wird ignoriert (nur Sandbox).",
+      );
+      return null;
+    }
+
     const target = normalizeEmail(e);
     const active = await autotask.query<Resource>("Resources", {
       MaxRecords: 500,
       IncludeFields: ["id", "firstName", "lastName", "email", "isActive"],
       Filter: [{ op: "eq", field: "isActive", value: true }],
     });
-    const loose = active.find(
+    const matches = active.filter(
       (r) => r.email && normalizeEmail(r.email) === target,
     );
-    return loose ? { id: loose.id, name: fullName(loose) || `#${loose.id}` } : null;
+    // Kollision: mehrere Resources normalisieren auf dieselbe Mail → kein Mapping
+    // raten (sonst würde stillschweigend der erste Treffer gewählt).
+    if (matches.length !== 1) return null;
+    const loose = matches[0];
+    return { id: loose.id, name: fullName(loose) || `#${loose.id}` };
   },
 
   // Aktive interne Mitarbeiter (licenseType 1) für die Zuweisungs-Auswahl.

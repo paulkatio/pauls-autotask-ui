@@ -83,6 +83,11 @@ export async function TicketDetailContent({
 // Leichte Einzelabfrage (nur id/ticketNumber/title).
 export async function ticketMetadata(id: number): Promise<Metadata> {
   if (!Number.isFinite(id)) return { title: "Ticket" };
+  // Auth-Grenze deckt auch die Metadaten-Generierung ab: ohne Session KEIN
+  // Autotask-Read (sonst ließe sich per ID-Enumeration unauthentifiziert gegen die
+  // PROD-API lesen, noch bevor der Layout-Guard greift).
+  const session = await getSession();
+  if (!session) return { title: "Ticket" };
   try {
     const rows = await tickets.query([{ op: "eq", field: "id", value: id }], {
       fields: ["id", "ticketNumber", "title"],

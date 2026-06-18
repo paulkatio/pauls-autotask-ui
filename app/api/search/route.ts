@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL } from "@/lib/security/rate-limit";
 import {
   searchColumnPage,
   type SearchKind,
@@ -14,10 +15,8 @@ export const dynamic = "force-dynamic";
 const KINDS: SearchKind[] = ["firma", "kontakt", "ticket-name", "ticket-nummer"];
 
 export async function GET(req: Request) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.search });
+  if (!g.ok) return g.res;
   const params = new URL(req.url).searchParams;
   const kind = params.get("kind") ?? "";
   const q = params.get("q") ?? "";

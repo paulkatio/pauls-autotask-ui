@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL, enforceRateLimit } from "@/lib/security/rate-limit";
 import { notifyAssignment } from "@/lib/tickets/assignment-notify";
 
 export const dynamic = "force-dynamic";
@@ -9,10 +10,9 @@ export const dynamic = "force-dynamic";
 // NACH einem erfolgreichen Assign aufgerufen (Einzel- wie Bulk-Zuweisung). Best
 // effort: liefert den Mailstatus zurück, kippt aber nie den Schreibvorgang.
 export async function POST(req: Request) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.email });
+  if (!g.ok) return g.res;
+  const session = g.session;
 
   const body = (await req.json().catch(() => null)) as {
     resourceId?: unknown;
@@ -30,6 +30,15 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+
+  // Zweite Schranke pro Empfänger: ein einzelnes Postfach soll auch dann nicht
+  // geflutet werden, wenn mehrere Absender zusammenwirken (guardApi limitiert bereits
+  // pro Absender via RL.email).
+  const recipientLimited = await enforceRateLimit(
+    String(resourceId),
+    RL.emailRecipient,
+  );
+  if (recipientLimited) return recipientLimited;
 
   const result = await notifyAssignment(resourceId, ticketIds, session.displayName);
   return NextResponse.json(result);

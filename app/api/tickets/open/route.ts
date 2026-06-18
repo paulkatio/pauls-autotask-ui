@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL } from "@/lib/security/rate-limit";
 import { getTicketsPage } from "@/lib/autotask/entities/ticket-list";
 import { type AutotaskFilter } from "@/lib/autotask/client";
 import { autotaskErrorResponse } from "@/lib/api/error-response";
@@ -12,10 +13,8 @@ export const dynamic = "force-dynamic";
 // clientseitigen „Offene Tickets"-Abschnitt der Übersicht (Filter/Paging ohne
 // Seiten-Neuladen). Reiner Lesepfad.
 export async function GET(req: Request) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.read });
+  if (!g.ok) return g.res;
 
   const url = new URL(req.url);
   const unassigned = url.searchParams.get("assigned") === "unassigned";

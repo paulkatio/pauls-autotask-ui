@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL } from "@/lib/security/rate-limit";
 import { timeEntries } from "@/lib/autotask/entities/time-entries";
 import { autotaskErrorResponse } from "@/lib/api/error-response";
 
@@ -9,13 +10,11 @@ export const dynamic = "force-dynamic";
 // Rollen einer Resource (für die gekoppelte Zuweisung: assignedResourceID +
 // assignedResourceRoleID müssen zusammen gesetzt werden).
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.read });
+  if (!g.ok) return g.res;
   const { id } = await params;
   const resourceId = Number(id);
   if (!Number.isFinite(resourceId)) {

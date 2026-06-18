@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL } from "@/lib/security/rate-limit";
 import { tickets } from "@/lib/autotask/entities/tickets";
 import { autotaskErrorResponse } from "@/lib/api/error-response";
 
@@ -22,10 +23,8 @@ const NUMERIC_FIELDS = [
 
 // POST /api/tickets — neues Ticket anlegen (BFF-Schreibpfad, Whitelist).
 export async function POST(req: Request) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.write });
+  if (!g.ok) return g.res;
 
   const body = (await req.json().catch(() => null)) as Record<
     string,

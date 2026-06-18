@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth";
+import { guardApi } from "@/lib/security/api-guard";
+import { RL, enforceRateLimit } from "@/lib/security/rate-limit";
 import {
   getTicketChat,
   sendTicketChatNote,
@@ -16,13 +17,11 @@ const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 const MAX_TOTAL_BYTES = 25 * 1024 * 1024;
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.read });
+  if (!g.ok) return g.res;
   const { id } = await params;
   const num = Number(id);
   if (!Number.isFinite(num)) {
@@ -40,10 +39,9 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const g = await guardApi(req, { rateLimit: RL.write });
+  if (!g.ok) return g.res;
+  const session = g.session;
   const { id } = await params;
   const num = Number(id);
   if (!Number.isFinite(num)) {
@@ -113,6 +111,13 @@ export async function POST(
       { error: "Nachricht darf nicht leer sein." },
       { status: 400 },
     );
+  }
+
+  // Kunden-Mail (notify) zusätzlich eng drosseln – getrennt vom Notiz-Budget, damit
+  // interne Notizen (notify=false) nicht limitiert werden, Mail-Spam aber gekappt ist.
+  if (notify) {
+    const limited = await enforceRateLimit(session.id, RL.email);
+    if (limited) return limited;
   }
 
   try {

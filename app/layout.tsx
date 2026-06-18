@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -47,11 +48,14 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Nonce der erzwingenden CSP (aus middleware.ts) an next-themes weiterreichen,
+  // damit dessen Inline-Theme-Skript unter der Policy laufen darf.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   // scrollbar-gutter:stable reserviert die Scrollbar-Spalte dauerhaft → kein
   // Breiten-Sprung, wenn sich die Inhaltshöhe ändert (z. B. Dashboard-Zeitraum)
   // oder ein Overlay den Scroll kurz sperrt.
@@ -67,6 +71,7 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          nonce={nonce}
         >
           <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
