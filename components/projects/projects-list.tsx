@@ -350,7 +350,7 @@ export function ProjectsList({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-row sm:flex-wrap sm:gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-row sm:flex-wrap sm:gap-2">
           <FilterSelect
             label="Status"
             value={statusFilter}
