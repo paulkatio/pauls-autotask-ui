@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // Gemeinsame Ergebnis-Spalte für die globale Suche – genutzt in der Spotlight-
@@ -95,14 +96,16 @@ export function ResultColumn({
         </ul>
       )}
       {hasMore && onLoadMore && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={onLoadMore}
           disabled={loadingMore}
-          className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring mt-1 min-h-11 rounded-lg px-2 py-1.5 text-sm font-medium outline-none focus-visible:ring-2 disabled:opacity-50 sm:min-h-0"
+          className="text-muted-foreground mt-1 min-h-11 font-medium sm:min-h-0"
         >
           {loadingMore ? "Lädt …" : "Mehr laden"}
-        </button>
+        </Button>
       )}
     </div>
   );

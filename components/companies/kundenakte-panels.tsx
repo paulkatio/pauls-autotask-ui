@@ -3,6 +3,7 @@
 import { FileTextIcon, MonitorIcon, UsersIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { contractStatusLabel, contractStatusVariant } from "@/lib/autotask/mappers";
 import { SearchableTable } from "@/components/searchable-table";
 import { TruncatedText } from "@/components/truncated-text";
 import { openContactModal } from "@/lib/open-contact";
@@ -155,10 +156,10 @@ export function ContractsPanel({ rows }: { rows: ContractRow[] }) {
           header: "Status",
           sortValue: (r) => r.status ?? null,
           cell: (r) =>
-            r.status === 1 ? (
-              <Badge>Aktiv</Badge>
-            ) : r.status === 0 ? (
-              <Badge variant="secondary">Inaktiv</Badge>
+            r.status === 1 || r.status === 0 ? (
+              <Badge variant={contractStatusVariant(r.status)}>
+                {contractStatusLabel(r.status)}
+              </Badge>
             ) : (
               <span className="text-muted-foreground">—</span>
             ),

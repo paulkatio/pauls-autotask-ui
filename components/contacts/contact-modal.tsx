@@ -120,31 +120,37 @@ export function ContactModal() {
               </Button>
             ) : null}
             {data.email ? (
-              <a
-                href={`mailto:${data.email}`}
-                className="hover:bg-accent flex items-center gap-2 rounded-md px-2 py-1.5"
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start font-normal"
+                render={<a href={`mailto:${data.email}`} aria-label={`E-Mail an ${data.email}`} />}
               >
-                <MailIcon className="text-muted-foreground size-4 shrink-0" />
+                <MailIcon className="text-muted-foreground" />
                 <span className="truncate">{data.email}</span>
-              </a>
+              </Button>
             ) : null}
             {data.phone ? (
-              <a
-                href={`tel:${data.phone}`}
-                className="hover:bg-accent flex items-center gap-2 rounded-md px-2 py-1.5"
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start font-normal"
+                render={<a href={`tel:${data.phone}`} aria-label={`${data.phone} anrufen`} />}
               >
-                <PhoneIcon className="text-muted-foreground size-4 shrink-0" />
+                <PhoneIcon className="text-muted-foreground" />
                 <span className="tabular-nums">{data.phone}</span>
-              </a>
+              </Button>
             ) : null}
             {data.mobilePhone ? (
-              <a
-                href={`tel:${data.mobilePhone}`}
-                className="hover:bg-accent flex items-center gap-2 rounded-md px-2 py-1.5"
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start font-normal"
+                render={<a href={`tel:${data.mobilePhone}`} aria-label={`${data.mobilePhone} anrufen`} />}
               >
-                <SmartphoneIcon className="text-muted-foreground size-4 shrink-0" />
+                <SmartphoneIcon className="text-muted-foreground" />
                 <span className="tabular-nums">{data.mobilePhone}</span>
-              </a>
+              </Button>
             ) : null}
             {!hasContactData && data.companyID == null ? (
               <p className="text-muted-foreground">Keine Kontaktdaten hinterlegt.</p>
