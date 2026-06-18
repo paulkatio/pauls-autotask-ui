@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowCounterClockwise, MagnifyingGlass } from "@phosphor-icons/react/ssr";
+import { ArrowCounterClockwise } from "@phosphor-icons/react/ssr";
 
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import { useColumnOrder } from "@/hooks/use-column-order";
 import { useTableSort, type SortValue } from "@/hooks/use-table-sort";
@@ -126,16 +126,13 @@ export function SearchableTable<T extends { id: number | string }>({
       {showToolbar && (
         <div className="flex flex-wrap items-center gap-2">
           {!hideSearch && (
-            <div className="relative w-full min-w-48 flex-1 sm:max-w-xs">
-              <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder={searchPlaceholder}
-                className="h-11 pl-9 sm:h-9"
-                aria-label={searchPlaceholder}
-              />
-            </div>
+            <SearchInput
+              value={q}
+              onValueChange={setQ}
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+              containerClassName="min-w-48 flex-1 sm:max-w-xs"
+            />
           )}
           {customized && (
             <Button

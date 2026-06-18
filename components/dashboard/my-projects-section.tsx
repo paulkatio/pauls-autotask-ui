@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/ssr";
 
 import { TruncatedText } from "@/components/truncated-text";
+import { Card, CardAction, CardContent, CardHeader } from "@/components/ui/card";
 import type { ProjectsPreview } from "@/lib/autotask/entities/projects";
 
 // Kompakte „Meine Projekte"-Sektion auf der Übersicht (Top 5). Quelle ist
@@ -26,26 +27,29 @@ function formatPercent(n?: number | null): string {
 
 export function MyProjectsSection({ preview }: { preview: ProjectsPreview }) {
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
+    <Card>
+      <CardHeader>
         <h2 className="text-lg font-semibold tracking-tight">Meine Projekte</h2>
-        <Link
-          href="/projekte"
-          className="text-muted-foreground hover:text-foreground inline-flex h-11 items-center gap-1 text-sm sm:h-auto"
-        >
-          Alle anzeigen
-          <ArrowRight className="size-4" />
-        </Link>
-      </div>
+        <CardAction>
+          <Link
+            href="/projekte"
+            className="text-muted-foreground hover:text-foreground inline-flex h-11 items-center gap-1 text-sm sm:h-auto"
+          >
+            Alle anzeigen
+            <ArrowRight className="size-4" />
+          </Link>
+        </CardAction>
+      </CardHeader>
 
-      {preview.items.length === 0 ? (
-        <p className="text-muted-foreground rounded-lg border p-4 text-sm">
-          Du leitest aktuell kein Projekt und hast in keinem offenen Projekt eine
-          Aufgabe.
-        </p>
-      ) : (
-        <ul className="divide-y rounded-lg border">
-          {preview.items.map((p) => (
+      <CardContent className="px-0">
+        {preview.items.length === 0 ? (
+          <p className="text-muted-foreground px-4 text-sm">
+            Du leitest aktuell kein Projekt und hast in keinem offenen Projekt
+            eine Aufgabe.
+          </p>
+        ) : (
+          <ul className="divide-y">
+            {preview.items.map((p) => (
             <li key={p.id}>
               <Link
                 href={`/projekte/${p.id}`}
@@ -62,16 +66,33 @@ export function MyProjectsSection({ preview }: { preview: ProjectsPreview }) {
                   )}
                 </span>
                 <span className="text-muted-foreground flex shrink-0 items-center gap-4 text-xs tabular-nums">
-                  <span>{formatPercent(p.completedPercentage)}</span>
+                  <span className="flex items-center gap-2">
+                    {p.completedPercentage != null &&
+                      Number.isFinite(p.completedPercentage) && (
+                        <span
+                          aria-hidden
+                          className="bg-muted h-1.5 w-16 overflow-hidden rounded-full"
+                        >
+                          <span
+                            className="bg-foreground block h-full rounded-full"
+                            style={{
+                              width: `${Math.max(0, Math.min(100, Math.round(p.completedPercentage)))}%`,
+                            }}
+                          />
+                        </span>
+                      )}
+                    <span>{formatPercent(p.completedPercentage)}</span>
+                  </span>
                   <span className="whitespace-nowrap">
                     {formatDate(p.endDateTime)}
                   </span>
                 </span>
               </Link>
             </li>
-          ))}
-        </ul>
-      )}
-    </section>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }

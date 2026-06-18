@@ -135,7 +135,7 @@ export default async function TeamTicketsPage({
             queue: sp.queue ?? "",
             assigned: sp.assigned ?? "",
           }}
-          columns={{ queue: true, assigned: true }}
+          columns={{ assigned: true }}
           assignmentFilter={!scopedToResource}
           resourceFilter
           defaultDeselectedResourceIds={defaultDeselectedResourceIds}

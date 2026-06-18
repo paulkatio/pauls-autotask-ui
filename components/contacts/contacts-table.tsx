@@ -8,10 +8,9 @@ import {
   CaretUpDown,
   AddressBook,
   ArrowCounterClockwise,
-  MagnifyingGlass,
 } from "@phosphor-icons/react/ssr";
 
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -204,16 +203,13 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full min-w-48 flex-1 sm:max-w-xs">
-          <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Vor- oder Nachname suchen …"
-            className="h-11 pl-9 sm:h-9"
-            aria-label="Kontakte suchen"
-          />
-        </div>
+        <SearchInput
+          value={q}
+          onValueChange={setQ}
+          placeholder="Vor- oder Nachname suchen …"
+          aria-label="Kontakte suchen"
+          containerClassName="min-w-48 flex-1 sm:max-w-xs"
+        />
         <CompanyFilterPicker company={company} onChange={setCompany} />
         <span className="text-muted-foreground w-full text-sm whitespace-nowrap sm:ml-auto sm:w-auto">
           {loading ? "Suchen …" : `${sorted.length} Kontakte`}

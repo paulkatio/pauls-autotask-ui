@@ -7,7 +7,6 @@ import {
   ArrowDown,
   ArrowUp,
   Kanban,
-  MagnifyingGlass,
 } from "@phosphor-icons/react/ssr";
 
 import {
@@ -26,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Badge } from "@/components/ui/badge";
 import {
   Empty,
@@ -339,16 +338,13 @@ export function ProjectsList({
           </Button>
         </div>
 
-        <div className="relative w-full min-w-48 sm:w-64 sm:flex-none">
-          <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-          <Input
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            placeholder="Projekt, Nummer oder Firma suchen …"
-            className="h-11 pl-9 sm:h-9"
-            aria-label="Projekte suchen"
-          />
-        </div>
+        <SearchInput
+          value={searchValue}
+          onValueChange={setSearchValue}
+          placeholder="Projekt, Nummer oder Firma suchen …"
+          aria-label="Projekte suchen"
+          containerClassName="min-w-48 sm:w-64 sm:flex-none"
+        />
 
         <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-row sm:flex-wrap sm:gap-2">
           <FilterSelect

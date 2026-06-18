@@ -18,7 +18,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
   return {
     id: "/",
     name: `${orgName} Tickets`,
-    short_name: "Tickets",
+    short_name: "AutoTask UI",
     description:
       "Fokussierte Oberfläche für Autotask – Dashboard, Ticketlisten und Ticket-Chat.",
     start_url: "/",

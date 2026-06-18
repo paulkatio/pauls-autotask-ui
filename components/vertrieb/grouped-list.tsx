@@ -5,13 +5,12 @@ import {
   FunnelX,
   StackSimple,
   ArrowCounterClockwise,
-  MagnifyingGlass,
   SlidersHorizontal,
 } from "@phosphor-icons/react/ssr";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { useColumnOrder } from "@/hooks/use-column-order";
 import {
   Select,
@@ -26,7 +25,6 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -190,16 +188,13 @@ export function GroupedList<T extends { id: number | string }>({
         {/* Desktop: Suche + Steuerung nebeneinander in EINER Zeile (kein verschenkter
             Platz rechts); mobil gestapelt. */}
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-          <div className="relative w-full sm:w-64 sm:flex-none">
-            <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder={searchPlaceholder}
-              className="h-11 pl-9 sm:h-9"
-              aria-label={searchPlaceholder}
-            />
-          </div>
+          <SearchInput
+            value={q}
+            onValueChange={setQ}
+            placeholder={searchPlaceholder}
+            aria-label={searchPlaceholder}
+            containerClassName="sm:w-64 sm:flex-none"
+          />
 
           {/* Ansicht (Gruppe) + Filter-Sheet + Zeitraum. */}
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center">
@@ -293,16 +288,17 @@ export function GroupedList<T extends { id: number | string }>({
                       </Select>
                     </div>
                   ))}
-                </div>
-                <SheetFooter>
+                  {/* Reset direkt unter den Filtern (nicht am Sheet-Boden). */}
                   <Button
                     variant="outline"
                     onClick={resetFilters}
                     disabled={activeFilters.length === 0}
+                    className="self-start"
                   >
+                    <FunnelX />
                     Filter zurücksetzen
                   </Button>
-                </SheetFooter>
+                </div>
               </SheetContent>
             </Sheet>
           )}

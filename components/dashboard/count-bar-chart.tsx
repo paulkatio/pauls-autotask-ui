@@ -167,7 +167,12 @@ export function CountBarChart({
             className="aspect-auto w-full"
             style={{ height: chartHeight }}
           >
-          <BarChart accessibilityLayer data={data} margin={{ top: 8 }}>
+          <BarChart
+            accessibilityLayer
+            data={data}
+            margin={{ top: 8 }}
+            barCategoryGap="30%"
+          >
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="label"
@@ -200,7 +205,9 @@ export function CountBarChart({
             <Bar
               dataKey="count"
               fill="var(--color-count)"
-              radius={4}
+              fillOpacity={0.7}
+              activeBar={{ fillOpacity: 1 }}
+              radius={[4, 4, 0, 0]}
               onClick={(d) => handleBarClick(d as { payload?: CountDatum })}
             />
           </BarChart>

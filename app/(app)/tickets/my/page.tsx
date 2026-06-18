@@ -160,7 +160,7 @@ export default async function MyTicketsPage({
               data={secondary}
               picklists={picklists}
               filters={{ status: "open", priority: "", queue: "" }}
-              columns={{ queue: true, assigned: true }}
+              columns={{ assigned: true }}
               showFilters={false}
               showPager={false}
               searchMode="off"

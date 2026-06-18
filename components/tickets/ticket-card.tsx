@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-indicator";
 import { labelOf } from "@/lib/autotask/mappers";
 import { PriorityBadge } from "@/components/priority-indicator";
@@ -85,6 +86,7 @@ export function TicketCard({
   selectable = false,
   selected = false,
   onToggleSelect,
+  flat = false,
 }: {
   ticket: TicketRow;
   picklists: TicketPicklists;
@@ -96,6 +98,9 @@ export function TicketCard({
   selectable?: boolean;
   selected?: boolean;
   onToggleSelect?: (checked: boolean) => void;
+  // „flat" = ohne eigenen Rahmen/Radius (für die Darstellung als Zeile in einer
+  // umgebenden Karte – verhindert Karte-in-Karte). Default: eigenständige Karte.
+  flat?: boolean;
 }) {
   const { openTicket } = useRecordNav();
   const showCompany = columns.company !== false && !!t.companyName;
@@ -145,7 +150,10 @@ export function TicketCard({
           openTicket(t.id);
         }
       }}
-      className="hover:bg-muted/50 active:bg-muted focus-visible:border-ring focus-visible:ring-ring/50 flex items-start gap-3 rounded-lg border p-3 transition-colors outline-none focus-visible:ring-3"
+      className={cn(
+        "hover:bg-muted/50 active:bg-muted focus-visible:border-ring focus-visible:ring-ring/50 flex items-start gap-3 p-3 transition-colors outline-none focus-visible:ring-3",
+        flat ? "rounded-none" : "rounded-lg border",
+      )}
     >
       {selectable && (
         <div onClick={(e) => e.stopPropagation()} className="pt-0.5">

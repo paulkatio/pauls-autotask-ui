@@ -28,7 +28,9 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Tickets",
+    // Vorausgefüllter Name beim „Zum Home-Bildschirm" in Safari (iOS liest das aus
+    // apple-mobile-web-app-title, NICHT aus dem Manifest).
+    title: "AutoTask UI",
   },
 };
 

@@ -7,10 +7,9 @@ import {
   ArrowUp,
   Buildings,
   ArrowCounterClockwise,
-  MagnifyingGlass,
 } from "@phosphor-icons/react/ssr";
 
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -227,16 +226,13 @@ export function CompaniesTable({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full min-w-48 flex-1 sm:max-w-sm">
-          <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Firma oder Ort suchen …"
-            className="h-11 pl-9 sm:h-9"
-            aria-label="Firmen filtern"
-          />
-        </div>
+        <SearchInput
+          value={q}
+          onValueChange={setQ}
+          placeholder="Firma oder Ort suchen …"
+          aria-label="Firmen filtern"
+          containerClassName="min-w-48 flex-1 sm:max-w-sm"
+        />
         <Select
           items={typeItems}
           value={typeFilter}

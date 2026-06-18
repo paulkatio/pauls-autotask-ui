@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { MagnifyingGlass, Ticket as TicketIcon, ArrowCounterClockwise } from "@phosphor-icons/react/ssr";
+import { Ticket as TicketIcon, ArrowCounterClockwise } from "@phosphor-icons/react/ssr";
 
 import {
   Select,
@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Empty,
@@ -83,6 +83,13 @@ interface Props {
   selectable?: boolean;
   resources?: ResourceOption[];
   myResourceId?: number;
+  // Eigener Rahmen um Tabelle/Karten. Default an. Aus, wenn die Liste bereits in
+  // einer umgebenden Karte sitzt (Übersicht) – verhindert Karte-in-Karte.
+  bordered?: boolean;
+  // Kompakte Tabelle (Übersicht): schmalere Titel-Spalte und keine erzwungene
+  // Mindestbreite, damit die Tabelle in die Karte passt und „Fällig" ohne
+  // Rechts-Scrollen sichtbar bleibt. Default aus (volle Listen unverändert).
+  compact?: boolean;
 }
 
 function formatDate(iso?: string | null): string {
@@ -107,6 +114,19 @@ function dateSortValue(iso?: string | null): number | null {
   if (!iso) return null;
   const ms = Date.parse(iso);
   return Number.isNaN(ms) ? null : ms;
+}
+
+// Überfällig = Fälligkeitstag liegt VOR dem heutigen Tag (kalendarisch, nicht
+// uhrzeitgenau – „heute fällig" gilt nicht als überfällig).
+function isOverdue(iso?: string | null): boolean {
+  if (!iso) return false;
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return false;
+  const due = new Date(ms);
+  const now = new Date();
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return dueDay.getTime() < today.getTime();
 }
 
 // Persistenz des Mitarbeiter-Filters (Team): wir speichern die ABGEWÄHLTEN IDs in
@@ -151,6 +171,8 @@ export function TicketsList({
   selectable = false,
   resources,
   myResourceId,
+  bordered = true,
+  compact = false,
 }: Props) {
   const router = useRouter();
   const { openTicket } = useRecordNav();
@@ -386,7 +408,14 @@ export function TicketsList({
       sortValue: (t) => t.title ?? "",
       cell: (t) => (
         <TableCell>
-          <TruncatedText className="max-w-xs xl:max-w-[12rem] 2xl:max-w-md">
+          <TruncatedText
+            className={cn(
+              "max-w-xs",
+              compact
+                ? "xl:max-w-[8rem] 2xl:max-w-[14rem]"
+                : "xl:max-w-[12rem] 2xl:max-w-md",
+            )}
+          >
             {t.title ?? "—"}
           </TruncatedText>
         </TableCell>
@@ -484,7 +513,14 @@ export function TicketsList({
       header: "Fällig",
       sortValue: (t) => dateSortValue(t.dueDateTime),
       cell: (t) => (
-        <TableCell className="text-muted-foreground tabular-nums whitespace-nowrap">
+        <TableCell
+          className={cn(
+            "tabular-nums whitespace-nowrap",
+            isOverdue(t.dueDateTime)
+              ? "text-warning"
+              : "text-muted-foreground",
+          )}
+        >
           {formatDate(t.dueDateTime)}
         </TableCell>
       ),
@@ -549,16 +585,13 @@ export function TicketsList({
               )}
             >
           {searchMode !== "off" && (
-            <div className="relative w-full sm:max-w-xs">
-              <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-              <Input
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                placeholder="Nummer oder Titel suchen …"
-                className="h-11 pl-9 sm:h-9"
-                aria-label="Tickets suchen"
-              />
-            </div>
+            <SearchInput
+              value={searchValue}
+              onValueChange={setSearchValue}
+              placeholder="Nummer oder Titel suchen …"
+              aria-label="Tickets suchen"
+              containerClassName="sm:max-w-xs"
+            />
           )}
 
           {showFilters && (
@@ -723,7 +756,12 @@ export function TicketsList({
           {/* Mobile-First: unter xl je Ticket eine Karte (kein Querscrollen). Ab xl
               die volle Tabelle mit umsortierbaren Spalten. Die Karte ist die
               gemeinsame TicketCard (Variante "worklist" → "Fällig …"). */}
-          <div className="grid grid-cols-1 gap-2 xl:hidden">
+          <div
+            className={cn(
+              "xl:hidden",
+              bordered ? "grid grid-cols-1 gap-2" : "divide-y",
+            )}
+          >
             {(mobileLimit ? items.slice(0, mobileLimit) : items).map((t) => (
               <TicketCard
                 key={t.id}
@@ -734,6 +772,7 @@ export function TicketsList({
                 selectable={selectableActive}
                 selected={selectedIds.has(t.id)}
                 onToggleSelect={(c) => toggleRow(t.id, c)}
+                flat={!bordered}
               />
             ))}
           </div>
@@ -743,8 +782,13 @@ export function TicketsList({
             </p>
           )}
 
-          <div className="hidden overflow-x-auto rounded-lg border xl:block">
-            <Table className="min-w-2xl">
+          <div
+            className={cn(
+              "hidden overflow-x-auto xl:block",
+              bordered && "rounded-lg border",
+            )}
+          >
+            <Table className={cn(!compact && "min-w-2xl")}>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   {selectableActive && (
