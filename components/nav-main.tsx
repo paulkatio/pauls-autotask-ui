@@ -50,13 +50,14 @@ export function NavMain({ items, label }: { items: NavItem[]; label?: string }) 
             <SidebarMenuButton
               tooltip={item.title}
               isActive={isActiveRoute(pathname, item.url)}
-              // Inaktiv = gedämpfte Sidebar-Vordergrundfarbe (Primitive-Default).
+              // Inaktiv = Label bleibt sidebar-foreground, Icon einen Tick heller
+              // (muted-foreground) → ruhige Hierarchie zwischen Icon und Text.
               // Aktiv = sidebar-accent-Fläche + kräftigere accent-foreground-Schrift
               // + font-medium + Akzent-Icon (primary = Theme-Hauptakzent). Klar
               // erkennbar wo man ist, AA in Hell UND Dunkel. Nur semantische Tokens,
               // kein erfundenes CSS / keine festen Farben. Farbsystem v2.
               // Im eingeklappten Icon-Modus erzwingt sidebar.tsx weiter 8er-Quadrate.
-              className="h-10 gap-3 transition-colors data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground data-active:font-medium [&>svg]:size-5 data-active:[&>svg]:text-primary"
+              className="h-9 gap-3 transition-colors [&>svg]:text-muted-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground data-active:font-medium [&>svg]:size-4 data-active:[&>svg]:text-primary"
               onClick={() => setOpenMobile(false)}
               render={<Link href={item.url} />}
             >
@@ -64,9 +65,10 @@ export function NavMain({ items, label }: { items: NavItem[]; label?: string }) 
               <span>{item.title}</span>
             </SidebarMenuButton>
             {item.badge != null && item.badge > 0 && (
-              // Kleiner, neutraler Pill über Token-Farben (muted); im Icon-Modus
-              // blendet der Primitive den Badge selbst aus.
-              <SidebarMenuBadge className="top-1/2! -translate-y-1/2! bg-muted text-muted-foreground tabular-nums">
+              // Kleiner, dezent farbiger Pill (tinted) – gleiches Muster wie die
+              // Status-Badges: bg-info/10 + text-info (dark: bg-info/20). Im
+              // Icon-Modus blendet der Primitive den Badge selbst aus.
+              <SidebarMenuBadge className="top-1/2! -translate-y-1/2! bg-info/10 text-info dark:bg-info/20 tabular-nums">
                 {fmtBadge(item.badge)}
               </SidebarMenuBadge>
             )}
