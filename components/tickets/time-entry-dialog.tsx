@@ -33,6 +33,7 @@ import {
   ResponsiveDialogTrigger,
 } from "@/components/ui/responsive-dialog";
 import { StatusDot } from "@/components/status-indicator";
+import { RichTextEditor } from "@/components/tickets/rich-text-editor";
 
 interface WorkType {
   id: number;
@@ -107,7 +108,10 @@ export function TimeEntryDialog({
   const [currentStatus, setCurrentStatus] = React.useState<number | null>(null);
   const [statusVal, setStatusVal] = React.useState<string>("");
   const [notifyCustomer, setNotifyCustomer] = React.useState(false);
+  // Kundennachricht als Rich-Text (gleicher Pfad wie der Chat: sendet text+html).
+  // customerText = Plaintext (Validierung/Fallback), customerHtml = sanitisiertes HTML.
   const [customerText, setCustomerText] = React.useState("");
+  const [customerHtml, setCustomerHtml] = React.useState("");
 
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -232,7 +236,11 @@ export function TimeEntryDialog({
           const r = await fetch(`/api/tickets/${ticketId}/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: customerText.trim(), notify: true }),
+            body: JSON.stringify({
+              text: customerText.trim(),
+              html: customerHtml,
+              notify: true,
+            }),
           });
           if (!r.ok) {
             const jj = (await r.json().catch(() => ({}))) as { error?: string };
@@ -253,6 +261,7 @@ export function TimeEntryDialog({
       setAppendToResolution(false);
       setNotifyCustomer(false);
       setCustomerText("");
+      setCustomerHtml("");
       onSaved?.();
       router.refresh();
     } catch (err) {
@@ -356,7 +365,7 @@ export function TimeEntryDialog({
           <div className="flex flex-col gap-2">
             <Label htmlFor="te-worktype">Tätigkeitsart</Label>
             {workTypes === null && !loadError ? (
-              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-11 w-full sm:h-9" />
             ) : (
               <Select
                 items={workTypeItems}
@@ -379,8 +388,15 @@ export function TimeEntryDialog({
             )}
           </div>
 
-          {/* Optionaler Status-Wechsel beim Erfassen (Default = aktueller Status). */}
-          {statuses.length > 0 && (
+          {/* Optionaler Status-Wechsel beim Erfassen (Default = aktueller Status).
+              Während des Ladens Platz reservieren (Skeleton in echter Höhe), damit
+              das Feld nicht nachträglich aufpoppt und den Dialog vergrößert. */}
+          {workTypes === null && !loadError ? (
+            <div className="flex flex-col gap-2">
+              <Label>Status</Label>
+              <Skeleton className="h-11 w-full sm:h-9" />
+            </div>
+          ) : statuses.length > 0 ? (
             <div className="flex flex-col gap-2">
               <Label htmlFor="te-status">Status</Label>
               <Select
@@ -411,7 +427,7 @@ export function TimeEntryDialog({
                 </SelectContent>
               </Select>
             </div>
-          )}
+          ) : null}
 
           {/* Abschlussbenachrichtigung an den Kunden (separater Text, getrennt von der
               internen Zusammenfassung). */}
@@ -428,13 +444,14 @@ export function TimeEntryDialog({
             </div>
             {notifyCustomer && (
               <>
-                <Textarea
-                  id="te-customer"
-                  value={customerText}
-                  onChange={(e) => setCustomerText(e.target.value)}
+                <RichTextEditor
+                  onChange={({ html, text }) => {
+                    setCustomerHtml(html);
+                    setCustomerText(text);
+                  }}
                   placeholder="Nachricht an den Kunden …"
-                  rows={3}
-                  aria-label="Nachricht an den Kunden"
+                  ariaLabel="Nachricht an den Kunden"
+                  disabled={saving}
                 />
                 <p className="text-muted-foreground text-xs">
                   Separater Text – geht per E-Mail an den Ticket-Kontakt und steht

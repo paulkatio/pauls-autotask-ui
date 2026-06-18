@@ -73,7 +73,12 @@ function ResponsiveDialogContent({
     );
   }
   return (
-    <DialogContent className={className} {...props}>
+    // Desktop: NUR der Body (ResponsiveDialogBody) scrollt. Das Popup selbst darf
+    // nicht vertikal scrollen – sonst erzeugt der bündige Footer (negatives -mb-4,
+    // das in das p-4 des Popups ragt, weil der Footer hier im <form> steckt statt
+    // direktes Popup-Kind zu sein) einen dauerhaften ~1rem-Scrollbalken, unabhängig
+    // von Inhalt und Zoom.
+    <DialogContent className={cn("pb-0", className)} {...props}>
       {children}
     </DialogContent>
   );
@@ -97,7 +102,11 @@ function ResponsiveDialogFooter(props: React.ComponentProps<"div">) {
       )}
     />
   ) : (
-    <DialogFooter {...props} />
+    // Desktop: das negative -mb-4 des DialogFooter würde hier aus dem <form>
+    // herauslecken (Footer ist NICHT direktes Popup-Kind) und dem scrollenden Body
+    // ein paar Pixel klauen → Dauer-Scrollbalken. Stattdessen Footer bündig über
+    // pb-0 am Popup + mb-0 am Footer (kein Leck).
+    <DialogFooter {...props} className={cn("mb-0", props.className)} />
   );
 }
 
@@ -125,8 +134,11 @@ function ResponsiveDialogClose(props: React.ComponentProps<typeof DialogClose>) 
 }
 
 // Scrollender Inhaltsbereich zwischen Header und Footer. Mobil: flex-1 + min-h-0,
-// damit er den Rest des gedeckelten Sheets einnimmt und scrollt. Desktop: feste
-// max-h, damit der Dialog nicht über den Viewport hinauswächst.
+// damit er den Rest des gedeckelten Sheets einnimmt und scrollt. Desktop: der Body
+// darf bis fast zur Fensterhöhe wachsen (Popup-Cap 90dvh minus Kopf/Fuß ≈ 10rem),
+// damit der Dialog auf großen Schirmen so groß wie nötig ist und NICHT schon bei
+// 60dvh ein paar überflüssige Pixel scrollt – er scrollt erst, wenn er sonst über
+// den Viewport hinausliefe.
 function ResponsiveDialogBody({
   className,
   ...props
@@ -135,8 +147,11 @@ function ResponsiveDialogBody({
   return (
     <div
       className={cn(
-        "overflow-y-auto overscroll-contain",
-        isMobile ? "min-h-0 flex-1 px-4" : "max-h-[60dvh] px-1",
+        "overscroll-contain",
+        // Mobil: eigener Scrollbereich (Sheet ist fix gedeckelt). Desktop: KEIN
+        // eigener Scroller – das Popup selbst scrollt (inhaltsgroß, gedeckelt bei
+        // 90dvh). So kein verschachtelter Flex-Scroller, der dem Body Pixel klaut.
+        isMobile ? "min-h-0 flex-1 overflow-y-auto px-4" : "px-1 pb-4",
         className,
       )}
       {...props}
