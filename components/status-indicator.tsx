@@ -1,9 +1,9 @@
 import { Badge } from "@/components/ui/badge";
-import { statusColor, statusVariant } from "@/lib/autotask/mappers";
+import { statusDotClass, statusVariant } from "@/lib/autotask/mappers";
 import { cn } from "@/lib/utils";
 
-// Kleiner farbiger Punkt vor dem Status – wie in Autotask. Farbe aus statusColor().
-// Inline-Style, weil die Farbe pro Status aus einer Map kommt (keine Tailwind-Token).
+// Kleiner farbiger Punkt vor dem Status – wie in Autotask. Farbe aus statusDotClass()
+// als semantische Token-Klasse → passt sich Hell/Dunkel automatisch an (kein Inline-Hex).
 export function StatusDot({
   status,
   className,
@@ -14,8 +14,11 @@ export function StatusDot({
   return (
     <span
       aria-hidden="true"
-      className={cn("inline-block size-2 shrink-0 rounded-full", className)}
-      style={{ backgroundColor: statusColor(status) }}
+      className={cn(
+        "inline-block size-2 shrink-0 rounded-full",
+        statusDotClass(status),
+        className,
+      )}
     />
   );
 }

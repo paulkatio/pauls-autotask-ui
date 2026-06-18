@@ -64,14 +64,15 @@ export function TableSkeleton({
   rows = 8,
   withCheckbox = false,
   minWidthClass = "min-w-3xl",
-  breakpoint = "md",
+  breakpoint = "xl",
 }: {
   columns?: number;
   rows?: number;
   withCheckbox?: boolean;
   minWidthClass?: string;
   // Muss zum Card↔Table-Breakpoint der jeweiligen Liste passen, sonst springt das
-  // Layout beim Laden (TicketsList = "xl", Companies/Contacts/SearchableTable = "lg").
+  // Layout beim Laden. Standard = "xl" (alle Listen nach der Vereinheitlichung;
+  // Karten unter xl, Tabelle ab xl).
   breakpoint?: "md" | "lg" | "xl";
 }) {
   // Literale Klassennamen (nicht dynamisch zusammensetzen) – sonst findet sie der

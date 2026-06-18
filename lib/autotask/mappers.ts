@@ -50,29 +50,28 @@ export function statusVariant(id: number | null | undefined): BadgeVariant {
   }
 }
 
-// Farbiger Punkt vor dem Status (wie Autotask). Farben grob an den Autotask-Status-
-// Farben orientiert; die vielen Warte-/System-Status neutral (slate). Erste Fassung –
-// einzelne Farben bei Bedarf an die echten Autotask-Werte angleichen.
-export function statusColor(id: number | null | undefined): string {
+// Token-Klasse für den Statuspunkt (wie Autotask), aber über semantische Tokens –
+// passt sich Hell/Dunkel automatisch an (KEIN fixes Hex mehr). Grob an den Autotask-
+// Status-Farben orientiert; die vielen Warte-/System-Status neutral.
+export function statusDotClass(id: number | null | undefined): string {
   switch (id) {
     case 1: // Neu
-      return "#eab308"; // gelb/amber
+      return "bg-warning"; // amber/ocker
     case 11: // Eskaliert
     case 21: // Reklamation
-      return "#ef4444"; // rot
+      return "bg-destructive"; // rot (einziger lauter Punkt)
     case 13: // Warten auf Genehmigung
     case 19: // Spätere Fälligkeit
-      return "#3b82f6"; // blau
+      return "bg-chart-2"; // gedämpftes Stahlblau
     case 22: // Genehmigung erteilt
-      return "#14b8a6"; // teal
-    case 23: // Genehmigung abgelehnt
-      return "#f97316"; // orange
     case 5: // Abgeschlossen
     case 14: // Gelöst warten auf Kunden
-      return "#22c55e"; // grün
+      return "bg-success"; // grün
+    case 23: // Genehmigung abgelehnt
+      return "bg-warning"; // amber (abgelehnt ≠ Fehler)
     default:
       // In Bearbeitung, Servicetermin, Fälligkeit überschritten, Warte-/System-Status …
-      return "#64748b"; // neutral (slate)
+      return "bg-muted-foreground"; // neutral
   }
 }
 
