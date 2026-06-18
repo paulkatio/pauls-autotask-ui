@@ -321,7 +321,7 @@ _10 Befunde — 0 High · 6 Medium · 3 Low · 1 Nit_
   - Datei: `components/companies/company-detail-content.tsx` · line 166-200, company header
   - Problem: The company detail header (lines 166-200) hand-codes `flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4`, which mirrors PageHeader component pattern (page-header.tsx line 26-31). This duplicates logic; if header spacing changes, both must be updated. The metadata (address, phone, website) below the title complicates reusing PageHeader, but the principle stands.
   - Fix: Document this intentional duplication due to metadata layout constraints, or consider refactoring into a reusable CompanyHeader component with PageHeader-like semantics.
-- [ ] **[NIT]** Contact info vertical gap (gap-y-1) is tight on wrapped lines  `spacing` · _320px_
+- [x] **[NIT]** Contact info vertical gap (gap-y-1) is tight on wrapped lines  `spacing` · _320px_
   - Datei: `components/companies/company-detail-content.tsx` · line 172-199, contact info wrapping
   - Problem: Contact info icons/text use `flex flex-wrap items-center gap-x-4 gap-y-1`. The `gap-y-1` (4px) is minimal when address wraps across multiple lines on narrow phones, creating cramped vertical spacing.
   - Fix: Consider `gap-y-2` (8px) for slightly better breathing room on mobile: `gap-y-2` instead of `gap-y-1` in line 172.
@@ -334,7 +334,7 @@ _13 Befunde — 1 High · 4 Medium · 8 Low · 0 Nit_
   - Datei: `components/contacts/contact-modal.tsx` · lines 123-148
   - Problem: Phone and email contact links (lines 123-148) use raw `<a href='tel:...' className='hover:bg-accent flex items-center gap-2 rounded-md px-2 py-1.5'>` instead of shadcn Button. This violates the design constitution rule: 'Every VISIBLE element must be a shadcn component or composed from shadcn primitives'. Raw interactive elements with custom styling = component-sourcing violation.
   - Fix: Replace raw `<a>` tags with `<Button variant='ghost' size='sm' asChild><a href={...}>...</a></Button>` to use shadcn Button infrastructure and ensure consistent interactive element styling.
-- [ ] **[MEDIUM]** Mobile card grid gap and internal spacing inconsistency  `spacing` · _mobile, tablet (<xl)_
+- [x] **[MEDIUM]** Mobile card grid gap and internal spacing inconsistency  `spacing` · _mobile, tablet (<xl)_
   - Datei: `components/contacts/contacts-table.tsx` · line 266
   - Problem: Mobile contact cards use `flex flex-col gap-1` (line 266) for internal spacing, while SearchableTable uses `flex flex-col gap-1.5` (line 179). This creates tighter vertical spacing in contact cards. Quoted classes: ContactsTable `gap-1` vs SearchableTable `gap-1.5`.
   - Fix: Change line 266 from `gap-1` to `gap-1.5` to match SearchableTable mobile card spacing. Ensure consistent internal card spacing across all list types.
@@ -472,7 +472,7 @@ _16 Befunde — 1 High · 3 Medium · 2 Low · 10 Nit_
   - Datei: `c:\dev\pauls-autotask-ui\app\(app)\zeiten\page.tsx` · lines 29, 82-85
   - Problem: Line 29: page defaults range to 'today'. Line 8-14: RangeToggle hardcodes 'today' and 'week' strings. Logic is duplicated but acceptable (page is data layer, RangeToggle is UI). Not a bug.
   - Fix: No change. Separation of concerns (page data, RangeToggle UI) is appropriate.
-- [ ] **[NIT]** RangeToggle buttons lack aria-pressed for toggle semantics  `accessibility` · _alle_
+- [x] **[NIT]** RangeToggle buttons lack aria-pressed for toggle semantics  `accessibility` · _alle_
   - Datei: `c:\dev\pauls-autotask-ui\components\time\range-toggle.tsx` · lines 20-21
   - Problem: Buttons toggle between 'today' and 'week' modes but have no aria-pressed. Sighted users see visual state (variant ghost/default), but screen readers don't announce which button is active. Functional but not accessible.
   - Fix: Add aria-pressed={range === 'today'} to first button and aria-pressed={range === 'week'} to second for screen reader clarity. Low priority but improves WCAG compliance.
@@ -769,7 +769,7 @@ _9 Befunde — 3 High · 2 Medium · 3 Low · 1 Nit_
   - Datei: `app/(app)/admin/page.tsx` · lines 14-29
   - Problem: The admin page correctly uses <PageHeader title="Admin" description="..." /> and <Empty> with EmptyMedia icon variant, matching the design system pattern. The page structure is sound and consistent. However, it contains only a placeholder Empty state with no actual admin features implemented.
   - Fix: When admin features are added, ensure they follow the section separation pattern (gap-6 between sections) and component sourcing from the established library.
-- [ ] **[LOW]** Login page uses gap-10 between logo and buttons instead of standard gap-6  `spacing` · _alle_
+- [x] **[LOW]** Login page uses gap-10 between logo and buttons instead of standard gap-6  `spacing` · _alle_
   - Datei: `app/login/page.tsx` · line 37
   - Problem: The login page uses `gap-10` (40px) between the logo section and the login buttons. This is larger than the standard `gap-6` (24px) used throughout the main app for section separation. While the extra spacing is intentional for visual hierarchy on a login screen, it diverges from the established spacing scale.
   - Fix: Consider using `gap-8` (32px) instead of `gap-10` to stay within the standard spacing scale, or add a comment explaining the deviation for login screen visual hierarchy.
@@ -777,7 +777,7 @@ _9 Befunde — 3 High · 2 Medium · 3 Low · 1 Nit_
   - Datei: `app/popup/layout.tsx` · line 14
   - Problem: The popup layout applies padding directly to the wrapper: `p-4 md:p-6`. This is p-4 (16px) on mobile and p-6 (24px) on desktop. The main app layout (app/(app)/layout.tsx line 94) uses `gap-6` between sections and `p-4 md:p-6` for outer padding. The popup is consistent with outer padding, but lacks internal gap-based section structure.
   - Fix: No change needed if this is intentional for popup context. Ensure any child content uses gap-6 between major sections, consistent with main app layout pattern.
-- [ ] **[NIT]** Login page title uses span instead of semantic h1 element  `typography` · _alle_
+- [x] **[NIT]** Login page title uses span instead of semantic h1 element  `typography` · _alle_
   - Datei: `app/login/page.tsx` · line 48
   - Problem: Login page title is a span with `className="text-2xl font-semibold tracking-tight"`, while admin page uses PageHeader which renders an h1. Both look identical visually, but login lacks semantic heading structure. This is minor for a one-off landing page.
   - Fix: Wrap login title in h1 element: `<h1 className="text-2xl font-semibold tracking-tight">Autotask UI</h1>` to match semantic structure of PageHeader.
