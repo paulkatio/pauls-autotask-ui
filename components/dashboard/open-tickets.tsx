@@ -5,7 +5,9 @@ import Link from "next/link";
 
 import { TicketsList, type TicketRow } from "@/components/tickets/tickets-list";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import type { TicketPicklists } from "@/lib/autotask/types";
@@ -73,95 +75,107 @@ export function OpenTickets({
   }
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
-          Offene Tickets
-          {count != null && count > 0 && (
-            <Badge
-              variant="secondary"
-              className="bg-chart-2/15 text-chart-2 tabular-nums"
-            >
-              {count > 999 ? "999+" : count}
-            </Badge>
-          )}
-        </h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            className="h-11 sm:h-9"
-            variant={assigned === "all" ? "secondary" : "outline"}
-            onClick={() => selectAssigned("all")}
-            disabled={loading}
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+            Offene Tickets
+            {count != null && count > 0 && (
+              <Badge
+                variant="secondary"
+                className="bg-chart-2/15 text-chart-2 tabular-nums"
+              >
+                {count > 999 ? "999+" : count}
+              </Badge>
+            )}
+          </h2>
+          {/* Segmentiert über die gemeinsame Tabs-Komponente (gleiches Muster wie
+              vertrieb-tabs/url-tabs) – klarer Aktiv-Zustand in Hell UND Dunkel.
+              Auswahl-Logik unverändert (selectAssigned). */}
+          <Tabs
+            value={assigned}
+            onValueChange={(v) => selectAssigned(v as Assigned)}
           >
-            Alle offenen
-          </Button>
-          <Button
-            size="sm"
-            className="h-11 sm:h-9"
-            variant={assigned === "unassigned" ? "secondary" : "outline"}
-            onClick={() => selectAssigned("unassigned")}
-            disabled={loading}
-          >
-            Nur nicht zugewiesene
-          </Button>
+            <TabsList className="group-data-horizontal/tabs:h-auto">
+              <TabsTrigger
+                value="all"
+                className="h-11 sm:h-9"
+                disabled={loading}
+              >
+                Alle offenen
+              </TabsTrigger>
+              <TabsTrigger
+                value="unassigned"
+                className="h-11 sm:h-9"
+                disabled={loading}
+              >
+                Nur nicht zugewiesene
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-      </div>
+      </CardHeader>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Gleiche Darstellung wie „Teamtickets": Karten mobil, volle Tabelle ab xl. */}
-      <div
-        className={cn(
-          "transition-opacity",
-          loading && "pointer-events-none opacity-60",
+      <CardContent className="flex flex-col gap-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
-      >
-        <TicketsList
-          data={data}
-          picklists={picklists}
-          filters={{ status: "open", priority: "", queue: "", assigned }}
-          columns={{ queue: true, assigned: true }}
-          showFilters={false}
-          showPager={false}
-          mobileLimit={8}
-          mobileOverflowHint={false}
-          searchMode="off"
-          emptyDescription={
-            assigned === "unassigned"
-              ? "Keine nicht zugewiesenen offenen Tickets."
-              : "Keine offenen Tickets."
-          }
-        />
-      </div>
 
-      {/* Übersicht zeigt nur die erste Seite; statt Pager ein einzelner Sprung in die
-          volle Liste (respektiert den aktiven „nicht zugewiesen"-Filter). Mittig
-          (Desktop) statt rechtsbündig; Anzahl direkt im Button. */}
-      <Button
-        variant="outline"
-        nativeButton={false}
-        className="h-11 w-full sm:h-9 sm:w-auto sm:self-center"
-        render={
-          <Link
-            href={
+        {/* Gleiche Darstellung wie „Teamtickets": Karten mobil, volle Tabelle ab xl.
+            bordered={false}: der eigene Rahmen entfällt, da die Liste bereits in
+            dieser Karte sitzt (kein Karte-in-Karte). */}
+        <div
+          className={cn(
+            "transition-opacity",
+            loading && "pointer-events-none opacity-60",
+          )}
+        >
+          <TicketsList
+            data={data}
+            picklists={picklists}
+            filters={{ status: "open", priority: "", queue: "", assigned }}
+            columns={{ assigned: true }}
+            showFilters={false}
+            showPager={false}
+            mobileLimit={8}
+            mobileOverflowHint={false}
+            searchMode="off"
+            bordered={false}
+            compact
+            emptyDescription={
               assigned === "unassigned"
-                ? "/tickets/team?assigned=unassigned"
-                : "/tickets/team"
+                ? "Keine nicht zugewiesenen offenen Tickets."
+                : "Keine offenen Tickets."
             }
           />
-        }
-      >
-        {assigned === "unassigned"
-          ? "Alle nicht zugewiesenen anzeigen"
-          : count != null
-            ? `Alle ${count} offenen Tickets anzeigen`
-            : "Alle offenen Tickets anzeigen"}
-      </Button>
-    </section>
+        </div>
+
+        {/* Übersicht zeigt nur die erste Seite; statt Pager ein einzelner Sprung in
+            die volle Liste (respektiert den aktiven „nicht zugewiesen"-Filter).
+            Mittig (Desktop) statt rechtsbündig; Anzahl direkt im Button. */}
+        <Button
+          variant="outline"
+          nativeButton={false}
+          className="h-11 w-full sm:h-9 sm:w-auto sm:self-center"
+          render={
+            <Link
+              href={
+                assigned === "unassigned"
+                  ? "/tickets/team?assigned=unassigned"
+                  : "/tickets/team"
+              }
+            />
+          }
+        >
+          {assigned === "unassigned"
+            ? "Alle nicht zugewiesenen anzeigen"
+            : count != null
+              ? `Alle ${count} offenen Tickets anzeigen`
+              : "Alle offenen Tickets anzeigen"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
