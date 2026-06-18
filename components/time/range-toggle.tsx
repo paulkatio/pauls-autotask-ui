@@ -23,6 +23,7 @@ export function RangeToggle({ range }: { range: TimeRange }) {
         variant={range === "today" ? "default" : "ghost"}
         size="sm"
         className="h-11 sm:h-9"
+        aria-pressed={range === "today"}
         onClick={() => set("today")}
       >
         Heute
@@ -31,6 +32,7 @@ export function RangeToggle({ range }: { range: TimeRange }) {
         variant={range === "week" ? "default" : "ghost"}
         size="sm"
         className="h-11 sm:h-9"
+        aria-pressed={range === "week"}
         onClick={() => set("week")}
       >
         Diese Woche
