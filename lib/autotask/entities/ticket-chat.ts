@@ -8,7 +8,11 @@ import { attachments as ticketAttachments } from "@/lib/autotask/entities/attach
 import { sendMail, isResendConfigured } from "@/lib/mail/resend";
 import { buildCustomerEmail } from "@/lib/mail/customer-email";
 import { getOrgName } from "@/lib/branding-server";
-import { sanitizeRichHtml, hasRichMarkup } from "@/lib/html/sanitize-rich";
+import {
+  sanitizeRichHtml,
+  hasRichMarkup,
+  plainTextFromRich,
+} from "@/lib/html/sanitize-rich";
 import { AutotaskError } from "@/lib/autotask/client";
 import {
   CONVERSATION_NOTE_TYPES,
@@ -132,9 +136,10 @@ export async function sendTicketChatNote(
   rawHtml: string = "",
 ): Promise<SendChatResult> {
   return withTicketLock(ticketId, async () => {
-    // Rich-Inhalt? -> sanitisiertes HTML als Notiz-Body + in die Kundenmail.
-    // Sonst Plaintext (Bestandsverhalten). Autotask speichert die description
-    // verbatim (verifiziert an 56313), unser Chat rendert sie wieder sanitisiert.
+    // Rich-Inhalt? Die Autotask-Notiz bekommt IMMER Klartext: Autotask zeigt die
+    // `description` als reinen Text (HTML-Tags würden als „<strong>…" sichtbar sein –
+    // verifiziert an 56313 per Screenshot). Formatierung lebt nur in der Kundenmail
+    // (HTML rendert dort sauber). Listen werden via plainTextFromRich zu „• …"-Zeilen.
     const sanitized = rawHtml.trim() ? sanitizeRichHtml(rawHtml) : "";
     const useHtml = sanitized.length > 0 && hasRichMarkup(sanitized);
     // title ist beim Anlegen Pflicht – aus der ersten Zeile des PLAINTEXTS ableiten.
@@ -144,7 +149,7 @@ export async function sendTicketChatNote(
       "Chat-Nachricht";
     const noteData = {
       title,
-      description: useHtml ? sanitized : text,
+      description: useHtml ? plainTextFromRich(sanitized) : text,
       noteType: CONVERSATION_NOTE_TYPES.outbound,
       publish: 1,
     };
@@ -210,6 +215,7 @@ export async function sendTicketChatNote(
         message: useHtml ? sanitized : text,
         orgName,
         ticketNumber: number,
+        ticketTitle: ticket?.title ?? "",
         isHtml: useHtml,
       });
 
