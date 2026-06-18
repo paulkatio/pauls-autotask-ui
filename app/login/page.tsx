@@ -72,7 +72,7 @@ export default async function LoginPage({
                   <Button
                     type="submit"
                     variant="outline"
-                    className="w-full justify-start"
+                    className="h-11 w-full justify-start sm:h-9"
                   >
                     {u.displayName}
                   </Button>
@@ -84,7 +84,7 @@ export default async function LoginPage({
               <Button
                 type="submit"
                 variant="outline"
-                className="h-12 w-full gap-3 text-base"
+                className="h-11 w-full gap-3 text-base sm:h-9"
               >
                 <MicrosoftLogo />
                 Mit Microsoft anmelden

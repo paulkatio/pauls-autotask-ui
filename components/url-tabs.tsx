@@ -40,7 +40,7 @@ export function UrlTabs({
           <TabsTrigger
             key={t.value}
             value={t.value}
-            className="h-11 flex-1 sm:h-8 sm:flex-none"
+            className="h-11 flex-1 sm:h-9 sm:flex-none"
           >
             {t.label}
           </TabsTrigger>

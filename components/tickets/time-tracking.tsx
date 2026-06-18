@@ -108,7 +108,7 @@ export function TimeTracking({ ticketId }: { ticketId: number }) {
   return (
     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
       {/* Umrahmte Zeitanzeige (mobil h-10 zu den größeren Touch-Tasten, ab sm h-8) */}
-      <span className="text-muted-foreground flex h-11 items-center gap-1.5 rounded-md border px-2.5 text-sm tabular-nums sm:h-8">
+      <span className="text-muted-foreground flex h-11 items-center gap-1.5 rounded-md border px-2.5 text-sm tabular-nums sm:h-9">
         <TimerIcon className="size-4" />
         {fmtElapsed(elapsedMs)}
       </span>

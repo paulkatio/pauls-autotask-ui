@@ -48,7 +48,7 @@ export default async function NoAccessPage() {
               </EmptyDescription>
             </EmptyHeader>
             <form action={signOutEntra}>
-              <Button type="submit" variant="outline">
+              <Button type="submit" variant="outline" className="h-11 sm:h-9">
                 Abmelden
               </Button>
             </form>

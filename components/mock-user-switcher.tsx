@@ -35,7 +35,7 @@ export function MockUserSwitcher({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button variant="outline" size="sm" className="h-11 sm:h-7" />}
+        render={<Button variant="outline" size="sm" className="h-11 sm:h-9" />}
         aria-label="Benutzer wechseln"
       >
         <UserIcon data-icon="inline-start" />

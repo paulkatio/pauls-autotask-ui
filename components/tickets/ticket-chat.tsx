@@ -568,7 +568,7 @@ export function TicketChat({
             <Button
               type="submit"
               size="sm"
-              className="h-11 sm:h-7"
+              className="h-11 sm:h-9"
               disabled={sending || (!text.trim() && files.length === 0)}
             >
               Senden &amp; mailen

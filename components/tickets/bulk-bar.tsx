@@ -688,7 +688,7 @@ export function BulkBar({
   function renderControls(stacked: boolean) {
     const triggerCls = stacked
       ? "h-11 w-full"
-      : "w-40 shrink-0 sm:h-7 sm:w-auto sm:min-w-36";
+      : "w-40 shrink-0 sm:h-9 sm:w-auto sm:min-w-36";
     const selectsWrap = stacked
       ? "flex flex-col gap-2"
       : "flex gap-2 overflow-x-auto sm:flex-wrap sm:items-center sm:overflow-visible";
@@ -697,10 +697,10 @@ export function BulkBar({
       : "flex items-center gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible";
     const btnCls = stacked
       ? "h-11 w-full justify-start"
-      : "h-11 flex-1 sm:h-7 sm:flex-none";
+      : "h-11 flex-1 sm:h-9 sm:flex-none";
     const popBtnCls = stacked
       ? "h-11 w-full justify-between"
-      : "h-11 shrink-0 sm:h-7 sm:flex-none";
+      : "h-11 shrink-0 sm:h-9 sm:flex-none";
     return (
       <>
         <div className={selectsWrap}>
@@ -875,7 +875,7 @@ export function BulkBar({
             <Button
               variant="ghost"
               size="sm"
-              className="h-11 shrink-0"
+              className="size-11 shrink-0"
               onClick={clearAll}
               aria-label="Auswahl aufheben"
             >

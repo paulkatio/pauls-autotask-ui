@@ -197,7 +197,7 @@ function ExpandableText({ text }: { text: string }) {
         {text}
       </p>
       {isLong && (
-        <Button variant="ghost" size="sm" className="h-11 sm:h-7" onClick={() => setExpanded((e) => !e)}>
+        <Button variant="ghost" size="sm" className="h-11 sm:h-9" onClick={() => setExpanded((e) => !e)}>
           {expanded ? "Weniger anzeigen" : "Mehr anzeigen"}
         </Button>
       )}
@@ -405,13 +405,13 @@ export function TicketDetailView({
               <TabsList className="group-data-horizontal/tabs:h-auto max-w-full flex-wrap justify-start gap-1">
                 <TabsTrigger
                   value="zeiten"
-                  className="h-11 flex-1 sm:h-8 sm:flex-none"
+                  className="h-11 flex-1 sm:h-9 sm:flex-none"
                 >
                   Zeiten
                 </TabsTrigger>
                 <TabsTrigger
                   value="anhaenge"
-                  className="h-11 flex-1 sm:h-8 sm:flex-none"
+                  className="h-11 flex-1 sm:h-9 sm:flex-none"
                 >
                   Anhänge ({detail.attachments.length})
                 </TabsTrigger>

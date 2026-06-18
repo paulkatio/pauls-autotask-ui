@@ -31,7 +31,7 @@ export function MyProjectsSection({ preview }: { preview: ProjectsPreview }) {
         <h2 className="text-lg font-semibold tracking-tight">Meine Projekte</h2>
         <Link
           href="/projekte"
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
+          className="text-muted-foreground hover:text-foreground inline-flex h-11 items-center gap-1 text-sm sm:h-auto"
         >
           Alle anzeigen
           <ArrowRightIcon className="size-4" />

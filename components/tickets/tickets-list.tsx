@@ -820,7 +820,7 @@ export function TicketsList({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-11 flex-1 sm:h-7 sm:flex-none"
+                className="h-11 flex-1 sm:h-9 sm:flex-none"
                 disabled={!data.prevCursor}
                 onClick={() => data.prevCursor && goToCursor(data.prevCursor)}
               >
@@ -829,7 +829,7 @@ export function TicketsList({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-11 flex-1 sm:h-7 sm:flex-none"
+                className="h-11 flex-1 sm:h-9 sm:flex-none"
                 disabled={!data.nextCursor}
                 onClick={() => data.nextCursor && goToCursor(data.nextCursor)}
               >

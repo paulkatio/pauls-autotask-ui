@@ -35,6 +35,6 @@ export function HeaderAutotaskLink({ webBase }: { webBase: string | null }) {
   // Schmaler Knopf mit Logo + „Autotask" + Link-Icon (wie Desktop), nur etwas
   // höher für die Touch-Bedienung. Nur Mobile (md:hidden).
   return (
-    <AutotaskOpenButton href={href} label="Autotask" className="h-9 md:hidden" />
+    <AutotaskOpenButton href={href} label="Autotask" className="h-11 md:hidden" />
   );
 }
