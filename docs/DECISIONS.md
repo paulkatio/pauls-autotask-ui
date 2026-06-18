@@ -2376,3 +2376,22 @@ Rechnungen lesen) – das vorab geflaggte Berechtigungsrisiko ist **entschärft*
   (`TicketWindowSelect`) `TICKET_WINDOW_DEFAULT` importieren kann; `ticket-list.ts`
   re-exportiert sie für die serverseitigen Aufrufer. `nowMs` via `currentMs()` aus
   `lib/format` (sonst `react-hooks/purity`-Lint bei direktem `Date.now()` im Render).
+
+---
+
+## 2026-06-18 — TicketNotes.description ist Rohtext (kein HTML-Rendering)
+
+**API-Fakt (belegt per Screenshot an Prod-Ticket 56313).** Autotask zeigt
+`TicketNotes.description` als **Rohtext** an. Übergibt man HTML, erscheinen die Tags
+sichtbar im Klartext (z. B. `<strong>` steht als Literal in der Notiz, wird nicht
+fett gerendert). Das Feld ist also reiner Text, kein Rich-Text/HTML-Container.
+
+**Konsequenz im Code.**
+- Die in den Chat/„Neue Notiz"-Dialog getippte Rich-Text-Eingabe wird vor dem Anlegen
+  der TicketNote per `plainTextFromRich` zu **Klartext** normalisiert (Listen → `• `,
+  Block-/Zeilenumbrüche bleiben als `\n`). So steht in Autotask sauberer Text statt
+  Markup.
+- **HTML lebt ausschließlich in der Kunden-Mail** (`buildCustomerEmail`,
+  `lib/mail/customer-email.ts`) — dort ist formatierter Inhalt erwünscht und korrekt.
+  Die TicketNote (internes Autotask-Protokoll) und die Mail (Kundenkanal) bekommen also
+  bewusst zwei Repräsentationen derselben Eingabe: Note = Klartext, Mail = HTML.
