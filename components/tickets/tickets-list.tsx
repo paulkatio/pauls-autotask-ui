@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { SearchIcon, TicketIcon } from "lucide-react";
+import { MagnifyingGlass, Ticket as TicketIcon, ArrowCounterClockwise } from "@phosphor-icons/react/ssr";
 
 import {
   Select,
@@ -33,7 +33,6 @@ import {
 import { BulkBar } from "@/components/tickets/bulk-bar";
 import { TruncatedText } from "@/components/truncated-text";
 import { useColumnOrder } from "@/hooks/use-column-order";
-import { RotateCcwIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { labelOf } from "@/lib/autotask/mappers";
 import { PriorityBadge } from "@/components/priority-indicator";
@@ -551,7 +550,7 @@ export function TicketsList({
             >
           {searchMode !== "off" && (
             <div className="relative w-full sm:max-w-xs">
-              <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+              <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
@@ -678,7 +677,7 @@ export function TicketsList({
                   onClick={colReset}
                   className="text-muted-foreground"
                 >
-                  <RotateCcwIcon />
+                  <ArrowCounterClockwise />
                   Spalten zurücksetzen
                 </Button>
               )}

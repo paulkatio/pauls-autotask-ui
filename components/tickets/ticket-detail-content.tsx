@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AlertCircleIcon } from "lucide-react";
+import { WarningCircle } from "@phosphor-icons/react/ssr";
 
 import { getSession } from "@/lib/auth";
 import { getTicketDetail } from "@/lib/autotask/entities/ticket-detail";
@@ -21,7 +21,7 @@ import { TicketDetailView } from "@/components/tickets/ticket-detail";
 function ErrorAlert({ title, message }: { title: string; message: string }) {
   return (
     <Alert variant="destructive">
-      <AlertCircleIcon />
+      <WarningCircle />
       <AlertTitle>{title}</AlertTitle>
       <AlertDescription>{message}</AlertDescription>
     </Alert>

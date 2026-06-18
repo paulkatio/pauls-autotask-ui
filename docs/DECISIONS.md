@@ -2430,3 +2430,39 @@ fett gerendert). Das Feld ist also reiner Text, kein Rich-Text/HTML-Container.
   `lib/mail/customer-email.ts`) — dort ist formatierter Inhalt erwünscht und korrekt.
   Die TicketNote (internes Autotask-Protokoll) und die Mail (Kundenkanal) bekommen also
   bewusst zwei Repräsentationen derselben Eingabe: Note = Klartext, Mail = HTML.
+
+---
+
+## 2026-06-18 — Icon-Library: lucide → Phosphor (vollständig)
+
+**Entscheidung (Paul).** Gesamtes Icon-Setup von `lucide-react` auf **Phosphor**
+(`@phosphor-icons/react`) umgestellt; `lucide-react` deinstalliert, keine Reste, nicht
+gemischt. CLAUDE.md §2 + STATE/README entsprechend aktualisiert. Ersetzt die frühere
+Phase-0-Notiz „iconLibrary = lucide".
+
+**Konventionen (verbindlich, auch in CLAUDE.md §2):**
+- Komponenten-Import aus dem **RSC-sicheren Barrel `@phosphor-icons/react/ssr`** (der
+  Default-Export nutzt `useContext(IconContext)` → bricht in Server-Komponenten; viele
+  Icons rendern hier in RSC). Funktioniert in Server- UND Client-Komponenten.
+- Typ `Icon` (ersetzt `LucideIcon`) **type-only** aus `@phosphor-icons/react`.
+- **Einsatzregel:** UI/Navigation/Tabellen/Buttons → `regular`/`bold`, einfarbig
+  (Default-Gewicht, kein `weight`-Prop). `duotone` NUR als gezielter Akzent (Hero-/Feature-
+  Icons, Empty States, Onboarding), nie flächig.
+- Phosphor-Namen ohne „Icon"-Suffix. `className` (size-*/Farbe) unverändert wie bei lucide
+  (Tailwind-Width/Height überschreibt das SVG-`1em`-Default).
+
+**Namens-Substitutionen (kein exaktes lucide-Pendant, nächstliegend gewählt):**
+`MessageSquarePlus → NotePencil`, `OctagonX → XCircle`, `Loader2 → CircleNotch`
+(animate-spin bleibt), `Contact → AddressBook`, `FileSignature → Signature`,
+`RemoveFormatting → Eraser`, `Merge → ArrowsMerge`, `Menu → List`,
+`LayoutDashboard → SquaresFour`. Restliche ~70 Icons 1:1 gemappt.
+
+**Kollisionen aliased:** Phosphor `Sidebar` kollidiert mit der lokalen `Sidebar`-Komponente
+(`ui/sidebar.tsx`) → als `SidebarIcon` importiert. Phosphor `Ticket` kollidiert mit dem
+`Ticket`-Typ (`tickets-list.tsx`) → als `TicketIcon` importiert.
+
+**Hinweis `components.json`:** bleibt auf `iconLibrary: lucide` (shadcn kennt kein Phosphor).
+Von `npx shadcn add` mitgelieferte lucide-Icons daher **manuell auf Phosphor umstellen**.
+
+**Verifiziert:** `typecheck` + `lint` + `next build` grün (alle Icon-Namen aus `/ssr`
+aufgelöst). Live-Browser-Smoke steht aus (Build deckt RSC-Auflösung ab).

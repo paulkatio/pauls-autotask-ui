@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronsUpDownIcon, PlusIcon } from "lucide-react";
+import { CaretUpDown, Plus } from "@phosphor-icons/react/ssr";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -356,7 +356,7 @@ export function NewTicketDialog({
       }}
     >
       <ResponsiveDialogTrigger render={<Button size="sm" className="h-11 sm:h-9" />}>
-        <PlusIcon />
+        <Plus />
         {triggerLabel ?? "Neues Ticket"}
       </ResponsiveDialogTrigger>
       <ResponsiveDialogContent className="sm:max-w-lg">
@@ -384,7 +384,7 @@ export function NewTicketDialog({
                 <span className="truncate">
                   {companyName || "Firma suchen …"}
                 </span>
-                <ChevronsUpDownIcon className="text-muted-foreground" />
+                <CaretUpDown className="text-muted-foreground" />
               </PopoverTrigger>
               <PopoverContent className="w-(--anchor-width) p-0">
                 <Command shouldFilter={false}>
@@ -442,7 +442,7 @@ export function NewTicketDialog({
                       ? "Erst Firma wählen"
                       : "Kontakt wählen"}
                 </span>
-                <ChevronsUpDownIcon className="text-muted-foreground" />
+                <CaretUpDown className="text-muted-foreground" />
               </PopoverTrigger>
               <PopoverContent className="w-(--anchor-width) p-0">
                 <Command>

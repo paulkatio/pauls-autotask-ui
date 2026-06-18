@@ -5,13 +5,13 @@ import { useEditor, useEditorState, EditorContent, type Editor } from "@tiptap/r
 import { StarterKit } from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extensions";
 import {
-  BoldIcon,
-  ItalicIcon,
-  UnderlineIcon,
-  ListIcon,
-  ListOrderedIcon,
-  RemoveFormattingIcon,
-} from "lucide-react";
+  TextB,
+  TextItalic,
+  TextUnderline,
+  ListBullets,
+  ListNumbers,
+  Eraser,
+} from "@phosphor-icons/react/ssr";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -159,21 +159,21 @@ export const RichTextEditor = React.forwardRef<
         <div className="flex flex-wrap items-center gap-1">
           <ToolbarButton
             label="Fett"
-            icon={BoldIcon}
+            icon={TextB}
             disabled={toolbarDisabled}
             active={state?.bold}
             onClick={() => editor?.chain().focus().toggleBold().run()}
           />
           <ToolbarButton
             label="Kursiv"
-            icon={ItalicIcon}
+            icon={TextItalic}
             disabled={toolbarDisabled}
             active={state?.italic}
             onClick={() => editor?.chain().focus().toggleItalic().run()}
           />
           <ToolbarButton
             label="Unterstrichen"
-            icon={UnderlineIcon}
+            icon={TextUnderline}
             disabled={toolbarDisabled}
             active={state?.underline}
             onClick={() => editor?.chain().focus().toggleUnderline().run()}
@@ -183,14 +183,14 @@ export const RichTextEditor = React.forwardRef<
 
           <ToolbarButton
             label="Stichpunkte"
-            icon={ListIcon}
+            icon={ListBullets}
             disabled={toolbarDisabled}
             active={state?.bullet}
             onClick={() => editor?.chain().focus().toggleBulletList().run()}
           />
           <ToolbarButton
             label="Nummerierte Liste"
-            icon={ListOrderedIcon}
+            icon={ListNumbers}
             disabled={toolbarDisabled}
             active={state?.ordered}
             onClick={() => editor?.chain().focus().toggleOrderedList().run()}
@@ -200,7 +200,7 @@ export const RichTextEditor = React.forwardRef<
 
           <ToolbarButton
             label="Formatierung entfernen"
-            icon={RemoveFormattingIcon}
+            icon={Eraser}
             disabled={toolbarDisabled}
             onClick={() =>
               editor?.chain().focus().unsetAllMarks().clearNodes().run()
@@ -232,7 +232,7 @@ function ToolbarButton({
   disabled,
 }: {
   label: string;
-  icon: typeof BoldIcon;
+  icon: typeof TextB;
   onClick: () => void;
   active?: boolean;
   disabled?: boolean;

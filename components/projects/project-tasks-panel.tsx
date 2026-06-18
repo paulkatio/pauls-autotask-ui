@@ -1,6 +1,6 @@
 "use client";
 
-import { ListTodoIcon } from "lucide-react";
+import { ListChecks } from "@phosphor-icons/react/ssr";
 
 import {
   Table,
@@ -77,7 +77,7 @@ export function ProjectTasksPanel({ rows }: { rows: ProjectTaskRow[] }) {
       <Empty>
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <ListTodoIcon />
+            <ListChecks />
           </EmptyMedia>
           <EmptyTitle>Keine Aufgaben</EmptyTitle>
           <EmptyDescription>

@@ -2,14 +2,14 @@
 
 import * as React from "react";
 import {
-  ArrowDownIcon,
-  ArrowUpDownIcon,
-  ArrowUpIcon,
-  ChevronsUpDownIcon,
-  ContactIcon,
-  RotateCcwIcon,
-  SearchIcon,
-} from "lucide-react";
+  ArrowDown,
+  ArrowsDownUp,
+  ArrowUp,
+  CaretUpDown,
+  AddressBook,
+  ArrowCounterClockwise,
+  MagnifyingGlass,
+} from "@phosphor-icons/react/ssr";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -129,10 +129,10 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
   }) {
     const active = sortKey === col;
     const Icon = !active
-      ? ArrowUpDownIcon
+      ? ArrowsDownUp
       : sortDir === "asc"
-        ? ArrowUpIcon
-        : ArrowDownIcon;
+        ? ArrowUp
+        : ArrowDown;
     return (
       <TableHead
         className="data-[dragover]:bg-accent data-[dragging]:opacity-60 cursor-grab transition-colors active:cursor-grabbing"
@@ -205,7 +205,7 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-full min-w-48 flex-1 sm:max-w-xs">
-          <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -225,7 +225,7 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
             onClick={reset}
             className="text-muted-foreground"
           >
-            <RotateCcwIcon />
+            <ArrowCounterClockwise />
             Spalten zurücksetzen
           </Button>
         )}
@@ -235,7 +235,7 @@ export function ContactsTable({ initial }: { initial: ContactListRow[] }) {
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <ContactIcon />
+              <AddressBook />
             </EmptyMedia>
             <EmptyTitle>Keine Kontakte</EmptyTitle>
             <EmptyDescription>
@@ -381,7 +381,7 @@ function CompanyFilterPicker({
         }
       >
         <span className="truncate">{company ? company.name : "Alle Firmen"}</span>
-        <ChevronsUpDownIcon className="text-muted-foreground" />
+        <CaretUpDown className="text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent className="w-(--anchor-width) p-0">
         <Command shouldFilter={false}>

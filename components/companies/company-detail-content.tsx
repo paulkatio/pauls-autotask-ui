@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Icon } from "@phosphor-icons/react";
 import {
-  ChevronLeftIcon,
-  CircleCheckIcon,
-  FileTextIcon,
-  GlobeIcon,
-  MapPinIcon,
-  MonitorIcon,
-  PhoneIcon,
-  TicketIcon,
-  UsersIcon,
-  type LucideIcon,
-} from "lucide-react";
+  CaretLeft,
+  CheckCircle,
+  FileText,
+  Globe,
+  MapPin,
+  Monitor,
+  Phone,
+  Ticket,
+  Users,
+} from "@phosphor-icons/react/ssr";
 
 import { getSession } from "@/lib/auth";
 import { companies } from "@/lib/autotask/entities/companies";
@@ -166,7 +166,7 @@ export async function CompanyDetailContent({
              diesen Inline-Link daher nur auf Desktop zeigen – kein Doppel. */
           className="text-muted-foreground hover:text-foreground hidden items-center gap-1 text-sm md:inline-flex"
         >
-          <ChevronLeftIcon className="size-4" />
+          <CaretLeft className="size-4" />
           Firmen
         </Link>
       )}
@@ -180,19 +180,19 @@ export async function CompanyDetailContent({
             <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               {addressLine ? (
                 <span className="inline-flex items-center gap-1.5">
-                  <MapPinIcon className="size-4 shrink-0" />
+                  <MapPin className="size-4 shrink-0" />
                   {addressLine}
                 </span>
               ) : null}
               {company.phone ? (
                 <span className="inline-flex items-center gap-1.5">
-                  <PhoneIcon className="size-4 shrink-0" />
+                  <Phone className="size-4 shrink-0" />
                   <span className="tabular-nums">{company.phone}</span>
                 </span>
               ) : null}
               {company.webAddress ? (
                 <span className="inline-flex items-center gap-1.5">
-                  <GlobeIcon className="size-4 shrink-0" />
+                  <Globe className="size-4 shrink-0" />
                   <a
                     href={webHref(company.webAddress)}
                     target="_blank"
@@ -237,31 +237,31 @@ export async function CompanyDetailContent({
         <StatCard
           title="Offene Tickets"
           value={stats?.openTickets ?? "—"}
-          icon={TicketIcon}
+          icon={Ticket}
           href={`${basePath}/${companyId}?tab=offen`}
         />
         <StatCard
           title="Abgeschlossen"
           value={stats?.closedTickets ?? "—"}
-          icon={CircleCheckIcon}
+          icon={CheckCircle}
           href={`${basePath}/${companyId}?tab=abgeschlossen`}
         />
         <StatCard
           title="Kontakte"
           value={stats?.contacts ?? "—"}
-          icon={UsersIcon}
+          icon={Users}
           href={`${basePath}/${companyId}?tab=kontakte`}
         />
         <StatCard
           title="Geräte"
           value={stats?.devices ?? "—"}
-          icon={MonitorIcon}
+          icon={Monitor}
           href={`${basePath}/${companyId}?tab=geraete`}
         />
         <StatCard
           title="Verträge"
           value={stats?.contracts ?? "—"}
-          icon={FileTextIcon}
+          icon={FileText}
           href={`${basePath}/${companyId}?tab=vertraege`}
         />
       </div>
@@ -362,7 +362,7 @@ async function renderPanel(
     if (rows.length === 0) {
       return (
         <EmptyTab
-          icon={<UsersIcon />}
+          icon={<Users />}
           title="Keine Kontakte"
           description="Für diese Firma sind keine aktiven Kontakte hinterlegt."
         />
@@ -376,7 +376,7 @@ async function renderPanel(
     if (rows.length === 0) {
       return (
         <EmptyTab
-          icon={<MonitorIcon />}
+          icon={<Monitor />}
           title="Keine Geräte"
           description="Für diese Firma sind keine Geräte erfasst."
         />
@@ -389,7 +389,7 @@ async function renderPanel(
   if (rows.length === 0) {
     return (
       <EmptyTab
-        icon={<FileTextIcon />}
+        icon={<FileText />}
         title="Keine Verträge"
         description="Für diese Firma sind keine Verträge hinterlegt."
       />
@@ -426,7 +426,7 @@ function StatCard({
 }: {
   title: string;
   value: number | string;
-  icon: LucideIcon;
+  icon: Icon;
   href: string;
 }) {
   return (

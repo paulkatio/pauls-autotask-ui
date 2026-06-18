@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import {
-  EuroIcon,
-  FilterIcon,
-  LandmarkIcon,
-  ReceiptEuroIcon,
-} from "lucide-react";
+  CurrencyEur,
+  FunnelSimple,
+  Bank,
+  Receipt,
+} from "@phosphor-icons/react/ssr";
 
 import { Badge } from "@/components/ui/badge";
 import { TruncatedText } from "@/components/truncated-text";
@@ -173,7 +173,7 @@ export function InvoicesList({
     {
       id: "status",
       label: "Status",
-      icon: <FilterIcon className="text-muted-foreground" />,
+      icon: <FunnelSimple className="text-muted-foreground" />,
       options: [
         { value: "alle", label: "Alle" },
         { value: "offen", label: "Offen" },
@@ -186,7 +186,7 @@ export function InvoicesList({
     {
       id: "betrag",
       label: "Betrag",
-      icon: <EuroIcon className="text-muted-foreground" />,
+      icon: <CurrencyEur className="text-muted-foreground" />,
       options: [
         { value: "alle", label: "Alle Beträge" },
         { value: "lt1k", label: "< 1.000 €" },
@@ -204,7 +204,7 @@ export function InvoicesList({
     {
       id: "zahlungsart",
       label: "Zahlungsart",
-      icon: <LandmarkIcon className="text-muted-foreground" />,
+      icon: <Bank className="text-muted-foreground" />,
       options: [
         { value: "alle", label: "Alle" },
         { value: "sepa", label: "SEPA" },
@@ -233,7 +233,7 @@ export function InvoicesList({
       storageKey="vertrieb-rechnungen-cols"
       statePrefix="vertrieb:rechnungen"
       minWidthClass="min-w-4xl"
-      emptyIcon={<ReceiptEuroIcon />}
+      emptyIcon={<Receipt />}
       emptyTitle="Keine Rechnungen"
       emptyDescription="Im gewählten Zeitraum gibt es keine Rechnungen."
       groupings={groupings}

@@ -3,14 +3,14 @@
 import * as React from "react";
 import { toast } from "sonner";
 import {
-  CheckIcon,
-  ChevronsUpDownIcon,
-  ExternalLinkIcon,
-  MergeIcon,
-  Undo2Icon,
-  UserPlusIcon,
-  XIcon,
-} from "lucide-react";
+  Check,
+  CaretUpDown,
+  ArrowSquareOut,
+  ArrowsMerge,
+  ArrowUUpLeft,
+  UserPlus,
+  X,
+} from "@phosphor-icons/react/ssr";
 
 import {
   Select,
@@ -769,7 +769,7 @@ export function BulkBar({
               }
             >
               Zuweisen
-              <ChevronsUpDownIcon className="text-muted-foreground" />
+              <CaretUpDown className="text-muted-foreground" />
             </PopoverTrigger>
             <PopoverContent className="w-64 p-0">
               {roleStep ? (
@@ -817,7 +817,7 @@ export function BulkBar({
             disabled={busyRoles}
             onClick={assignToMe}
           >
-            <UserPlusIcon />
+            <UserPlus />
             Mir zuweisen
           </Button>
 
@@ -833,7 +833,7 @@ export function BulkBar({
             }
             onClick={openMerge}
           >
-            <MergeIcon />
+            <ArrowsMerge />
             Zusammenführen
           </Button>
 
@@ -843,7 +843,7 @@ export function BulkBar({
             className={btnCls}
             onClick={clearAll}
           >
-            <XIcon />
+            <X />
             Auswahl aufheben
           </Button>
         </div>
@@ -870,7 +870,7 @@ export function BulkBar({
               onClick={() => setActionsOpen(true)}
             >
               Aktionen
-              <ChevronsUpDownIcon className="text-muted-foreground" />
+              <CaretUpDown className="text-muted-foreground" />
             </Button>
             <Button
               variant="ghost"
@@ -879,7 +879,7 @@ export function BulkBar({
               onClick={clearAll}
               aria-label="Auswahl aufheben"
             >
-              <XIcon />
+              <X />
             </Button>
           </div>
         ) : (
@@ -1062,7 +1062,7 @@ export function BulkBar({
               <ResponsiveDialogFooter>
                 {undoOps.length > 0 && (
                   <Button variant="outline" onClick={undoFromDialog}>
-                    <Undo2Icon />
+                    <ArrowUUpLeft />
                     Rückgängig (nur Status)
                   </Button>
                 )}
@@ -1137,7 +1137,7 @@ export function BulkBar({
                             </span>
                             <span className="flex shrink-0 items-center gap-2">
                               {isSource && <Badge variant="outline">markiert</Badge>}
-                              {isSel && <CheckIcon className="size-4" />}
+                              {isSel && <Check className="size-4" />}
                             </span>
                           </button>
                         );
@@ -1201,7 +1201,7 @@ export function BulkBar({
               )}
               <AlertDialogFooter>
                 <Button variant="outline" onClick={openTarget}>
-                  <ExternalLinkIcon />
+                  <ArrowSquareOut />
                   Ziel-Ticket öffnen
                 </Button>
                 <AlertDialogAction onClick={closeMerge}>Schließen</AlertDialogAction>

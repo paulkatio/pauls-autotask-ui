@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeft } from "@phosphor-icons/react/ssr";
 
 import { Button } from "@/components/ui/button";
 
@@ -45,7 +45,7 @@ export function HeaderBack() {
       aria-label="Zurück"
       onClick={goBack}
     >
-      <ArrowLeftIcon />
+      <ArrowLeft />
     </Button>
   );
 }

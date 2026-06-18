@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarRangeIcon } from "lucide-react";
+import { CalendarBlank } from "@phosphor-icons/react/ssr";
 
 import {
   Select,
@@ -41,7 +41,7 @@ export function VertriebPeriodSelect({ value }: { value: string }) {
         className="h-11 w-full min-w-0 sm:h-9 sm:w-auto"
         aria-label="Zeitraum"
       >
-        <CalendarRangeIcon className="text-muted-foreground" />
+        <CalendarBlank className="text-muted-foreground" />
         <SelectValue />
       </SelectTrigger>
       <SelectContent className="w-auto min-w-44">

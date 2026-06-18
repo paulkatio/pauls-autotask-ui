@@ -1,6 +1,6 @@
 "use client";
 
-import { LayersIcon } from "lucide-react";
+import { StackSimple } from "@phosphor-icons/react/ssr";
 
 import {
   Table,
@@ -77,7 +77,7 @@ export function ProjectPhasesPanel({ rows }: { rows: ProjectPhase[] }) {
       <Empty>
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <LayersIcon />
+            <StackSimple />
           </EmptyMedia>
           <EmptyTitle>Keine Phasen</EmptyTitle>
           <EmptyDescription>

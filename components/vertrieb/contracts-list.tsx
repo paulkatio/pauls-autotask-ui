@@ -1,6 +1,6 @@
 "use client";
 
-import { FileTextIcon, FilterIcon } from "lucide-react";
+import { FileText, FunnelSimple } from "@phosphor-icons/react/ssr";
 
 import { Badge } from "@/components/ui/badge";
 import { TruncatedText } from "@/components/truncated-text";
@@ -117,7 +117,7 @@ export function ContractsList({
       hrefFor={(r) => `/vertrieb/vertraege/${r.id}`}
       storageKey="vertrieb-vertraege-cols"
       statePrefix="vertrieb:vertraege"
-      emptyIcon={<FileTextIcon />}
+      emptyIcon={<FileText />}
       emptyTitle="Keine Verträge"
       emptyDescription="Im gewählten Zeitraum gibt es keine Verträge."
       groupings={groupings}
@@ -125,7 +125,7 @@ export function ContractsList({
         {
           id: "status",
           label: "Status",
-          icon: <FilterIcon className="text-muted-foreground" />,
+          icon: <FunnelSimple className="text-muted-foreground" />,
           options: [
             { value: "alle", label: "Alle" },
             { value: "1", label: "Aktiv" },

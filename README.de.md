@@ -59,7 +59,7 @@ Gebaut für das Handy – nicht „Desktop, nur kleiner":
 
 ## Tech-Stack
 
-**Next.js 16** (App Router, Turbopack) · **React 19** · **TypeScript** · **Tailwind v4** · **shadcn/ui** (einzige UI-Library) · Charts über shadcn-`Chart` (Recharts) · `next-themes` · `lucide-react` · **Auth.js v5** (Microsoft Entra ID) oder Mock · Tests mit **Playwright**.
+**Next.js 16** (App Router, Turbopack) · **React 19** · **TypeScript** · **Tailwind v4** · **shadcn/ui** (einzige UI-Library) · Charts über shadcn-`Chart` (Recharts) · `next-themes` · `@phosphor-icons/react` · **Auth.js v5** (Microsoft Entra ID) oder Mock · Tests mit **Playwright**.
 
 ## Erste Schritte
 

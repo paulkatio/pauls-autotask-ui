@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Icon } from "@phosphor-icons/react";
 import {
-  CalendarRangeIcon,
-  ChevronLeftIcon,
-  GaugeIcon,
-  LayersIcon,
-  ListTodoIcon,
-  type LucideIcon,
-} from "lucide-react";
+  CalendarBlank,
+  CaretLeft,
+  Gauge,
+  StackSimple,
+  ListChecks,
+} from "@phosphor-icons/react/ssr";
 
 import { getSession } from "@/lib/auth";
 import {
@@ -138,7 +138,7 @@ export async function ProjectDetailContent({
         href="/projekte"
         className="text-muted-foreground hover:text-foreground hidden items-center gap-1 text-sm md:inline-flex"
       >
-        <ChevronLeftIcon className="size-4" />
+        <CaretLeft className="size-4" />
         Projekte
       </Link>
 
@@ -207,26 +207,26 @@ export async function ProjectDetailContent({
         <StatCard
           title="Fortschritt"
           value={formatPercent(project.completedPercentage)}
-          icon={GaugeIcon}
+          icon={Gauge}
         />
         <StatCard
           title="Aufgaben offen"
           value={
             stats ? `${stats.tasksOpen} / ${stats.tasksTotal}` : "—"
           }
-          icon={ListTodoIcon}
+          icon={ListChecks}
           href="?tab=aufgaben"
         />
         <StatCard
           title="Phasen"
           value={stats ? stats.phases : "—"}
-          icon={LayersIcon}
+          icon={StackSimple}
           href="?tab=phasen"
         />
         <StatCard
           title="Fällig"
           value={formatDate(project.endDateTime)}
-          icon={CalendarRangeIcon}
+          icon={CalendarBlank}
         />
       </div>
 
@@ -273,7 +273,7 @@ function StatCard({
 }: {
   title: string;
   value: number | string;
-  icon: LucideIcon;
+  icon: Icon;
   href?: string;
 }) {
   const card = (

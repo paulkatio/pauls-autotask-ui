@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { SearchIcon } from "lucide-react";
+import { MagnifyingGlass } from "@phosphor-icons/react/ssr";
 
 import { Input } from "@/components/ui/input";
 
@@ -21,7 +21,7 @@ export function SearchBox() {
 
   return (
     <form onSubmit={submit} className="relative w-full max-w-2xl">
-      <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2" />
+      <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2" />
       <Input
         value={q}
         onChange={(e) => setQ(e.target.value)}

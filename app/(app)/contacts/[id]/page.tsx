@@ -2,12 +2,12 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  Building2Icon,
-  ChevronLeftIcon,
-  MailIcon,
-  PhoneIcon,
-  SmartphoneIcon,
-} from "lucide-react";
+  Buildings,
+  CaretLeft,
+  Envelope,
+  Phone,
+  DeviceMobile,
+} from "@phosphor-icons/react/ssr";
 
 import { getSession } from "@/lib/auth";
 import { contacts } from "@/lib/autotask/entities/contacts";
@@ -168,7 +168,7 @@ export default async function ContactDetailPage({
         href="/contacts"
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
       >
-        <ChevronLeftIcon className="size-4" />
+        <CaretLeft className="size-4" />
         Kontakte
       </Link>
 
@@ -178,7 +178,7 @@ export default async function ContactDetailPage({
         <CardContent className="flex flex-col gap-2 py-6 text-sm">
           {contact.companyID != null ? (
             <div className="flex items-center gap-2">
-              <Building2Icon className="text-muted-foreground size-4 shrink-0" />
+              <Buildings className="text-muted-foreground size-4 shrink-0" />
               <Link
                 href={`/companies/${contact.companyID}`}
                 className="hover:underline"
@@ -189,19 +189,19 @@ export default async function ContactDetailPage({
           ) : null}
           {contact.emailAddress ? (
             <div className="flex items-center gap-2">
-              <MailIcon className="text-muted-foreground size-4 shrink-0" />
+              <Envelope className="text-muted-foreground size-4 shrink-0" />
               <span>{contact.emailAddress}</span>
             </div>
           ) : null}
           {contact.phone ? (
             <div className="flex items-center gap-2">
-              <PhoneIcon className="text-muted-foreground size-4 shrink-0" />
+              <Phone className="text-muted-foreground size-4 shrink-0" />
               <span className="tabular-nums">{contact.phone}</span>
             </div>
           ) : null}
           {contact.mobilePhone ? (
             <div className="flex items-center gap-2">
-              <SmartphoneIcon className="text-muted-foreground size-4 shrink-0" />
+              <DeviceMobile className="text-muted-foreground size-4 shrink-0" />
               <span className="tabular-nums">{contact.mobilePhone}</span>
             </div>
           ) : null}

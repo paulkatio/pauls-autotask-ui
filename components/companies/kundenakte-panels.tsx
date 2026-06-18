@@ -1,6 +1,6 @@
 "use client";
 
-import { FileTextIcon, MonitorIcon, UsersIcon } from "lucide-react";
+import { FileText, Monitor, Users } from "@phosphor-icons/react/ssr";
 
 import { Badge } from "@/components/ui/badge";
 import { contractStatusLabel, contractStatusVariant } from "@/lib/autotask/mappers";
@@ -39,7 +39,7 @@ export function ContactsPanel({ rows }: { rows: ContactRow[] }) {
       searchText={(r) => `${r.name} ${r.email} ${r.phone}`}
       searchPlaceholder="Kontakt suchen …"
       onRowClick={(r) => openContactModal(r.id)}
-      emptyIcon={<UsersIcon />}
+      emptyIcon={<Users />}
       emptyTitle="Keine Kontakte"
       emptyDescription="Für diese Firma sind keine aktiven Kontakte hinterlegt."
       columns={[
@@ -83,7 +83,7 @@ export function DevicesPanel({ rows }: { rows: DeviceRow[] }) {
       storageKey="cols:kundenakte-geraete"
       searchText={(r) => `${r.name} ${r.serialNumber} ${r.location}`}
       searchPlaceholder="Gerät suchen …"
-      emptyIcon={<MonitorIcon />}
+      emptyIcon={<Monitor />}
       emptyTitle="Keine Geräte"
       emptyDescription="Für diese Firma sind keine Geräte erfasst."
       columns={[
@@ -129,7 +129,7 @@ export function ContractsPanel({ rows }: { rows: ContractRow[] }) {
       storageKey="cols:kundenakte-vertraege"
       searchText={(r) => r.name}
       searchPlaceholder="Vertrag suchen …"
-      emptyIcon={<FileTextIcon />}
+      emptyIcon={<FileText />}
       emptyTitle="Keine Verträge"
       emptyDescription="Für diese Firma sind keine Verträge hinterlegt."
       columns={[

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { RotateCcwIcon, SearchIcon } from "lucide-react";
+import { ArrowCounterClockwise, MagnifyingGlass } from "@phosphor-icons/react/ssr";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -127,7 +127,7 @@ export function SearchableTable<T extends { id: number | string }>({
         <div className="flex flex-wrap items-center gap-2">
           {!hideSearch && (
             <div className="relative w-full min-w-48 flex-1 sm:max-w-xs">
-              <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+              <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -144,7 +144,7 @@ export function SearchableTable<T extends { id: number | string }>({
               onClick={reset}
               className="text-muted-foreground"
             >
-              <RotateCcwIcon />
+              <ArrowCounterClockwise />
               Spalten zurücksetzen
             </Button>
           )}

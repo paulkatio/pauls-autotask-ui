@@ -1,4 +1,4 @@
-import { ExternalLinkIcon } from "lucide-react";
+import { ArrowSquareOut } from "@phosphor-icons/react/ssr";
 
 import { buttonVariants } from "@/components/ui/button";
 import { AutotaskLogo } from "@/components/icons/autotask-logo";
@@ -39,7 +39,7 @@ export function AutotaskOpenButton({
     >
       <AutotaskLogo className="size-4" />
       {label}
-      {!iconOnly && <ExternalLinkIcon />}
+      {!iconOnly && <ArrowSquareOut />}
     </a>
   );
 }

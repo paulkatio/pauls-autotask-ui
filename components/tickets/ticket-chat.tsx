@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { AlertCircleIcon, MailIcon, PaperclipIcon, XIcon } from "lucide-react";
+import { WarningCircle, Envelope, Paperclip, X } from "@phosphor-icons/react/ssr";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -352,7 +352,7 @@ export function TicketChat({
         {dragOver && (
           <div className="bg-background/80 text-muted-foreground pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl text-sm">
             <span className="flex items-center gap-2">
-              <PaperclipIcon className="size-4" /> Dateien hier ablegen
+              <Paperclip className="size-4" /> Dateien hier ablegen
             </span>
           </div>
         )}
@@ -466,7 +466,7 @@ export function TicketChat({
                                 key={i}
                                 className="flex items-center gap-1 text-xs opacity-90"
                               >
-                                <PaperclipIcon className="size-3 shrink-0" />
+                                <Paperclip className="size-3 shrink-0" />
                                 <span className="truncate">{name}</span>
                               </span>
                             ))}
@@ -475,13 +475,13 @@ export function TicketChat({
                       </div>
                       {status?.kind === "failed" && (
                         <span className="text-destructive flex items-center gap-1 text-xs">
-                          <AlertCircleIcon className="size-3 shrink-0" />
+                          <WarningCircle className="size-3 shrink-0" />
                           E-Mail nicht zugestellt – als Notiz gespeichert
                         </span>
                       )}
                       {status?.kind === "skipped" && (
                         <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                          <MailIcon className="size-3 shrink-0" />
+                          <Envelope className="size-3 shrink-0" />
                           Nur als Notiz gespeichert (nicht gemailt)
                         </span>
                       )}
@@ -501,7 +501,7 @@ export function TicketChat({
 
         {mailNotice && (
           <Alert>
-            <MailIcon />
+            <Envelope />
             <AlertDescription>{mailNotice}</AlertDescription>
           </Alert>
         )}
@@ -525,7 +525,7 @@ export function TicketChat({
                     key={i}
                     className="border-chart-2/30 bg-chart-2/10 text-chart-2 flex items-center gap-1.5 rounded-md border py-1 pr-1 pl-2 text-xs"
                   >
-                    <PaperclipIcon className="size-3 shrink-0" />
+                    <Paperclip className="size-3 shrink-0" />
                     <span className="max-w-44 truncate">
                       {format && <span className="font-semibold">{format}: </span>}
                       <span className="font-medium">{base}</span>
@@ -536,7 +536,7 @@ export function TicketChat({
                       aria-label={`${f.name} entfernen`}
                       className="text-chart-2/70 hover:bg-chart-2/15 hover:text-chart-2 rounded p-0.5"
                     >
-                      <XIcon className="size-3" />
+                      <X className="size-3" />
                     </button>
                   </span>
                 );
@@ -563,7 +563,7 @@ export function TicketChat({
               aria-label="Datei anhängen"
               disabled={sending || files.length >= MAX_FILES}
             >
-              <PaperclipIcon />
+              <Paperclip />
             </Button>
             <Button
               type="submit"

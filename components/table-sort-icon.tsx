@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDownIcon, ChevronUpIcon, ChevronsUpDownIcon } from "lucide-react";
+import { CaretDown, CaretUp, CaretUpDown } from "@phosphor-icons/react/ssr";
 
 // Sortier-Indikator für klickbare Tabellenköpfe – einheitlich über alle
 // Tabellenansichten. Aktiv: Pfeil auf/ab. Sortierbar aber inaktiv: dezenter
@@ -10,9 +10,9 @@ export function SortIcon({
 }: {
   state: "asc" | "desc" | "none";
 }) {
-  if (state === "asc") return <ChevronUpIcon className="size-3.5 shrink-0" />;
-  if (state === "desc") return <ChevronDownIcon className="size-3.5 shrink-0" />;
+  if (state === "asc") return <CaretUp className="size-3.5 shrink-0" />;
+  if (state === "desc") return <CaretDown className="size-3.5 shrink-0" />;
   return (
-    <ChevronsUpDownIcon className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover/sorthead:opacity-50" />
+    <CaretUpDown className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover/sorthead:opacity-50" />
   );
 }

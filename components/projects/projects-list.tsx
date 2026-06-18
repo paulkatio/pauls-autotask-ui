@@ -4,11 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  FolderKanbanIcon,
-  SearchIcon,
-} from "lucide-react";
+  ArrowDown,
+  ArrowUp,
+  Kanban,
+  MagnifyingGlass,
+} from "@phosphor-icons/react/ssr";
 
 import {
   Table,
@@ -340,7 +340,7 @@ export function ProjectsList({
         </div>
 
         <div className="relative w-full min-w-48 sm:w-64 sm:flex-none">
-          <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
@@ -386,7 +386,7 @@ export function ProjectsList({
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <FolderKanbanIcon />
+              <Kanban />
             </EmptyMedia>
             <EmptyTitle>Keine Projekte</EmptyTitle>
             <EmptyDescription>
@@ -565,9 +565,9 @@ function SortHead({
       {label}
       {active &&
         (sortDir === "asc" ? (
-          <ArrowUpIcon className="size-3.5" />
+          <ArrowUp className="size-3.5" />
         ) : (
-          <ArrowDownIcon className="size-3.5" />
+          <ArrowDown className="size-3.5" />
         ))}
     </button>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronsUpDownIcon, UserIcon } from "lucide-react";
+import { CaretUpDown, User } from "@phosphor-icons/react/ssr";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,13 +38,13 @@ export function MockUserSwitcher({
         render={<Button variant="outline" size="sm" className="h-11 sm:h-9" />}
         aria-label="Benutzer wechseln"
       >
-        <UserIcon data-icon="inline-start" />
+        <User data-icon="inline-start" />
         {/* Name erst ab sm zeigen – auf schmalen Headern nur Icon, damit der
             Seitentitel nicht verdrängt wird. */}
         <span className="hidden sm:inline">
           {current?.displayName ?? "Benutzer"}
         </span>
-        <ChevronsUpDownIcon data-icon="inline-end" />
+        <CaretUpDown data-icon="inline-end" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>

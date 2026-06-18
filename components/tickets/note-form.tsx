@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { LockIcon } from "lucide-react";
+import { Lock } from "@phosphor-icons/react/ssr";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,7 +78,7 @@ export function NoteForm({
         />
       </div>
       <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-        <LockIcon className="size-3.5 shrink-0" />
+        <Lock className="size-3.5 shrink-0" />
         Interne Notiz – für den Kunden nicht sichtbar.
       </p>
       {error && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileSignatureIcon, FilterIcon } from "lucide-react";
+import { Signature, FunnelSimple } from "@phosphor-icons/react/ssr";
 
 import { Badge } from "@/components/ui/badge";
 import { TruncatedText } from "@/components/truncated-text";
@@ -148,7 +148,7 @@ export function QuotesList({
       storageKey="vertrieb-angebote-cols"
       statePrefix="vertrieb:angebote"
       minWidthClass="min-w-4xl"
-      emptyIcon={<FileSignatureIcon />}
+      emptyIcon={<Signature />}
       emptyTitle="Keine Angebote"
       emptyDescription="Im gewählten Zeitraum gibt es keine Angebote."
       groupings={groupings}
@@ -156,7 +156,7 @@ export function QuotesList({
         {
           id: "status",
           label: "Status",
-          icon: <FilterIcon className="text-muted-foreground" />,
+          icon: <FunnelSimple className="text-muted-foreground" />,
           options: [
             { value: "alle", label: "Alle" },
             { value: "1", label: "Nicht angefordert" },

@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import {
-  Building2Icon,
-  MailIcon,
-  PhoneIcon,
-  SmartphoneIcon,
-} from "lucide-react";
+  Buildings,
+  Envelope,
+  Phone,
+  DeviceMobile,
+} from "@phosphor-icons/react/ssr";
 
 import {
   Dialog,
@@ -113,7 +113,7 @@ export function ContactModal() {
                   openCompany(cid);
                 }}
               >
-                <Building2Icon className="text-muted-foreground" />
+                <Buildings className="text-muted-foreground" />
                 <span className="truncate">
                   {data.companyName ?? `Firma ${data.companyID}`}
                 </span>
@@ -126,7 +126,7 @@ export function ContactModal() {
                 className="w-full justify-start font-normal"
                 render={<a href={`mailto:${data.email}`} aria-label={`E-Mail an ${data.email}`} />}
               >
-                <MailIcon className="text-muted-foreground" />
+                <Envelope className="text-muted-foreground" />
                 <span className="truncate">{data.email}</span>
               </Button>
             ) : null}
@@ -137,7 +137,7 @@ export function ContactModal() {
                 className="w-full justify-start font-normal"
                 render={<a href={`tel:${data.phone}`} aria-label={`${data.phone} anrufen`} />}
               >
-                <PhoneIcon className="text-muted-foreground" />
+                <Phone className="text-muted-foreground" />
                 <span className="tabular-nums">{data.phone}</span>
               </Button>
             ) : null}
@@ -148,7 +148,7 @@ export function ContactModal() {
                 className="w-full justify-start font-normal"
                 render={<a href={`tel:${data.mobilePhone}`} aria-label={`${data.mobilePhone} anrufen`} />}
               >
-                <SmartphoneIcon className="text-muted-foreground" />
+                <DeviceMobile className="text-muted-foreground" />
                 <span className="tabular-nums">{data.mobilePhone}</span>
               </Button>
             ) : null}

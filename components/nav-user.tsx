@@ -23,7 +23,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import * as React from "react"
-import { ChevronsUpDownIcon, HistoryIcon, LogOutIcon } from "lucide-react"
+import { CaretUpDown, ClockCounterClockwise, SignOut } from "@phosphor-icons/react/ssr"
 
 import { useTheme } from "next-themes"
 
@@ -66,7 +66,7 @@ export function NavUser({
               <span className="truncate font-medium">{user.name}</span>
               <span className="truncate text-xs">{user.email}</span>
             </div>
-            <ChevronsUpDownIcon className="ml-auto size-4" />
+            <CaretUpDown className="ml-auto size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-fit"
@@ -92,7 +92,7 @@ export function NavUser({
             {/* Platzhalter bis B04 (Mock-Provider / echte Session). */}
             <DropdownMenuGroup>
               <DropdownMenuItem onClick={() => setHistoryOpen(true)}>
-                <HistoryIcon />
+                <ClockCounterClockwise />
                 Verlauf
               </DropdownMenuItem>
             </DropdownMenuGroup>
@@ -110,7 +110,7 @@ export function NavUser({
             </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => logout()}>
-              <LogOutIcon />
+              <SignOut />
               Abmelden
             </DropdownMenuItem>
           </DropdownMenuContent>

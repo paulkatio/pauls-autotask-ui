@@ -25,7 +25,8 @@ bleiben immer serverseitig**.
 
 **Stack:** Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind v4 ·
 **shadcn/ui** (und sonst keine UI-Lib) · Charts über shadcn-`Chart` (Recharts) ·
-`next-themes` (Light/Dark/System) · Icons `lucide-react` · Auth über eigene
+`next-themes` (Light/Dark/System) · Icons **Phosphor** (`@phosphor-icons/react`, Import aus
+`/ssr`) · Auth über eigene
 Abstraktion (Mock **oder** Microsoft Entra ID via Auth.js v5) · Tests: Playwright.
 
 ---

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import {
-  AlertCircleIcon,
-  FolderKanbanIcon,
-  InboxIcon,
-  ReplyIcon,
-  TicketIcon,
-  type LucideIcon,
-} from "lucide-react";
+  WarningCircle,
+  Kanban,
+  Tray,
+  ArrowBendUpLeft,
+  Ticket,
+} from "@phosphor-icons/react/ssr";
+import type { Icon } from "@phosphor-icons/react";
 
 import { getSession } from "@/lib/auth";
 import {
@@ -40,7 +40,7 @@ function KpiCard({
   title: string;
   value: number | string;
   href: string;
-  icon: LucideIcon;
+  icon: Icon;
   accent?: boolean; // true -> destructive-Akzent (nur handlungsrelevante Kachel)
   hint?: string;
 }) {
@@ -114,7 +114,7 @@ export default async function DashboardPage() {
   if (data === "rate-limited" || data === "error") {
     return (
       <Alert variant="destructive">
-        <AlertCircleIcon />
+        <WarningCircle />
         <AlertTitle>Dashboard konnte nicht geladen werden</AlertTitle>
         <AlertDescription>
           {data === "rate-limited"
@@ -147,7 +147,7 @@ export default async function DashboardPage() {
           title="Meine Tickets"
           value={kpis.myOpen + kpis.secondaryOpen}
           href="/tickets/my"
-          icon={TicketIcon}
+          icon={Ticket}
           hint={
             kpis.secondaryOpen > 0
               ? `inkl. ${kpis.secondaryOpen} zusätzlich`
@@ -158,21 +158,21 @@ export default async function DashboardPage() {
           title="Nicht zugewiesen"
           value={kpis.pool}
           href="/tickets/team?assigned=unassigned"
-          icon={InboxIcon}
+          icon={Tray}
           hint="Wartet auf einen Bearbeiter"
         />
         <KpiCard
           title="Meine Projekte"
           value={kpis.myProjects}
           href="/projekte"
-          icon={FolderKanbanIcon}
+          icon={Kanban}
           hint="Geleitet oder bearbeitet"
         />
         <KpiCard
           title="Ball liegt bei mir"
           value={kpis.ballApprox ? `~${kpis.ballInMyCourt}` : kpis.ballInMyCourt}
           href="/tickets/ball"
-          icon={ReplyIcon}
+          icon={ArrowBendUpLeft}
           accent
           hint={kpis.ballApprox ? "Kunde zuletzt aktiv (ca.)" : "Kunde hat geantwortet"}
         />

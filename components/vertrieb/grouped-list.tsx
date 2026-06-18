@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import {
-  FilterXIcon,
-  LayersIcon,
-  RotateCcwIcon,
-  SearchIcon,
-  SlidersHorizontalIcon,
-} from "lucide-react";
+  FunnelX,
+  StackSimple,
+  ArrowCounterClockwise,
+  MagnifyingGlass,
+  SlidersHorizontal,
+} from "@phosphor-icons/react/ssr";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -191,7 +191,7 @@ export function GroupedList<T extends { id: number | string }>({
             Platz rechts); mobil gestapelt. */}
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           <div className="relative w-full sm:w-64 sm:flex-none">
-            <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -213,7 +213,7 @@ export function GroupedList<T extends { id: number | string }>({
               className="h-11 w-full min-w-0 sm:h-9 sm:w-auto"
               aria-label="Gruppieren nach"
             >
-              <LayersIcon className="text-muted-foreground" />
+              <StackSimple className="text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="w-auto min-w-48">
@@ -240,7 +240,7 @@ export function GroupedList<T extends { id: number | string }>({
                 }
                 aria-label="Filter öffnen"
               >
-                <SlidersHorizontalIcon className="text-muted-foreground" />
+                <SlidersHorizontal className="text-muted-foreground" />
                 {filterTitle}
                 {activeFilters.length > 0 && (
                   <Badge variant="secondary" className="ml-auto tabular-nums sm:ml-1">
@@ -321,7 +321,7 @@ export function GroupedList<T extends { id: number | string }>({
               onClick={resetFilters}
               className="text-muted-foreground hidden sm:inline-flex"
             >
-              <FilterXIcon />
+              <FunnelX />
               Filter zurücksetzen
             </Button>
           )}
@@ -334,7 +334,7 @@ export function GroupedList<T extends { id: number | string }>({
               onClick={resetColumns}
               className="w-full justify-start text-muted-foreground sm:ml-auto sm:w-auto"
             >
-              <RotateCcwIcon />
+              <ArrowCounterClockwise />
               Spalten zurücksetzen
             </Button>
           )}

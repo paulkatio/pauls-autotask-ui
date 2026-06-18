@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ChevronsUpDownIcon, PencilIcon } from "lucide-react";
+import { CaretUpDown, PencilSimple } from "@phosphor-icons/react/ssr";
 
 import {
   Select,
@@ -159,7 +159,7 @@ export function DescriptionEdit({
               className="h-11 sm:h-9"
               onClick={() => setEditing(true)}
             >
-              <PencilIcon />
+              <PencilSimple />
               Bearbeiten
             </Button>
           </CardAction>
@@ -974,7 +974,7 @@ export function RefCombobox({
           }
         >
           <span className="truncate">{label ?? placeholder}</span>
-          <ChevronsUpDownIcon className="text-muted-foreground" />
+          <CaretUpDown className="text-muted-foreground" />
         </PopoverTrigger>
         <PopoverContent className="w-(--anchor-width) min-w-64 p-0">
           <Command>

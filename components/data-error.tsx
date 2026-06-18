@@ -1,4 +1,4 @@
-import { AlertCircleIcon } from "lucide-react";
+import { WarningCircle } from "@phosphor-icons/react/ssr";
 
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
@@ -13,7 +13,7 @@ export function DataError({
 }) {
   return (
     <Alert variant="destructive">
-      <AlertCircleIcon />
+      <WarningCircle />
       <AlertTitle>{title}</AlertTitle>
       <AlertDescription>
         {rateLimited

@@ -11,15 +11,15 @@ import Link from "next/link"
 // Logo-Bild bricht Browser-/Optimizer-Cache automatisch (keine veraltete Anzeige).
 import autotaskLogo from "../public/autotask-logo.png"
 import {
-  LayoutDashboardIcon,
-  TicketIcon,
-  UsersIcon,
-  FolderKanbanIcon,
-  Building2Icon,
-  ContactIcon,
-  ClockIcon,
-  BriefcaseBusinessIcon,
-} from "lucide-react"
+  SquaresFour,
+  Ticket,
+  Users,
+  Kanban,
+  Buildings,
+  AddressBook,
+  Clock,
+  Briefcase,
+} from "@phosphor-icons/react/ssr"
 
 import { NavMain, type NavItem } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -39,13 +39,13 @@ import {
 // aktuell sehen alle Nutzer dieselbe Ansicht, alle Links sichtbar. `SessionUser.roles`
 // bleibt als Weiche im Datenmodell, wird hier aber (noch) nicht ausgewertet.
 const navItems: NavItem[] = [
-  { title: "Übersicht", url: "/", icon: LayoutDashboardIcon },
-  { title: "Meine Tickets", url: "/tickets/my", icon: TicketIcon },
-  { title: "Teamtickets", url: "/tickets/team", icon: UsersIcon },
-  { title: "Projekte", url: "/projekte", icon: FolderKanbanIcon },
-  { title: "Firmen", url: "/companies", icon: Building2Icon },
-  { title: "Kontakte", url: "/contacts", icon: ContactIcon },
-  { title: "Meine Zeiten", url: "/zeiten", icon: ClockIcon },
+  { title: "Übersicht", url: "/", icon: SquaresFour },
+  { title: "Meine Tickets", url: "/tickets/my", icon: Ticket },
+  { title: "Teamtickets", url: "/tickets/team", icon: Users },
+  { title: "Projekte", url: "/projekte", icon: Kanban },
+  { title: "Firmen", url: "/companies", icon: Buildings },
+  { title: "Kontakte", url: "/contacts", icon: AddressBook },
+  { title: "Meine Zeiten", url: "/zeiten", icon: Clock },
 ]
 
 export function AppSidebar({
@@ -77,7 +77,7 @@ export function AppSidebar({
     const entry: NavItem = {
       title: "Vertrieb",
       url: "/vertrieb",
-      icon: BriefcaseBusinessIcon,
+      icon: Briefcase,
     }
     items.splice(at >= 0 ? at + 1 : items.length, 0, entry)
   }

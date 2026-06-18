@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ClockIcon } from "lucide-react";
+import { Clock } from "@phosphor-icons/react/ssr";
 
 import { Badge } from "@/components/ui/badge";
 import { SearchableTable } from "@/components/searchable-table";
@@ -87,7 +87,7 @@ export function ZeitenTable({ rows }: { rows: ZeitenRow[] }) {
           </div>
         </>
       )}
-      emptyIcon={<ClockIcon />}
+      emptyIcon={<Clock />}
       emptyTitle="Keine Zeiten"
       emptyDescription="Keine Zeiteinträge im gewählten Zeitraum."
       columns={[

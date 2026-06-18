@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import type { LucideIcon } from "lucide-react"
+import type { Icon } from "@phosphor-icons/react"
 
 import {
   SidebarGroup,
@@ -16,7 +16,7 @@ import {
 export type NavItem = {
   title: string
   url: string
-  icon: LucideIcon
+  icon: Icon
   // Optionaler Zähler-Badge (z. B. Anzahl offener Tickets). Bei 0/undefined ausgeblendet.
   badge?: number
 }

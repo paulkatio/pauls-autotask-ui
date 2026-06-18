@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ClockIcon } from "lucide-react";
+import { Clock } from "@phosphor-icons/react/ssr";
 import { toast } from "sonner";
 
 import { formatHours } from "@/lib/format";
@@ -282,7 +282,7 @@ export function TimeEntryDialog({
     <ResponsiveDialog open={open} onOpenChange={setOpen}>
       {showTrigger && (
         <ResponsiveDialogTrigger render={<Button />}>
-          <ClockIcon />
+          <Clock />
           Zeit erfassen
         </ResponsiveDialogTrigger>
       )}

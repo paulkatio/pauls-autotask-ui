@@ -2,13 +2,13 @@
 
 import * as React from "react";
 import {
-  ArrowDownIcon,
-  ArrowUpDownIcon,
-  ArrowUpIcon,
-  Building2Icon,
-  RotateCcwIcon,
-  SearchIcon,
-} from "lucide-react";
+  ArrowDown,
+  ArrowsDownUp,
+  ArrowUp,
+  Buildings,
+  ArrowCounterClockwise,
+  MagnifyingGlass,
+} from "@phosphor-icons/react/ssr";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -134,10 +134,10 @@ export function CompaniesTable({
   }) {
     const active = sortKey === col;
     const Icon = !active
-      ? ArrowUpDownIcon
+      ? ArrowsDownUp
       : sortDir === "asc"
-        ? ArrowUpIcon
-        : ArrowDownIcon;
+        ? ArrowUp
+        : ArrowDown;
     return (
       <TableHead
         className={cn(
@@ -228,7 +228,7 @@ export function CompaniesTable({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-full min-w-48 flex-1 sm:max-w-sm">
-          <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <MagnifyingGlass className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -269,7 +269,7 @@ export function CompaniesTable({
             onClick={reset}
             className="text-muted-foreground"
           >
-            <RotateCcwIcon />
+            <ArrowCounterClockwise />
             Spalten zurücksetzen
           </Button>
         )}
@@ -286,7 +286,7 @@ export function CompaniesTable({
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <Building2Icon />
+              <Buildings />
             </EmptyMedia>
             <EmptyTitle>Keine Firmen</EmptyTitle>
             <EmptyDescription>

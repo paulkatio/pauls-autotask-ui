@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { SearchIcon } from "lucide-react";
+import { MagnifyingGlass } from "@phosphor-icons/react/ssr";
 
 import { Button } from "@/components/ui/button";
 import { OPEN_COMMAND_PALETTE } from "@/components/command-palette";
@@ -32,7 +32,7 @@ export function HeaderSearch() {
         className="text-muted-foreground hidden w-56 justify-between font-normal md:flex lg:w-72"
       >
         <span className="flex items-center gap-2">
-          <SearchIcon className="size-4" />
+          <MagnifyingGlass className="size-4" />
           Suche …
         </span>
         <kbd className="bg-muted text-muted-foreground pointer-events-none flex h-5 items-center gap-0.5 rounded border px-1.5 text-xs font-medium tabular-nums">

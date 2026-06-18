@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { XIcon } from "lucide-react";
+import { X } from "@phosphor-icons/react/ssr";
 
 import {
   Select,
@@ -152,7 +152,7 @@ export function SecondaryResourcesEdit({
                 disabled={saving}
                 onClick={() => remove(sr.id, sr.name)}
               >
-                <XIcon />
+                <X />
               </Button>
             </li>
           ))}

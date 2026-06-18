@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { HistoryIcon, Undo2Icon } from "lucide-react";
+import { ClockCounterClockwise, ArrowUUpLeft } from "@phosphor-icons/react/ssr";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -117,7 +117,7 @@ export function HistorySheet({
             <Button variant="ghost" size="icon" aria-label="Verlauf" className="relative" />
           }
         >
-          <HistoryIcon />
+          <ClockCounterClockwise />
           {undoableCount > 0 && (
             <span className="bg-primary text-primary-foreground absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full text-[10px] tabular-nums">
               {undoableCount > 9 ? "9+" : undoableCount}
@@ -162,7 +162,7 @@ export function HistorySheet({
                         disabled={busy === e.id}
                         onClick={() => undo(e)}
                       >
-                        <Undo2Icon />
+                        <ArrowUUpLeft />
                         Rückgängig
                       </Button>
                     ) : (

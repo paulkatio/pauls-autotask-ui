@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Building2Icon, ContactIcon, HashIcon, TicketIcon } from "lucide-react";
+import { Buildings, AddressBook, Hash, Ticket } from "@phosphor-icons/react/ssr";
 import { toast } from "sonner";
 
 import {
@@ -25,10 +25,10 @@ interface ColState extends InitialColumn {
 }
 
 const COLUMNS: { kind: SearchKind; title: string; icon: React.ReactNode }[] = [
-  { kind: "firma", title: "Firma", icon: <Building2Icon className="size-3.5 shrink-0" /> },
-  { kind: "kontakt", title: "Kontakte", icon: <ContactIcon className="size-3.5 shrink-0" /> },
-  { kind: "ticket-name", title: "Ticket-Name", icon: <TicketIcon className="size-3.5 shrink-0" /> },
-  { kind: "ticket-nummer", title: "Ticket-Nummer", icon: <HashIcon className="size-3.5 shrink-0" /> },
+  { kind: "firma", title: "Firma", icon: <Buildings className="size-3.5 shrink-0" /> },
+  { kind: "kontakt", title: "Kontakte", icon: <AddressBook className="size-3.5 shrink-0" /> },
+  { kind: "ticket-name", title: "Ticket-Name", icon: <Ticket className="size-3.5 shrink-0" /> },
+  { kind: "ticket-nummer", title: "Ticket-Nummer", icon: <Hash className="size-3.5 shrink-0" /> },
 ];
 
 function seed(initial: Initial): Record<SearchKind, ColState> {

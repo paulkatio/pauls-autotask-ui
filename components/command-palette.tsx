@@ -3,18 +3,18 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
-  Building2Icon,
-  ClockIcon,
-  ContactIcon,
-  FolderKanbanIcon,
-  HashIcon,
-  LayoutDashboardIcon,
-  SearchIcon,
-  SettingsIcon,
-  TicketIcon,
-  UsersIcon,
-  type LucideIcon,
-} from "lucide-react";
+  Buildings,
+  Clock,
+  AddressBook,
+  Kanban,
+  Hash,
+  SquaresFour,
+  MagnifyingGlass,
+  GearSix,
+  Ticket,
+  Users,
+} from "@phosphor-icons/react/ssr";
+import type { Icon } from "@phosphor-icons/react";
 
 import {
   Dialog,
@@ -38,18 +38,18 @@ const COLUMN_LIMIT = 8;
 interface NavTarget {
   title: string;
   url: string;
-  icon: LucideIcon;
+  icon: Icon;
 }
 
 const NAV: NavTarget[] = [
-  { title: "Übersicht", url: "/", icon: LayoutDashboardIcon },
-  { title: "Meine Tickets", url: "/tickets/my", icon: TicketIcon },
-  { title: "Teamtickets", url: "/tickets/team", icon: UsersIcon },
-  { title: "Projekte", url: "/projekte", icon: FolderKanbanIcon },
-  { title: "Firmen", url: "/companies", icon: Building2Icon },
-  { title: "Kontakte", url: "/contacts", icon: ContactIcon },
-  { title: "Meine Zeiten", url: "/zeiten", icon: ClockIcon },
-  { title: "Admin", url: "/admin", icon: SettingsIcon },
+  { title: "Übersicht", url: "/", icon: SquaresFour },
+  { title: "Meine Tickets", url: "/tickets/my", icon: Ticket },
+  { title: "Teamtickets", url: "/tickets/team", icon: Users },
+  { title: "Projekte", url: "/projekte", icon: Kanban },
+  { title: "Firmen", url: "/companies", icon: Buildings },
+  { title: "Kontakte", url: "/contacts", icon: AddressBook },
+  { title: "Meine Zeiten", url: "/zeiten", icon: Clock },
+  { title: "Admin", url: "/admin", icon: GearSix },
 ];
 
 interface TicketHit {
@@ -235,7 +235,7 @@ export function CommandPalette() {
 
         {/* Große Suchleiste (Spotlight-Stil). */}
         <div className="flex items-center gap-3 border-b px-4">
-          <SearchIcon className="text-muted-foreground size-5 shrink-0" />
+          <MagnifyingGlass className="text-muted-foreground size-5 shrink-0" />
           <input
             ref={inputRef}
             // autoFocus während des Mountens → Tastatur öffnet direkt mit (kein
@@ -280,7 +280,7 @@ export function CommandPalette() {
           <ResultGrid dense>
             <ResultColumn
               title="Firma"
-              icon={<Building2Icon className="size-3.5 shrink-0" />}
+              icon={<Buildings className="size-3.5 shrink-0" />}
               items={companyItems}
               loading={loading}
               onSelect={go}
@@ -288,7 +288,7 @@ export function CommandPalette() {
             />
             <ResultColumn
               title="Kontakte"
-              icon={<ContactIcon className="size-3.5 shrink-0" />}
+              icon={<AddressBook className="size-3.5 shrink-0" />}
               items={contactItems}
               loading={loading}
               onSelect={selectContact}
@@ -296,7 +296,7 @@ export function CommandPalette() {
             />
             <ResultColumn
               title="Ticket-Name"
-              icon={<TicketIcon className="size-3.5 shrink-0" />}
+              icon={<Ticket className="size-3.5 shrink-0" />}
               items={ticketNameItems}
               loading={loading}
               onSelect={go}
@@ -304,7 +304,7 @@ export function CommandPalette() {
             />
             <ResultColumn
               title="Ticket-Nummer"
-              icon={<HashIcon className="size-3.5 shrink-0" />}
+              icon={<Hash className="size-3.5 shrink-0" />}
               items={ticketNumberItems}
               loading={loading}
               onSelect={go}

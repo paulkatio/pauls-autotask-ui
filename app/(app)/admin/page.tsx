@@ -1,4 +1,4 @@
-import { SettingsIcon } from "lucide-react";
+import { GearSix } from "@phosphor-icons/react/ssr";
 
 import { PageHeader } from "@/components/page-header";
 import {
@@ -16,7 +16,7 @@ export default function AdminPage() {
       <Empty>
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <SettingsIcon />
+            <GearSix />
           </EmptyMedia>
           <EmptyTitle>Noch keine Admin-Funktionen</EmptyTitle>
           <EmptyDescription>

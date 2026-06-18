@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { MessageSquarePlusIcon } from "lucide-react";
+import { NotePencil } from "@phosphor-icons/react/ssr";
 
 import { Button } from "@/components/ui/button";
 import { NoteForm } from "@/components/tickets/note-form";
@@ -36,7 +36,7 @@ export function NewNoteButton({
           />
         }
       >
-        <MessageSquarePlusIcon />
+        <NotePencil />
         Neue Notiz
       </ResponsiveDialogTrigger>
       <ResponsiveDialogContent className="flex flex-col">

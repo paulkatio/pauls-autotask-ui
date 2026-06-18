@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { UploadIcon } from "lucide-react";
+import { UploadSimple } from "@phosphor-icons/react/ssr";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -70,7 +70,7 @@ export function AttachmentUpload({ ticketId }: { ticketId: number }) {
         disabled={busy}
         onClick={() => inputRef.current?.click()}
       >
-        <UploadIcon />
+        <UploadSimple />
         {busy ? "Lädt hoch …" : "Neuer Anhang"}
       </Button>
     </div>

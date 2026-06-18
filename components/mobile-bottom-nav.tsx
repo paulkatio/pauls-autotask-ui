@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboardIcon,
-  MenuIcon,
-  SearchIcon,
-  TicketIcon,
-  UsersIcon,
-  type LucideIcon,
-} from "lucide-react";
+  SquaresFour,
+  List,
+  MagnifyingGlass,
+  Ticket,
+  Users,
+} from "@phosphor-icons/react/ssr";
+import type { Icon } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -18,22 +18,22 @@ import { isActiveRoute } from "@/components/nav-main";
 import { cn } from "@/lib/utils";
 
 // Persistente Tab-Leiste unten – nur mobil (md:hidden). Gibt der installierten PWA
-// das native App-Gefühl. Zusammengesetzt aus shadcn-Button + Link + lucide-Icons
+// das native App-Gefühl. Zusammengesetzt aus shadcn-Button + Link + Phosphor-Icons
 // und semantischen Tokens (kein erfundenes Styling). „Suche" öffnet die im Layout
 // gemountete Command-Palette, „Mehr" öffnet die bestehende Sidebar-Sheet
 // (Firmen/Kontakte/Zeiten/Profil/Theme) – so bleibt alles erreichbar ohne die
 // Leiste zu überladen. Labels bewusst kurz (Paul) für sauberen, engen Tab-Look.
 
 type Tab =
-  | { kind: "link"; label: string; href: string; icon: LucideIcon }
-  | { kind: "action"; label: string; action: "search" | "more"; icon: LucideIcon };
+  | { kind: "link"; label: string; href: string; icon: Icon }
+  | { kind: "action"; label: string; action: "search" | "more"; icon: Icon };
 
 const TABS: Tab[] = [
-  { kind: "link", label: "Übersicht", href: "/", icon: LayoutDashboardIcon },
-  { kind: "link", label: "Meine", href: "/tickets/my", icon: TicketIcon },
-  { kind: "link", label: "Team", href: "/tickets/team", icon: UsersIcon },
-  { kind: "action", label: "Suche", action: "search", icon: SearchIcon },
-  { kind: "action", label: "Mehr", action: "more", icon: MenuIcon },
+  { kind: "link", label: "Übersicht", href: "/", icon: SquaresFour },
+  { kind: "link", label: "Meine", href: "/tickets/my", icon: Ticket },
+  { kind: "link", label: "Team", href: "/tickets/team", icon: Users },
+  { kind: "action", label: "Suche", action: "search", icon: MagnifyingGlass },
+  { kind: "action", label: "Mehr", action: "more", icon: List },
 ];
 
 const tabClass =

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRight } from "@phosphor-icons/react/ssr";
 
 import { TruncatedText } from "@/components/truncated-text";
 import type { ProjectsPreview } from "@/lib/autotask/entities/projects";
@@ -34,7 +34,7 @@ export function MyProjectsSection({ preview }: { preview: ProjectsPreview }) {
           className="text-muted-foreground hover:text-foreground inline-flex h-11 items-center gap-1 text-sm sm:h-auto"
         >
           Alle anzeigen
-          <ArrowRightIcon className="size-4" />
+          <ArrowRight className="size-4" />
         </Link>
       </div>
 

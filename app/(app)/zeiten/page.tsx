@@ -1,4 +1,4 @@
-import { ClockIcon } from "lucide-react";
+import { Clock } from "@phosphor-icons/react/ssr";
 
 import { getSession } from "@/lib/auth";
 import { getMyTimeEntries, type TimeRange } from "@/lib/autotask/entities/my-time";
@@ -75,7 +75,7 @@ export default async function ZeitenPage({
           <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon">
-                <ClockIcon />
+                <Clock />
               </EmptyMedia>
               <EmptyTitle>Keine Zeiten erfasst</EmptyTitle>
               <EmptyDescription>

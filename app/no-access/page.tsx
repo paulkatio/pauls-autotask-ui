@@ -1,4 +1,4 @@
-import { ShieldAlertIcon } from "lucide-react";
+import { ShieldWarning } from "@phosphor-icons/react/ssr";
 
 import { auth } from "@/lib/auth/authjs";
 import { signOutEntra } from "@/lib/auth/entra-actions";
@@ -33,7 +33,7 @@ export default async function NoAccessPage() {
           <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon">
-                <ShieldAlertIcon />
+                <ShieldWarning />
               </EmptyMedia>
               <EmptyTitle>Kein Autotask-Zugang für diese E-Mail</EmptyTitle>
               <EmptyDescription>

@@ -3,19 +3,19 @@
 import * as React from "react";
 import { toast } from "sonner";
 import {
-  Building2Icon,
-  ChevronDownIcon,
-  ClockIcon,
-  DownloadIcon,
-  FileIcon,
-  ListChecksIcon,
-  MailIcon,
-  MapPinIcon,
-  PhoneIcon,
-  SmartphoneIcon,
-  UserCheckIcon,
-  UserIcon,
-} from "lucide-react";
+  Buildings,
+  CaretDown,
+  Clock,
+  DownloadSimple,
+  File,
+  ListChecks,
+  Envelope,
+  MapPin,
+  Phone,
+  DeviceMobile,
+  UserCheck,
+  User,
+} from "@phosphor-icons/react/ssr";
 
 import {
   Card,
@@ -167,7 +167,7 @@ function Rail({
         }
       >
         {title}
-        <ChevronDownIcon
+        <CaretDown
           className={cn(
             "text-muted-foreground transition-transform duration-200",
             open && "rotate-180",
@@ -461,18 +461,18 @@ export function TicketDetailView({
                 )}
                 {contact.email && (
                   <span className="text-muted-foreground flex items-center gap-1.5 break-all">
-                    <MailIcon className="size-3.5 shrink-0" /> {contact.email}
+                    <Envelope className="size-3.5 shrink-0" /> {contact.email}
                   </span>
                 )}
                 {contact.phone && (
                   <span className="text-muted-foreground flex items-center gap-1.5">
-                    <PhoneIcon className="size-3.5 shrink-0" />
+                    <Phone className="size-3.5 shrink-0" />
                     <span className="break-all">{contact.phone}</span>
                   </span>
                 )}
                 {contact.mobilePhone && (
                   <span className="text-muted-foreground flex items-center gap-1.5">
-                    <SmartphoneIcon className="size-3.5 shrink-0" />
+                    <DeviceMobile className="size-3.5 shrink-0" />
                     <span className="break-all">{contact.mobilePhone}</span>
                   </span>
                 )}
@@ -537,7 +537,7 @@ export function TicketDetailView({
             {device.location && (
               <Field label="Standort">
                 <span className="flex items-center gap-1.5">
-                  <MapPinIcon className="text-muted-foreground size-3.5" />
+                  <MapPin className="text-muted-foreground size-3.5" />
                   {device.location}
                 </span>
               </Field>
@@ -621,14 +621,14 @@ export function TicketDetailView({
         {/* Kontextgruppe: Firma primär, Kontakt · Verantwortlich sekundär, Erstellt muted. */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2 text-sm font-medium">
-            <Building2Icon className="text-muted-foreground size-4 shrink-0" />
+            <Buildings className="text-muted-foreground size-4 shrink-0" />
             <span className="min-w-0 break-words">{company?.name ?? "—"}</span>
           </div>
           {(contact?.name || detail.assignedResourceName) && (
             <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
               {contact?.name && (
                 <span className="flex items-center gap-1.5">
-                  <UserIcon className="size-3.5 shrink-0" />
+                  <User className="size-3.5 shrink-0" />
                   <span className="min-w-0 break-words">{contact.name}</span>
                 </span>
               )}
@@ -637,7 +637,7 @@ export function TicketDetailView({
               )}
               {detail.assignedResourceName && (
                 <span className="flex items-center gap-1.5">
-                  <UserCheckIcon className="size-3.5 shrink-0" />
+                  <UserCheck className="size-3.5 shrink-0" />
                   <span className="min-w-0 break-words">
                     {detail.assignedResourceName}
                   </span>
@@ -646,7 +646,7 @@ export function TicketDetailView({
             </div>
           )}
           <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-            <ClockIcon className="size-3.5 shrink-0" />
+            <Clock className="size-3.5 shrink-0" />
             <span className="tabular-nums">
               Erstellt {fmtDate(ticket.createDate, true)}
             </span>
@@ -730,7 +730,7 @@ function ChecklistCard({
     <Card>
       <CardHeader className="border-b">
         <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-          <ListChecksIcon className="size-4 shrink-0" />
+          <ListChecks className="size-4 shrink-0" />
           Checkliste
           <span className="text-muted-foreground text-sm font-normal tabular-nums">
             {done}/{list.length} erledigt
@@ -815,7 +815,7 @@ function ActivitySection({
             </span>
           )}
         </span>
-        <ChevronDownIcon
+        <CaretDown
           className={cn(
             "text-muted-foreground transition-transform duration-200",
             open && "rotate-180",
@@ -945,7 +945,7 @@ function AttachmentsList({
       <Empty>
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <FileIcon />
+            <File />
           </EmptyMedia>
           <EmptyTitle>Keine Anhänge</EmptyTitle>
           <EmptyDescription>
@@ -967,7 +967,7 @@ function AttachmentsList({
             key={a.id}
             className="flex items-center gap-3 rounded-lg border p-3"
           >
-            <FileIcon className="text-muted-foreground size-5 shrink-0" />
+            <File className="text-muted-foreground size-5 shrink-0" />
             <div className="flex min-w-0 flex-col">
               <span className="truncate text-sm font-medium">{name}</span>
               <span className="text-muted-foreground truncate text-xs">
@@ -987,7 +987,7 @@ function AttachmentsList({
                 />
               }
             >
-              <DownloadIcon />
+              <DownloadSimple />
               Laden
             </Button>
           </div>

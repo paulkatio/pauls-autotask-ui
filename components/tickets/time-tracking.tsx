@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ClockIcon, PauseIcon, PlayIcon, TimerIcon } from "lucide-react";
+import { Clock, Pause, Play, Timer } from "@phosphor-icons/react/ssr";
 
 import { Button } from "@/components/ui/button";
 import { TimeEntryDialog } from "@/components/tickets/time-entry-dialog";
@@ -109,10 +109,10 @@ export function TimeTracking({ ticketId }: { ticketId: number }) {
     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
       {/* Umrahmte Zeitanzeige (mobil h-10 zu den größeren Touch-Tasten, ab sm h-8) */}
       <span className="text-muted-foreground flex h-11 items-center gap-1.5 rounded-md border px-2.5 text-sm tabular-nums sm:h-9">
-        <TimerIcon className="size-4" />
+        <Timer className="size-4" />
         {fmtElapsed(elapsedMs)}
       </span>
-      {/* Play ⇄ Pause (lucide PlayIcon/PauseIcon) */}
+      {/* Play ⇄ Pause */}
       <Button
         variant="outline"
         size="icon"
@@ -120,10 +120,10 @@ export function TimeTracking({ ticketId }: { ticketId: number }) {
         onClick={toggle}
         aria-label={running ? "Stoppuhr pausieren" : "Stoppuhr starten"}
       >
-        {running ? <PauseIcon /> : <PlayIcon />}
+        {running ? <Pause /> : <Play />}
       </Button>
       <Button onClick={openDialog} className="h-11 flex-1 sm:h-9 sm:flex-none">
-        <ClockIcon />
+        <Clock />
         Zeit erfassen
       </Button>
       {/* „Neue Notiz" direkt neben „Zeit erfassen" (Paul). */}

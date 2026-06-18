@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 // Statischer Import: Next vergibt eine inhalts-gehashte, optimierte URL.
 import autotaskLogo from "../../public/autotask-logo.png";
 
-// Offizielles Microsoft-Markenzeichen (4 Quadrate). Kein lucide-Pendant vorhanden;
+// Offizielles Microsoft-Markenzeichen (4 Quadrate). Kein Phosphor-Pendant vorhanden;
 // die Hex-Farben sind die Markenfarben und gehören fest zum Logo (kein freies Design).
 function MicrosoftLogo() {
   return (
