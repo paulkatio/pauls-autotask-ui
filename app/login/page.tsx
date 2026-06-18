@@ -34,7 +34,7 @@ export default async function LoginPage({
 
   return (
     <main className="bg-background flex min-h-svh items-center justify-center p-6">
-      <div className="flex w-full max-w-sm flex-col items-center gap-10">
+      <div className="flex w-full max-w-sm flex-col items-center gap-8">
         <div className="flex flex-col items-center gap-3 text-center">
           <Image
             src={autotaskLogo}
@@ -45,9 +45,9 @@ export default async function LoginPage({
             className="size-16 rounded-2xl shadow-sm"
           />
           <div className="flex flex-col gap-1">
-            <span className="text-2xl font-semibold tracking-tight">
+            <h1 className="text-2xl font-semibold tracking-tight">
               Autotask UI
-            </span>
+            </h1>
             <span className="text-muted-foreground text-sm">{orgName}</span>
           </div>
         </div>
