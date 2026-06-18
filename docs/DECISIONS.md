@@ -15,6 +15,41 @@ Regeln:
 
 ---
 
+## TL;DR — die tragenden Fakten (Index)
+
+Die wichtigsten verifizierten Fakten in einem Satz; Details in den darunterliegenden
+chronologischen Einträgen.
+
+- **Backend = PRODUKTION**, kein Sandbox-Schutz. Schreibpfade sind sofort+unumkehrbar gegen echte
+  Kunden. API/Felder/Schreibpfade IMMER gegen die **Sandbox** verifizieren (Creds gitignored in
+  `.env.sandbox.local`, Tenant `webservices18`/`ssig-itSB021825`), nie gegen Prod.
+- **Der Autotask-MCP in Claude zeigt PROD**, NICHT die App-Sandbox → nicht zur Sandbox-Verifikation
+  nutzen. Probe stattdessen via curl-REST oder `next start` mit Shell-Vars + `AUTH_MODE=mock`.
+- **Test-Schreiben NUR an Prod-Ticket `56313` „ZZZ TESTTICKET"** (SSIG-IT GmbH `companyID 0`, Kontakt
+  Paul-Harald Katio `30684646`, Mail `qalab@autotask.com` = Catch-all). Die alte ID `43180` ist in
+  Prod ein **echtes Kundenticket** — nie beschreiben.
+- **Autotask sortiert serverseitig NICHT** und liefert **älteste zuerst** (id-asc, B13).
+  „Neueste zuerst" = `createDate`-Zeitfenster + Vollabruf + client-seitiger desc-Sort. Datums-
+  vergleiche im Filter funktionieren.
+- **Thread-Limit 3 parallele Requests/Objekt-Endpoint je Integration.** App-Limiter: 2/Objekt
+  (Tickets 1), pro Prozess; zusätzlich globaler Upstash-Semaphore (≤2/Objekt über alle Instanzen).
+  Kind-Pfade (`…/Notes`/`…/Attachments`) zählen aufs Kind-Objekt, nicht aufs Parent.
+- **TicketNotes:** Anlegen via `POST Tickets/{id}/Notes` (`POST TicketNotes` = 404), `title` ist
+  Pflicht, **`description` ist Rohtext** (HTML erscheint als Literal → Notiz via `plainTextFromRich`,
+  HTML nur in der Kunden-Mail), Löschen nicht möglich (405).
+- **Inbound-Mailantworten:** noteType 3, `createdByContactID` kann NULL sein (auf Resource gemappt) →
+  zusätzlich am Body-Marker „Durch eingehende E-Mail-Verarbeitung erstellt" erkannt. Outbound = 18,
+  interne Notiz = 2. Chat = reines Kundenfenster, Mailversand opt-in mit Bestätigung.
+- **Auth:** `AUTH_MODE` fail-closed in Prod; Entra-Issuer tenant-spezifisch (`…/<tenant>/v2.0`),
+  E-Mail→Resource via `resources.byEmail`. **Rollen werden NICHT ausgewertet** — alle sehen alles
+  (B12). `AUTOTASK_API_SECRET` in `.env.local` in **einfache Quotes** (Sonderzeichen `#`/`$`).
+- **Projekte:** nur **Leiter + Fällig-Datum** schreibbar (Status = stiller No-Op, Rest nicht).
+- **Sicherheit (2026-06-17):** `guardApi` (CSRF+Session+Rate-Limit) an JEDER `/api`-Route; CSP via
+  `middleware.ts` erzwungen (Nonce + `strict-dynamic`, kein `unsafe-inline`/`eval`). Siehe
+  [`SECURITY-AUDIT.md`](SECURITY-AUDIT.md).
+
+---
+
 ## Teil A – API-Befunde aus Phase 0
 
 > Wird von Claude Code während B00 ausgefüllt. Solange hier `OFFEN` steht, ist der
