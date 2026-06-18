@@ -29,6 +29,7 @@
   --color-destructive: var(--destructive);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -75,6 +76,7 @@
   --destructive: oklch(0.505 0.155 32);    /* gedämpftes warmes Rot #ab3724 */
   --success: oklch(0.515 0.085 150);       /* gedämpftes warmes Grün #41754d */
   --warning: oklch(0.515 0.097 68);        /* gedämpftes Amber/Ocker #8c5c20 */
+  --info: oklch(0.52 0.10 250);            /* gedämpftes Stahlblau (chart-2-Hue) */
   --border: oklch(0.916 0.003 70);         /* Chalk #e4e3e1 – EINE Borderfarbe */
   --input: oklch(0.916 0.003 70);          /* Chalk */
   --ring: oklch(0.62 0.012 65);            /* mittleres Warm-Grau (Focus) */
@@ -118,6 +120,7 @@
   --destructive: oklch(0.70 0.16 30);      /* aufgehelltes warmes Rot #f17260 */
   --success: oklch(0.75 0.10 152);         /* aufgehelltes Grün #7cc08f */
   --warning: oklch(0.80 0.105 75);         /* aufgehelltes Amber #e5b46e */
+  --info: oklch(0.62 0.10 250);            /* aufgehelltes Stahlblau (chart-2-Hue) */
   --border: oklch(0.30 0.006 65);          /* dunkles Warm-Grau, Hairline */
   --input: oklch(0.33 0.006 65);
   --ring: oklch(0.50 0.010 65);

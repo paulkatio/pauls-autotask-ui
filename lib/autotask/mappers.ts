@@ -25,7 +25,9 @@ export type BadgeVariant =
   | "destructive"
   | "outline"
   | "success"
-  | "warning";
+  | "warning"
+  | "info"
+  | "muted";
 
 // Ticket-Status (IDs verifiziert 2026-06-04). Farbsystem v2 — entschärft:
 //  destructive (rot) = Problem (eskaliert/überfällig/Reklamation) — EINZIGER lauter Status
@@ -37,16 +39,22 @@ export function statusVariant(id: number | null | undefined): BadgeVariant {
     case 11: // Eskaliert
     case 18: // Fälligkeit überschritten
     case 21: // Reklamation
-      return "destructive";
-    case 1: // Neu
-    case 8: // In Bearbeitung
+      return "destructive"; // rot
+    case 5:  // Abgeschlossen
+    case 14: // Gelöst warten auf Kunden
+    case 22: // Genehmigung erteilt
+      return "success"; // grün
+    case 1:  // Neu
+    case 23: // Genehmigung abgelehnt
+      return "warning"; // amber
+    case 8:  // In Bearbeitung
     case 10: // Servicetermin geplant
-    case 15: // Kundennotiz hinzugefügt
-      return "outline";
+    case 13: // Warten auf Genehmigung
+    case 19: // Spätere Fälligkeit
+      return "info"; // stahlblau
     default:
-      // Abgeschlossen (5) + Warte-Status (7,9,12,13,14,17,20) + RMM-Warnung
-      // geschlossen / Spätere Fälligkeit / unbekannt: gedämpft gefüllt = "erledigt".
-      return "secondary";
+      // Warte-/System-Status (7,9,12,15,16,17,20) + unbekannt: bewusst ruhig
+      return "muted";
   }
 }
 
@@ -55,22 +63,23 @@ export function statusVariant(id: number | null | undefined): BadgeVariant {
 // Status-Farben orientiert; die vielen Warte-/System-Status neutral.
 export function statusDotClass(id: number | null | undefined): string {
   switch (id) {
-    case 1: // Neu
-      return "bg-warning"; // amber/ocker
     case 11: // Eskaliert
+    case 18: // Fälligkeit überschritten
     case 21: // Reklamation
-      return "bg-destructive"; // rot (einziger lauter Punkt)
+      return "bg-destructive"; // rot
+    case 5:  // Abgeschlossen
+    case 14: // Gelöst warten auf Kunden
+    case 22: // Genehmigung erteilt
+      return "bg-success"; // grün
+    case 1:  // Neu
+    case 23: // Genehmigung abgelehnt
+      return "bg-warning"; // amber
+    case 8:  // In Bearbeitung
+    case 10: // Servicetermin geplant
     case 13: // Warten auf Genehmigung
     case 19: // Spätere Fälligkeit
-      return "bg-chart-2"; // gedämpftes Stahlblau
-    case 22: // Genehmigung erteilt
-    case 5: // Abgeschlossen
-    case 14: // Gelöst warten auf Kunden
-      return "bg-success"; // grün
-    case 23: // Genehmigung abgelehnt
-      return "bg-warning"; // amber (abgelehnt ≠ Fehler)
+      return "bg-info"; // stahlblau
     default:
-      // In Bearbeitung, Servicetermin, Fälligkeit überschritten, Warte-/System-Status …
       return "bg-muted-foreground"; // neutral
   }
 }
