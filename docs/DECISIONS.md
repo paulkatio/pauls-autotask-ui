@@ -2348,3 +2348,31 @@ Rechnungen lesen) – das vorab geflaggte Berechtigungsrisiko ist **entschärft*
   Zahlungsart) stecken gebündelt in einem `Sheet` mit Aktiv-Zähler-Badge. Skaliert,
   bleibt mobil ruhig (kein Chip-Overflow). Nested base-ui Select im Sheet rendert korrekt
   über dem Overlay (kein z-index-Problem). `GroupedList` nimmt jetzt `filters: FilterDef[]`.
+
+### [2026-06-18] Firmen-/Kontaktakte: abgeschlossene Tickets nach Datum (Fenster + Client-Sort)
+- **Bug:** Akten-Tab „Abgeschlossene Tickets" (Firma & Kontakt) zeigte immer die
+  **ältesten** Tickets (in Prod 2022), egal wie sortiert. Ursache: der Tab lud per
+  `getTicketsPage` (Cursor-Paging, 25/Seite, **ohne Sort**); Autotask liefert immer
+  **id-aufsteigend = älteste zuerst** → Seite 1 = niedrigste ids. Die Spalten-Sortierung
+  in `TicketsList` ist rein clientseitig und ordnet nur die geladenen 25 Zeilen → die
+  neuesten lagen auf späteren Serverseiten und kamen nie ins Sichtfeld.
+- **Sandbox-Probe (read-only, 2026-06-18) – bestätigt:**
+  - `POST Tickets/query` ohne Sort, `status=5`: erste Items id 7681… / `createDate`
+    2019-11 → Default-Reihenfolge ist **älteste zuerst** (B13 bekräftigt).
+  - `createDate gte 2024-01-01` **filtert serverseitig korrekt** (Items ab id 30919,
+    Daten ≥ 2024); auch auf `query/count` (alle abgeschlossen 31772 → seit 2024 11639).
+  - D. h. **Datumsvergleiche werden unterstützt, nur Sortieren nicht** (wie B13).
+- **Fix (analog Rechnungen/Angebote):** server-seitiges **Zeitfenster** `createDate >=
+  Start` + Vollabruf via `getTicketsAll` (Cap 500) + **clientseitig `createDate` desc**
+  (`sortByCreatedDesc`) → neueste zuerst. Kein Cursor-Paging mehr in diesen Tabs
+  (`showPager=false`). URL-Param `?win=` (`24m` Default, `12m`, `yearsTwo`=dieses+letztes
+  Jahr, `all`), UI = `TicketWindowSelect` (shadcn Select). Cap erreicht → `Alert`
+  „Zeitraum eingrenzen" (Cap füllt von den ältesten ids des Fensters auf, daher könnten
+  bei >500 die neuesten fehlen).
+- **Offene Tickets** werden bewusst **NICHT** nach Datum gefenstert (ein altes, weiter
+  offenes Ticket darf nicht verschwinden) – nur geladen und neueste zuerst sortiert.
+- **Modul-Schnitt:** reine Fenster-/Sortier-Helfer liegen in `lib/autotask/ticket-window.ts`
+  **ohne** `server-only` (nur typweiser `AutotaskFilter`-Import), damit der Client
+  (`TicketWindowSelect`) `TICKET_WINDOW_DEFAULT` importieren kann; `ticket-list.ts`
+  re-exportiert sie für die serverseitigen Aufrufer. `nowMs` via `currentMs()` aus
+  `lib/format` (sonst `react-hooks/purity`-Lint bei direktem `Date.now()` im Render).

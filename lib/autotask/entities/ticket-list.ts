@@ -33,6 +33,19 @@ export function ticketSearchFilter(q?: string): AutotaskFilter[] {
   ];
 }
 
+// Zeitfenster-/Sortier-Helfer leben in einem reinen Modul (ohne server-only), damit
+// der client-seitige TicketWindowSelect TICKET_WINDOW_DEFAULT importieren kann, ohne
+// server-only-Code ins Bundle zu ziehen. Hier nur re-exportiert, damit die
+// serverseitigen Aufrufer (Akten-Seiten) sie weiter aus einer Stelle beziehen.
+export {
+  type TicketWindow,
+  TICKET_WINDOW_DEFAULT,
+  normalizeTicketWindow,
+  ticketWindowStartISO,
+  ticketWindowFilter,
+  sortByCreatedDesc,
+} from "@/lib/autotask/ticket-window";
+
 // Eine Listenseite (server-seitig gefiltert + gepaged) mit gebündelt aufgelösten
 // Firmen- und (optional) Zugewiesen-Namen – kein N+1. Von "Meine Tickets" (B07)
 // und "Teamtickets" (B12) gemeinsam genutzt.

@@ -24,8 +24,13 @@ import { contacts } from "@/lib/autotask/entities/contacts";
 import { configurationItems } from "@/lib/autotask/entities/config-items";
 import { contracts } from "@/lib/autotask/entities/contracts";
 import {
-  getTicketsPage,
+  getTicketsAll,
   ticketSearchFilter,
+  sortByCreatedDesc,
+  normalizeTicketWindow,
+  ticketWindowStartISO,
+  ticketWindowFilter,
+  type TicketWindow,
 } from "@/lib/autotask/entities/ticket-list";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
 import {
@@ -34,6 +39,7 @@ import {
 } from "@/lib/autotask/entities/resources";
 import { type AutotaskFilter } from "@/lib/autotask/client";
 import { loadOrError } from "@/lib/data/load-or-error";
+import { currentMs } from "@/lib/format";
 import { autotaskCompanyUrl } from "@/lib/autotask/links";
 import { DataError } from "@/components/data-error";
 import { NewTicketDialog } from "@/components/tickets/new-ticket-dialog";
@@ -45,6 +51,8 @@ import {
   ContractsPanel,
 } from "@/components/companies/kundenakte-panels";
 import { TicketsList } from "@/components/tickets/tickets-list";
+import { TicketWindowSelect } from "@/components/tickets/ticket-window-select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
   CardAction,
@@ -82,14 +90,14 @@ function webHref(web: string): string {
 export async function CompanyDetailContent({
   companyId,
   tabParam,
-  cursor,
+  win,
   q,
   basePath = "/companies",
   showBackLink = true,
 }: {
   companyId: number;
   tabParam?: string;
-  cursor?: string;
+  win?: string;
   q?: string;
   basePath?: string;
   showBackLink?: boolean;
@@ -128,7 +136,7 @@ export async function CompanyDetailContent({
     .join(", ");
 
   const panelRes = await loadOrError(() =>
-    renderPanel(tab, companyId, cursor, q, picklists, {
+    renderPanel(tab, companyId, normalizeTicketWindow(win), currentMs(), q, picklists, {
       resources: assignableResources,
       myResourceId: session.autotaskResourceId,
     }),
@@ -281,42 +289,71 @@ export async function companyMetadata(id: number): Promise<Metadata> {
 async function renderPanel(
   tab: Tab,
   companyId: number,
-  cursor: string | undefined,
+  win: TicketWindow,
+  nowMs: number,
   q: string | undefined,
   picklists: Awaited<ReturnType<typeof getTicketPicklists>>,
   bulk: { resources: ResourceOption[]; myResourceId: number },
 ): Promise<React.ReactNode> {
   if (tab === "offen" || tab === "abgeschlossen") {
+    const closed = tab === "abgeschlossen";
     const filter: AutotaskFilter[] = [
       { op: "eq", field: "companyID", value: companyId },
     ];
-    if (tab === "offen") {
-      filter.push({ op: "noteq", field: "status", value: 5 });
-    } else {
-      filter.push({ op: "eq", field: "status", value: 5 });
-    }
+    filter.push(
+      closed
+        ? { op: "eq", field: "status", value: 5 }
+        : { op: "noteq", field: "status", value: 5 },
+    );
+    // Abgeschlossene Tickets im Zeitfenster laden (B13: Server sortiert nicht ->
+    // Fenster + Vollabruf + Client-Sort, analog Rechnungen). Offene Tickets werden
+    // NIE nach Datum gefiltert – ein altes, weiterhin offenes Ticket darf nicht
+    // verschwinden – nur geladen und neueste zuerst sortiert.
+    if (closed) filter.push(...ticketWindowFilter(ticketWindowStartISO(win, nowMs)));
     filter.push(...ticketSearchFilter(q));
-    const data = await getTicketsPage(filter, {
-      cursorUrl: cursor,
-      withAssigned: true,
-    });
-    return (
+
+    const all = await getTicketsAll(filter, { withAssigned: true });
+    const data = {
+      items: sortByCreatedDesc(all.items),
+      nextCursor: null,
+      prevCursor: null,
+    };
+
+    const list = (
       <TicketsList
         data={data}
         picklists={picklists}
-        filters={{ status: tab === "offen" ? "open" : "5", priority: "", queue: "" }}
+        filters={{ status: closed ? "5" : "open", priority: "", queue: "" }}
         columns={{ assigned: true, company: false }}
         showFilters={false}
-        showPager
+        showPager={false}
         selectable
         resources={bulk.resources}
         myResourceId={bulk.myResourceId}
         emptyDescription={
-          tab === "offen"
-            ? "Diese Firma hat keine offenen Tickets."
-            : "Diese Firma hat keine abgeschlossenen Tickets."
+          closed
+            ? "Diese Firma hat im gewählten Zeitraum keine abgeschlossenen Tickets."
+            : "Diese Firma hat keine offenen Tickets."
         }
       />
+    );
+
+    if (!closed) return list;
+
+    return (
+      <div className="flex flex-col gap-4">
+        <TicketWindowSelect value={win} />
+        {all.capped && (
+          <Alert>
+            <AlertTitle>Nur die ersten 500 Tickets</AlertTitle>
+            <AlertDescription>
+              Im gewählten Zeitraum gibt es mehr als 500 abgeschlossene Tickets.
+              Bitte den Zeitraum eingrenzen, um die neuesten vollständig zu sehen.
+            </AlertDescription>
+          </Alert>
+        )}
+        {list}
+      </div>
     );
   }
 

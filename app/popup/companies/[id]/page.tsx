@@ -21,7 +21,7 @@ export default async function PopupCompanyPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; cursor?: string; q?: string }>;
+  searchParams: Promise<{ tab?: string; win?: string; q?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -29,7 +29,7 @@ export default async function PopupCompanyPage({
     <CompanyDetailContent
       companyId={Number(id)}
       tabParam={sp.tab}
-      cursor={sp.cursor}
+      win={sp.win}
       q={sp.q}
       basePath="/popup/companies"
       showBackLink={false}

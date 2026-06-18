@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -12,17 +13,24 @@ import { getSession } from "@/lib/auth";
 import { contacts } from "@/lib/autotask/entities/contacts";
 import { companies } from "@/lib/autotask/entities/companies";
 import {
-  getTicketsPage,
+  getTicketsAll,
   ticketSearchFilter,
+  sortByCreatedDesc,
+  normalizeTicketWindow,
+  ticketWindowStartISO,
+  ticketWindowFilter,
 } from "@/lib/autotask/entities/ticket-list";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
 import { getAssignableResources } from "@/lib/autotask/entities/resources";
 import { type AutotaskFilter } from "@/lib/autotask/client";
+import { currentMs } from "@/lib/format";
 import { loadOrError } from "@/lib/data/load-or-error";
 import { DataError } from "@/components/data-error";
 import { PageHeader } from "@/components/page-header";
 import { UrlTabs } from "@/components/url-tabs";
 import { TicketsList } from "@/components/tickets/tickets-list";
+import { TicketWindowSelect } from "@/components/tickets/ticket-window-select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +48,7 @@ export default async function ContactDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; cursor?: string; q?: string }>;
+  searchParams: Promise<{ tab?: string; win?: string; q?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -83,42 +91,76 @@ export default async function ContactDetailPage({
     getTicketPicklists(),
     getAssignableResources(),
   ]);
+  const closed = tab === "abgeschlossen";
+  const win = normalizeTicketWindow(sp.win);
   const filter: AutotaskFilter[] = [
     { op: "eq", field: "contactID", value: contactId },
   ];
-  if (tab === "offen") {
-    filter.push({ op: "noteq", field: "status", value: 5 });
-  } else {
-    filter.push({ op: "eq", field: "status", value: 5 });
-  }
+  filter.push(
+    closed
+      ? { op: "eq", field: "status", value: 5 }
+      : { op: "noteq", field: "status", value: 5 },
+  );
+  // Abgeschlossene im Zeitfenster laden (B13: Server sortiert nicht -> Fenster +
+  // Vollabruf + Client-Sort). Offene NIE nach Datum filtern (ein altes, weiterhin
+  // offenes Ticket darf nicht verschwinden) -> nur laden und neueste zuerst.
+  if (closed)
+    filter.push(...ticketWindowFilter(ticketWindowStartISO(win, currentMs())));
   filter.push(...ticketSearchFilter(sp.q));
 
   const panelRes = await loadOrError(() =>
-    getTicketsPage(filter, { cursorUrl: sp.cursor, withAssigned: true }),
+    getTicketsAll(filter, { withAssigned: true }),
   );
-  const panel = !panelRes.ok ? (
-    <DataError
-      title="Tickets konnten nicht geladen werden"
-      rateLimited={panelRes.rateLimited}
-    />
-  ) : (
-    <TicketsList
-      data={panelRes.data}
-      picklists={picklists}
-      filters={{ status: tab === "offen" ? "open" : "5", priority: "", queue: "" }}
-      columns={{ assigned: true, company: false }}
-      showFilters={false}
-      showPager
-      selectable
-      resources={assignableResources}
-      myResourceId={session.autotaskResourceId}
-      emptyDescription={
-        tab === "offen"
-          ? "Dieser Kontakt hat keine offenen Tickets."
-          : "Dieser Kontakt hat keine abgeschlossenen Tickets."
-      }
-    />
-  );
+
+  let panel: ReactNode;
+  if (!panelRes.ok) {
+    panel = (
+      <DataError
+        title="Tickets konnten nicht geladen werden"
+        rateLimited={panelRes.rateLimited}
+      />
+    );
+  } else {
+    const list = (
+      <TicketsList
+        data={{
+          items: sortByCreatedDesc(panelRes.data.items),
+          nextCursor: null,
+          prevCursor: null,
+        }}
+        picklists={picklists}
+        filters={{ status: closed ? "5" : "open", priority: "", queue: "" }}
+        columns={{ assigned: true, company: false }}
+        showFilters={false}
+        showPager={false}
+        selectable
+        resources={assignableResources}
+        myResourceId={session.autotaskResourceId}
+        emptyDescription={
+          closed
+            ? "Dieser Kontakt hat im gewählten Zeitraum keine abgeschlossenen Tickets."
+            : "Dieser Kontakt hat keine offenen Tickets."
+        }
+      />
+    );
+    panel = !closed ? (
+      list
+    ) : (
+      <div className="flex flex-col gap-4">
+        <TicketWindowSelect value={win} />
+        {panelRes.data.capped && (
+          <Alert>
+            <AlertTitle>Nur die ersten 500 Tickets</AlertTitle>
+            <AlertDescription>
+              Im gewählten Zeitraum gibt es mehr als 500 abgeschlossene Tickets.
+              Bitte den Zeitraum eingrenzen, um die neuesten vollständig zu sehen.
+            </AlertDescription>
+          </Alert>
+        )}
+        {list}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
