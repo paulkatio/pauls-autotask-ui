@@ -57,7 +57,7 @@ export default async function RechnungDetailPage({
   const nowMs = currentMs();
   const num = invoice.invoiceNumber ?? String(invoiceId);
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <VertriebBreadcrumb
         listHref="/vertrieb/rechnungen"
         listLabel="Rechnungen"

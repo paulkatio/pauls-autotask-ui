@@ -47,7 +47,7 @@ export default async function VertragDetailPage({
 
   const name = contract.contractName ?? `Vertrag ${contractId}`;
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <VertriebBreadcrumb
         listHref="/vertrieb/vertraege"
         listLabel="Verträge"

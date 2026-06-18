@@ -54,7 +54,7 @@ export default async function AngebotDetailPage({
 
   const num = quote.quoteNumber != null ? String(quote.quoteNumber) : String(quoteId);
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <VertriebBreadcrumb
         listHref="/vertrieb/angebote"
         listLabel="Angebote"
