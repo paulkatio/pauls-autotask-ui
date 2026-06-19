@@ -57,7 +57,7 @@ export function NavMain({ items, label }: { items: NavItem[]; label?: string }) 
               // erkennbar wo man ist, AA in Hell UND Dunkel. Nur semantische Tokens,
               // kein erfundenes CSS / keine festen Farben. Farbsystem v2.
               // Im eingeklappten Icon-Modus erzwingt sidebar.tsx weiter 8er-Quadrate.
-              className="h-9 gap-3 transition-colors [&>svg]:text-muted-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground data-active:font-medium [&>svg]:size-4 data-active:[&>svg]:text-primary"
+              className="h-11 gap-3 transition-colors [&>svg]:text-muted-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground data-active:font-medium [&>svg]:size-5 data-active:[&>svg]:text-primary sm:h-9 sm:[&>svg]:size-4"
               onClick={() => setOpenMobile(false)}
               render={<Link href={item.url} />}
             >

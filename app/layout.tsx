@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { appleStartupImages } from "@/lib/splash-screens";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,10 @@ export const metadata: Metadata = {
     // Vorausgefüllter Name beim „Zum Home-Bildschirm" in Safari (iOS liest das aus
     // apple-mobile-web-app-title, NICHT aus dem Manifest).
     title: "AutoTask UI",
+    // iOS-Startbilder je iPhone-Größe (Hell/Dunkel) – überbrücken den weißen
+    // Kaltstart der installierten PWA, bis der erste Frame da ist. Generiert von
+    // scripts/gen-splash.mjs (kein Service Worker, siehe docs/DECISIONS.md).
+    startupImage: appleStartupImages,
   },
 };
 

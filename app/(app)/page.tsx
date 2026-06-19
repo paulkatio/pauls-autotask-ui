@@ -183,16 +183,18 @@ export default async function DashboardPage() {
       </div>
 
       {/* Ab lg: 4-Spalten-Grid analog zum KPI-Raster darüber. Chart = 3/4
-          (col-span-3), Projekte = 1/4 (eine Spalte) → die Spaltenkanten fluchten
-          mit den vier KPI-Karten. items-stretch (Default): beide Karten gleich hoch
-          – auch bei nur EINEM Projekt. Dass das Diagramm dabei NICHT mitwächst,
-          regelt die feste Plot-Höhe im Chart; dass die Projektliste das Diagramm
-          nicht hochzieht, regelt deren Scroll-Deckel. Unter lg gestapelt. */}
+          (col-span-3), Projekte = 1/4. FESTE Zeilenhöhe (lg:h-[23rem]) auf beiden
+          Spalten = der Höhenbedarf des Diagramms (Kopf + Plot + Achse). So ist die
+          Zeile NIE höher als das Diagramm; die Projektliste wird darin abgeschnitten
+          und scrollt intern, egal wie viele Projekte (Paul-Feedback). Unter lg
+          gestapelt/voll breit (natürliche Höhe). */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
-        <div className="lg:col-span-3 lg:h-full">
+        <div className="lg:col-span-3 lg:h-[23rem]">
           <CountBarChart title="Tickets pro Mitarbeiter" data={perResource} />
         </div>
-        <MyProjectsSection preview={projectsPreview} />
+        <div className="lg:h-[23rem]">
+          <MyProjectsSection preview={projectsPreview} />
+        </div>
       </div>
 
       <OpenTickets

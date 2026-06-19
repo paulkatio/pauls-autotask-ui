@@ -54,14 +54,14 @@ export function MyProjectsSection({ preview }: { preview: ProjectsPreview }) {
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex-1 px-0">
+      <CardContent className="min-h-0 flex-1 overflow-y-auto px-0">
         {items.length === 0 ? (
           <p className="text-muted-foreground px-4 text-sm">
             Du leitest aktuell kein Projekt und hast in keinem offenen Projekt
             eine Aufgabe.
           </p>
         ) : (
-          <ul className="max-h-80 divide-y overflow-y-auto">
+          <ul className="divide-y">
             {items.map((p) => {
               const pct =
                 p.completedPercentage != null &&
