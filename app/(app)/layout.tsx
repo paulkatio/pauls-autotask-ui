@@ -1,5 +1,11 @@
+import { Suspense } from "react";
+
 import { AppSidebar } from "@/components/app-sidebar";
 import { CommandPalette } from "@/components/command-palette";
+import {
+  NavigationProgress,
+  NavigationProgressClickBridge,
+} from "@/components/navigation-progress";
 import { ContactModal } from "@/components/contacts/contact-modal";
 import { HeaderAutotaskLink } from "@/components/header-autotask-link";
 import { HeaderBack } from "@/components/header-back";
@@ -35,13 +41,14 @@ export default async function AppLayout({
   // Vertriebsbereich nur für berechtigte Resourcen (siehe lib/auth/sales-access).
   const showSales = canAccessSales(session);
 
-  // Offene-Tickets-Zähler für die Sidebar-Badges (best effort: nie die App kippen).
-  let ticketCounts: { mine: number; team: number } | undefined;
-  try {
-    ticketCounts = await getSidebarTicketCounts(session.autotaskResourceId);
-  } catch {
-    ticketCounts = undefined;
-  }
+  // Offene-Tickets-Zähler für die Sidebar-Badges: BEWUSST NICHT awaiten. Sonst
+  // blockiert die (oft kalte, langsame) Autotask-Zählung die erste Auslieferung –
+  // auf der installierten PWA äußert sich das als weißer Bildschirm beim Kaltstart.
+  // Stattdessen als Promise weiterreichen: Shell + Seiten-Skelett kommen sofort, die
+  // Badges streamen per Suspense nach (best effort: Fehler -> null, nie ein Crash).
+  const ticketCountsPromise = getSidebarTicketCounts(
+    session.autotaskResourceId,
+  ).catch(() => null);
   const switcherUsers = mockUsers.map((u) => ({
     userName: u.userName,
     displayName: u.displayName,
@@ -49,10 +56,16 @@ export default async function AppLayout({
 
   return (
     <SidebarProvider>
+      {/* Globaler Ladebalken + Anker-Klick-Brücke: sofortiges „es lädt"-Signal bei
+          jeder Navigation. Suspense, da NavigationProgress useSearchParams nutzt. */}
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
+      <NavigationProgressClickBridge />
       <AppSidebar
         user={session}
         orgName={orgName}
-        ticketCounts={ticketCounts}
+        ticketCountsPromise={ticketCountsPromise}
         showSales={showSales}
       />
       <SidebarInset className="min-w-0">
@@ -94,7 +107,7 @@ export default async function AppLayout({
         <div className="flex min-w-0 flex-1 flex-col gap-6 p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
           {children}
         </div>
-        <MobileBottomNav ticketCounts={ticketCounts} />
+        <MobileBottomNav ticketCountsPromise={ticketCountsPromise} />
       </SidebarInset>
       <CommandPalette />
       <ContactModal />

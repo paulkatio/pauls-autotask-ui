@@ -1,12 +1,15 @@
-import { PageHeaderSkeleton } from "@/components/skeletons";
+import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Suche: Kopf + große Suchleiste + 4-Spalten-Ergebnisraster (Firma/Kontakte/
-// Ticket-Name/Ticket-Nummer) – gleiches Raster wie die echten Ergebnisse.
+// Suche: ECHTER Kopf (konstant) bleibt sofort stehen; nur große Suchleiste +
+// 4-Spalten-Ergebnisraster sind Skeleton. Überschrift „springt" nicht.
 export default function Loading() {
   return (
     <div className="flex flex-col gap-6">
-      <PageHeaderSkeleton />
+      <PageHeader
+        title="Suche"
+        description="Tickets, Firmen und Kontakte gleichzeitig durchsuchen."
+      />
       <Skeleton className="h-12 w-full max-w-2xl rounded-lg" />
       <div className="bg-border grid grid-cols-1 gap-px overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, col) => (

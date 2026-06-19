@@ -2,6 +2,7 @@ import { useRouter } from "next/navigation";
 
 import { useInAppNav } from "@/hooks/use-in-app-nav";
 import { openCompanyPopup, openTicketPopup } from "@/lib/open-popup";
+import { navProgress } from "@/lib/nav-progress";
 
 // Einheitlicher Einstieg, um einen Datensatz zu öffnen. Entscheidet beim Tippen,
 // ob IN der App navigiert wird (mobil/PWA – Zurück-Geste funktioniert, kein neuer
@@ -15,13 +16,17 @@ export function useRecordNav() {
   const inApp = useInAppNav();
 
   function openTicket(id: number) {
-    if (inApp) router.push(`/tickets/${id}`);
-    else openTicketPopup(id);
+    if (inApp) {
+      navProgress.start(); // sofortiges Lade-Feedback (In-App-Navigation)
+      router.push(`/tickets/${id}`);
+    } else openTicketPopup(id);
   }
 
   function openCompany(id: number) {
-    if (inApp) router.push(`/companies/${id}`);
-    else openCompanyPopup(id);
+    if (inApp) {
+      navProgress.start();
+      router.push(`/companies/${id}`);
+    } else openCompanyPopup(id);
   }
 
   return { openTicket, openCompany };

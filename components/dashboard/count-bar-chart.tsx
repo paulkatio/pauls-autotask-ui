@@ -65,17 +65,11 @@ export function CountBarChart({
 }) {
   const router = useRouter();
 
-  // Responsive ohne Overengineering: bis einschl. mittelgroßer Viewports die Labels
-  // schräg stellen + nur Vorname (kein Überlappen, kein Abschneiden); erst auf
-  // breiten Bildschirmen (>= xl) horizontal mit vollem Namen.
-  const [compact, setCompact] = React.useState(false);
-  React.useEffect(() => {
-    const mq = window.matchMedia("(max-width: 1279px)");
-    const update = () => setCompact(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
+  // Labels IMMER schräg + gekürzt („Vorname N."). Der Chart sitzt auf der Übersicht
+  // in einer 3/4-Spalte – bei 9 Namen überlappen horizontale Labels sonst auch auf
+  // breiten Viewports (Container schmal, Viewport breit). Schräg + kurz ist auf jeder
+  // Breite kollisionsfrei; der volle Name bleibt im Tooltip.
+  const compact = true;
 
   // Auf dem Smartphone funktioniert das Balkendiagramm schlecht (zu viele Namen auf
   // wenig Breite) → unter sm stattdessen eine kompakte, sortierte Liste mit Mini-
@@ -118,14 +112,19 @@ export function CountBarChart({
   }
 
   return (
-    <Card>
+    // Karte füllt die (gestreckte) Grid-Spalte (h-full) – so ist sie genauso hoch wie
+    // das „Meine Projekte"-Panel daneben. ABER die Plotfläche selbst ist FEST
+    // (ChartContainer height={chartHeight}, NICHT h-full): so wachsen die Balken NICHT
+    // mit einer hohen Nachbarspalte mit (war der „viel zu hoch"-Bug). Überschuss-Höhe
+    // bleibt als Leerraum unter den Balken statt sie aufzublähen.
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>
           Offene Tickets je zugewiesenem Mitarbeiter.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         {small ? (
           data.length === 0 ? (
             <p className="text-muted-foreground py-8 text-center text-sm">

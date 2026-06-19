@@ -1,20 +1,21 @@
 "use client";
 
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { useProgressNav } from "@/hooks/use-progress-nav";
 import type { TimeRange } from "@/lib/autotask/entities/my-time";
 
 // Umschalter Heute / Diese Woche – steuert den ?range=-Parameter (server liest ihn).
 export function RangeToggle({ range }: { range: TimeRange }) {
-  const router = useRouter();
+  const { navigate } = useProgressNav();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   function set(next: TimeRange) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("range", next);
-    router.push(`${pathname}?${params.toString()}`);
+    navigate(`${pathname}?${params.toString()}`);
   }
 
   return (

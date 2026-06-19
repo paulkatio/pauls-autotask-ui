@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { MagnifyingGlass, X } from "@phosphor-icons/react/ssr";
 
 import { Input } from "@/components/ui/input";
+import { navProgress } from "@/lib/nav-progress";
 
 // Große Suchleiste der /search-Seite (Spotlight-Stil). Enter sucht; es wird
 // gleichzeitig in allen vier Spalten gesucht (siehe Seite).
@@ -16,6 +17,7 @@ export function SearchBox() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const t = q.trim();
+    navProgress.start();
     router.push(t ? `/search?q=${encodeURIComponent(t)}` : "/search");
   }
 

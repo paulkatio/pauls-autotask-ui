@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { CalendarBlank } from "@phosphor-icons/react/ssr";
 
 import {
@@ -13,12 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { yearOptions } from "@/lib/vertrieb/year-window";
+import { useProgressNav } from "@/hooks/use-progress-nav";
 
 // Zeitraum-Auswahl für Rechnungen/Angebote/Verträge. Ändert die SERVER-Datenmenge
 // (Jahresfenster), daher Navigation per ?zeitraum=. Werte: Jahreszahl (genau dieses
 // Kalenderjahr) oder "alle". Default = aktuelles Jahr -> saubere URL ohne Param.
 export function VertriebPeriodSelect({ value }: { value: string }) {
-  const router = useRouter();
+  const { navigate } = useProgressNav();
   const pathname = usePathname();
   const nowYear = new Date().getFullYear();
   const defaultValue = String(nowYear);
@@ -31,7 +32,7 @@ export function VertriebPeriodSelect({ value }: { value: string }) {
       value={current}
       onValueChange={(v) => {
         const next = String(v);
-        router.push(
+        navigate(
           next === defaultValue ? pathname : `${pathname}?zeitraum=${next}`,
         );
       }}

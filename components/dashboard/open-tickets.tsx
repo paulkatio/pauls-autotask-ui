@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import type { TicketPicklists } from "@/lib/autotask/types";
+import type { ResourceOption } from "@/lib/autotask/entities/resources";
 
 type Page = {
   items: TicketRow[];
@@ -28,11 +29,18 @@ export function OpenTickets({
   picklists,
   initial,
   count,
+  resources,
+  myResourceId,
 }: {
   picklists: TicketPicklists;
   initial: Page;
   // Gesamtzahl offener Tickets (team-weit) für den Badge neben der Überschrift.
   count?: number;
+  // Mehrfachauswahl + Bulk-Aktionen wie in „Meine Tickets"/„Teamtickets". Ohne
+  // diese beiden bleibt die Liste read-only (z. B. wenn die Resourcen nicht
+  // geladen werden konnten).
+  resources?: ResourceOption[];
+  myResourceId?: number;
 }) {
   const [assigned, setAssigned] = React.useState<Assigned>("all");
   const [data, setData] = React.useState<Page>(initial);
@@ -144,6 +152,12 @@ export function OpenTickets({
             searchMode="off"
             bordered={false}
             compact
+            selectable
+            resources={resources}
+            myResourceId={myResourceId}
+            // Clientseitige Liste: nach einer Bulk-Aktion die aktuelle Seite neu
+            // laden (statt router.refresh -> kein voller Seiten-Neuaufbau).
+            onBulkApplied={() => fetchPage(assigned)}
             emptyDescription={
               assigned === "unassigned"
                 ? "Keine nicht zugewiesenen offenen Tickets."

@@ -29,6 +29,7 @@ import {
   type SearchResultItem,
 } from "@/components/search/result-column";
 import { openContactModal } from "@/lib/open-contact";
+import { navProgress } from "@/lib/nav-progress";
 
 // Event-Name, mit dem die Header-Suche die Palette öffnet.
 export const OPEN_COMMAND_PALETTE = "open-command-palette";
@@ -170,6 +171,7 @@ export function CommandPalette() {
     setOpen(false);
     setQuery("");
     clearHits();
+    navProgress.start(); // sofortiges Lade-Feedback
     router.push(url);
   }
 

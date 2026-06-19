@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft } from "@phosphor-icons/react/ssr";
 
 import { Button } from "@/components/ui/button";
+import { navProgress } from "@/lib/nav-progress";
 
 // Mobiler Zurück-Button im App-Header. Nur auf Detailseiten (Ticket/Firma) und nur
 // mobil sichtbar – seit die Detailansicht mobil IN der App geöffnet wird
@@ -30,6 +31,7 @@ export function HeaderBack() {
     const ref = document.referrer;
     const sameOrigin =
       !!ref && new URL(ref).origin === window.location.origin;
+    navProgress.start(); // sofortiges Lade-Feedback
     if (window.history.length > 1 && sameOrigin) {
       router.back();
     } else {

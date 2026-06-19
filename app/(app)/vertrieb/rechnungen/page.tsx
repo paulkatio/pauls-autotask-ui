@@ -7,7 +7,6 @@ import { normalizeYear, yearWindowOf } from "@/lib/vertrieb/year-window";
 import { currentMs } from "@/lib/format";
 import { loadOrError } from "@/lib/data/load-or-error";
 import { DataError } from "@/components/data-error";
-import { VertriebTabs } from "@/components/vertrieb/vertrieb-tabs";
 import { InvoicesList } from "@/components/vertrieb/invoices-list";
 
 export const dynamic = "force-dynamic";
@@ -38,16 +37,14 @@ export default async function RechnungenPage({
 
   const { rows, capped, total } = res.data;
   const nowMs = currentMs();
+  // Tab-Leiste liefert das Section-Layout; hier nur der Inhalt.
   return (
-    <div className="flex flex-col gap-6">
-      <VertriebTabs heading="Rechnungen" />
-      <InvoicesList
-        rows={rows}
-        capped={capped}
-        total={total}
-        zeitraum={z}
-        nowMs={nowMs}
-      />
-    </div>
+    <InvoicesList
+      rows={rows}
+      capped={capped}
+      total={total}
+      zeitraum={z}
+      nowMs={nowMs}
+    />
   );
 }

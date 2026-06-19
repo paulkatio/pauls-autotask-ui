@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { getSession } from "@/lib/auth";
 import {
   getTicketsAll,
@@ -6,12 +8,10 @@ import {
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
 import { getAssignableResources } from "@/lib/autotask/entities/resources";
 import { getSidebarTicketCounts } from "@/lib/autotask/entities/ticket-counts";
-import { getSecondaryOpenTickets } from "@/lib/autotask/entities/dashboard";
 import { type AutotaskFilter } from "@/lib/autotask/client";
 import { loadOrError } from "@/lib/data/load-or-error";
-import { DataError } from "@/components/data-error";
-import { Badge } from "@/components/ui/badge";
 import { TicketsList } from "@/components/tickets/tickets-list";
+import { SecondaryOpenTickets } from "@/components/tickets/secondary-open-tickets";
 import { PageHeader } from "@/components/page-header";
 import { NewTicketDialog } from "@/components/tickets/new-ticket-dialog";
 
@@ -89,85 +89,52 @@ export default async function MyTicketsPage({
   // Textsuche (Nummer/Titel) – Paul-Feedback.
   filter.push(...ticketSearchFilter(sp.q));
 
-  const [picklists, assignableResources, counts, secondary] = await Promise.all([
+  // Schnelles, gecachtes Beiwerk für Kopf + Toolbar (Picklists für die Filterchips,
+  // Resourcen für die Bulk-Aktionen, Zähler für den Badge). NUR diese awaiten – sie
+  // sind klein/gecacht, also schnell. Die (langsame) Ticketliste NICHT awaiten.
+  const [picklists, assignableResources, counts] = await Promise.all([
     getTicketPicklists(),
     getAssignableResources(),
     getSidebarTicketCounts(session.autotaskResourceId).catch(() => null),
-    // Tickets, in denen ich zusätzlicher Mitarbeiter bin – eigener Bereich unter
-    // der Hauptliste (Paul-Vorgabe). Best effort: nie die Seite kippen.
-    getSecondaryOpenTickets(session.autotaskResourceId).catch(() => ({
-      items: [],
-      nextCursor: null,
-      prevCursor: null,
-    })),
   ]);
 
-  // Alle dir zugewiesenen Tickets in EINER Liste (keine Paginierung).
-  const res = await loadOrError(() => getTicketsAll(filter));
-  if (!res.ok)
-    return (
-      <DataError
-        title="Tickets konnten nicht geladen werden"
-        rateLimited={res.rateLimited}
+  // Hauptliste als PROMISE an die Liste reichen (loadOrError fängt Fehler zu einem
+  // Ergebnis, kein Throw). So rendern Kopf + Filterchips SOFORT; nur die Tabelle hängt
+  // am Abruf (Suspense in TicketsList) und streamt nach.
+  const ticketsResult = loadOrError(() => getTicketsAll(filter));
+
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Meine Tickets"
+        description="Dir zugewiesene Tickets – nach Status, Priorität und Queue filtern."
+        badge={counts?.mine}
+        actions={<NewTicketDialog picklists={picklists} />}
       />
-    );
-  const data = res.data;
+      <TicketsList
+        data={ticketsResult}
+        picklists={picklists}
+        filters={{
+          status,
+          priority: sp.priority ?? "",
+          queue: sp.queue ?? "",
+        }}
+        selectable
+        resources={assignableResources}
+        myResourceId={session.autotaskResourceId}
+        showPager={false}
+        emptyDescription="Für die aktuelle Auswahl sind dir keine Tickets zugewiesen."
+      />
 
-    return (
-      <div className="flex flex-col gap-6">
-        <PageHeader
-          title="Meine Tickets"
-          description="Dir zugewiesene Tickets – nach Status, Priorität und Queue filtern."
-          badge={counts?.mine}
-          actions={<NewTicketDialog picklists={picklists} />}
-        />
-        <TicketsList
-          data={{ items: data.items, nextCursor: null, prevCursor: null }}
+      {/* Eigener Bereich „Als zusätzlicher Mitarbeiter": streamt eigenständig (eigener,
+          potenziell langsamer Abruf) und blockiert daher die Hauptliste NICHT. Nur
+          sichtbar, wenn es solche Tickets gibt. */}
+      <Suspense fallback={null}>
+        <SecondaryOpenTickets
+          resourceId={session.autotaskResourceId}
           picklists={picklists}
-          filters={{
-            status,
-            priority: sp.priority ?? "",
-            queue: sp.queue ?? "",
-          }}
-          selectable
-          resources={assignableResources}
-          myResourceId={session.autotaskResourceId}
-          showPager={false}
-          emptyDescription="Für die aktuelle Auswahl sind dir keine Tickets zugewiesen."
         />
-        {data.capped && (
-          <p className="text-muted-foreground text-xs">
-            Sehr viele Tickets – es werden die ersten {data.total} angezeigt.
-          </p>
-        )}
-
-        {/* Eigener Bereich: offene Tickets, in denen ich zusätzlicher Mitarbeiter
-            bin (nicht mir zugewiesen, aber mit mir verbunden). Nur sichtbar, wenn
-            es solche Tickets gibt – kein leerer Block. Read-only (keine Auswahl):
-            fremde Tickets werden hier nicht gebündelt bearbeitet. */}
-        {secondary.items.length > 0 && (
-          <section className="flex flex-col gap-4 border-t pt-6">
-            <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
-              Als zusätzlicher Mitarbeiter
-              <Badge
-                variant="secondary"
-                className="bg-chart-2/15 text-chart-2 tabular-nums"
-              >
-                {secondary.items.length}
-              </Badge>
-            </h2>
-            <TicketsList
-              data={secondary}
-              picklists={picklists}
-              filters={{ status: "open", priority: "", queue: "" }}
-              columns={{ assigned: true }}
-              showFilters={false}
-              showPager={false}
-              searchMode="off"
-              emptyDescription="Aktuell bist du in keinem offenen Ticket zusätzlicher Mitarbeiter."
-            />
-          </section>
-        )}
-      </div>
-    );
+      </Suspense>
+    </div>
+  );
 }

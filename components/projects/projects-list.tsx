@@ -24,9 +24,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Empty,
   EmptyDescription,
@@ -37,6 +37,7 @@ import {
 import { TruncatedText } from "@/components/truncated-text";
 import { projectStatusVariant } from "@/lib/autotask/mappers";
 import { cn } from "@/lib/utils";
+import { useProgressNav } from "@/hooks/use-progress-nav";
 import type { ProjectRow } from "@/lib/autotask/entities/projects";
 
 // Projektliste. „Meine / Alle"-Umschalter (Server-Daten je Scope), Sofort-Clientsuche
@@ -184,6 +185,7 @@ export function ProjectsList({
   capped?: boolean;
 }) {
   const router = useRouter();
+  const { navigate, pending } = useProgressNav();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -222,8 +224,9 @@ export function ProjectsList({
 
   function selectScope(next: ProjectScope) {
     if (next === scope) return;
-    // Scope-Wechsel verwirft die clientseitigen Filter (neue Datenbasis).
-    router.push(next === "all" ? "/projekte?scope=all" : "/projekte");
+    // Scope-Wechsel verwirft die clientseitigen Filter (neue Datenbasis). Über
+    // useProgressNav → globaler Ladebalken + Inhalts-Dim, da der Server neu lädt.
+    navigate(next === "all" ? "/projekte?scope=all" : "/projekte");
   }
 
   const statusOptions = React.useMemo(
@@ -309,16 +312,16 @@ export function ProjectsList({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Einheitliche Toolbar (wie Firmen/Vertrieb): Scope · Suche · Filter in EINER
-          Zeile auf Desktop (Chips inhaltsbreit, nicht volle Breite); mobil gestapelt.
-          Alle Controls einheitlich h-9 (Desktop) / h-11 (Mobile, Touch). */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
-          <Button
-            size="sm"
-            className="h-11 w-full sm:h-9 sm:w-auto"
-            variant={scope === "mine" ? "secondary" : "outline"}
-            onClick={() => selectScope("mine")}
+      {/* Einheitlich mit Vertrieb / „Offene Tickets": segmentierte Auswahl-Chips als
+          eigene Zeile OBEN, Suche + Filter in der Zeile DARUNTER. */}
+      <Tabs
+        value={scope}
+        onValueChange={(v) => selectScope(v as ProjectScope)}
+      >
+        <TabsList className="group-data-horizontal/tabs:h-auto max-w-full flex-wrap justify-start gap-1">
+          <TabsTrigger
+            value="mine"
+            className="h-11 flex-1 sm:h-9 sm:flex-none"
           >
             Meine Projekte
             <Badge
@@ -327,17 +330,17 @@ export function ProjectsList({
             >
               {myCount}
             </Badge>
-          </Button>
-          <Button
-            size="sm"
-            className="h-11 w-full sm:h-9 sm:w-auto"
-            variant={scope === "all" ? "secondary" : "outline"}
-            onClick={() => selectScope("all")}
+          </TabsTrigger>
+          <TabsTrigger
+            value="all"
+            className="h-11 flex-1 sm:h-9 sm:flex-none"
           >
             Alle Projekte
-          </Button>
-        </div>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
         <SearchInput
           value={searchValue}
           onValueChange={setSearchValue}
@@ -378,7 +381,16 @@ export function ProjectsList({
         </p>
       )}
 
-      {items.length === 0 ? (
+      {/* Inhalt beim Scope-Wechsel dezent abdimmen, solange der Server neu lädt
+          (zusätzlich läuft der globale Ladebalken). Filter/Suche sind clientseitig
+          und sofort – die dimmen nicht. */}
+      <div
+        className={cn(
+          "flex flex-col gap-4 transition-opacity",
+          pending && "pointer-events-none opacity-60",
+        )}
+      >
+        {items.length === 0 ? (
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -530,7 +542,8 @@ export function ProjectsList({
             </Table>
           </div>
         </>
-      )}
+        )}
+      </div>
     </div>
   );
 }

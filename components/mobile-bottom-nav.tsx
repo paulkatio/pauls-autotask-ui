@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense, use } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -44,7 +45,30 @@ function fmtBadge(n: number): string {
   return n > 99 ? "99+" : String(n);
 }
 
+// Promise-Variante (Streaming): blockt den Kaltstart nicht – die Leiste erscheint
+// sofort (Fallback ohne Badges), die Zähler streamen per Suspense nach.
 export function MobileBottomNav({
+  ticketCountsPromise,
+}: {
+  ticketCountsPromise?: Promise<{ mine: number; team: number } | null>;
+}) {
+  return (
+    <Suspense fallback={<BottomNavBar />}>
+      <BottomNavResolved promise={ticketCountsPromise} />
+    </Suspense>
+  );
+}
+
+function BottomNavResolved({
+  promise,
+}: {
+  promise?: Promise<{ mine: number; team: number } | null>;
+}) {
+  const counts = promise ? use(promise) : null;
+  return <BottomNavBar ticketCounts={counts ?? undefined} />;
+}
+
+function BottomNavBar({
   ticketCounts,
 }: {
   // Offene-Tickets-Zähler (mir / Team) für die kleinen Badges an „Meine"/„Team".

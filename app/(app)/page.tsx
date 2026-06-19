@@ -17,6 +17,7 @@ import { getMyProjectsPreview } from "@/lib/autotask/entities/projects";
 import { MyProjectsSection } from "@/components/dashboard/my-projects-section";
 import { getTicketsPage } from "@/lib/autotask/entities/ticket-list";
 import { getSidebarTicketCounts } from "@/lib/autotask/entities/ticket-counts";
+import { getAssignableResources } from "@/lib/autotask/entities/resources";
 import { CountBarChart } from "@/components/dashboard/count-bar-chart";
 import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
 import { AutotaskError, type AutotaskFilter } from "@/lib/autotask/client";
@@ -98,6 +99,9 @@ export default async function DashboardPage() {
   // Gesamtzahl offener Tickets (team-weit) für den Badge an der „Offene Tickets"-
   // Sektion. Gecacht, best effort.
   const counts = await getSidebarTicketCounts(rid).catch(() => null);
+  // Mitarbeiter für die Bulk-Aktionen der „Offene Tickets"-Liste (Zuweisen).
+  // Best effort: scheitert der Abruf, bleibt die Liste read-only statt zu kippen.
+  const assignableResources = await getAssignableResources().catch(() => []);
 
   // Datenabruf vom Rendern trennen: Fehler werden zu einem Sentinel, das JSX entsteht
   // AUSSERHALB von try/catch (React-19-Error-Boundary-Regel, kein JSX im try).
@@ -178,11 +182,26 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <CountBarChart title="Tickets pro Mitarbeiter" data={perResource} />
+      {/* Ab lg: 4-Spalten-Grid analog zum KPI-Raster darüber. Chart = 3/4
+          (col-span-3), Projekte = 1/4 (eine Spalte) → die Spaltenkanten fluchten
+          mit den vier KPI-Karten. items-stretch (Default): beide Karten gleich hoch
+          – auch bei nur EINEM Projekt. Dass das Diagramm dabei NICHT mitwächst,
+          regelt die feste Plot-Höhe im Chart; dass die Projektliste das Diagramm
+          nicht hochzieht, regelt deren Scroll-Deckel. Unter lg gestapelt. */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <div className="lg:col-span-3 lg:h-full">
+          <CountBarChart title="Tickets pro Mitarbeiter" data={perResource} />
+        </div>
+        <MyProjectsSection preview={projectsPreview} />
+      </div>
 
-      <MyProjectsSection preview={projectsPreview} />
-
-      <OpenTickets picklists={picklists} initial={openTickets} count={counts?.team} />
+      <OpenTickets
+        picklists={picklists}
+        initial={openTickets}
+        count={counts?.team}
+        resources={assignableResources}
+        myResourceId={rid}
+      />
     </div>
   );
 }

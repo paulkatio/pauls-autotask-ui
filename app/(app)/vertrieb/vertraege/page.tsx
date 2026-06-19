@@ -6,7 +6,6 @@ import { contracts } from "@/lib/autotask/entities/contracts";
 import { normalizeYear, yearWindowOf } from "@/lib/vertrieb/year-window";
 import { loadOrError } from "@/lib/data/load-or-error";
 import { DataError } from "@/components/data-error";
-import { VertriebTabs } from "@/components/vertrieb/vertrieb-tabs";
 import { ContractsList } from "@/components/vertrieb/contracts-list";
 
 export const dynamic = "force-dynamic";
@@ -33,10 +32,6 @@ export default async function VertraegePage({
       />
     );
 
-  return (
-    <div className="flex flex-col gap-6">
-      <VertriebTabs heading="Verträge" />
-      <ContractsList rows={res.data.rows} zeitraum={z} />
-    </div>
-  );
+  // Tab-Leiste liefert das Section-Layout; hier nur der Inhalt.
+  return <ContractsList rows={res.data.rows} zeitraum={z} />;
 }

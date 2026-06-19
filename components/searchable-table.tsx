@@ -25,6 +25,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
+import { navProgress } from "@/lib/nav-progress";
 
 // Wiederverwendbare, durchsuchbare Tabelle für vollständig geladene Listen
 // (Paul-Feedback: „immer eine Suche"). Standard: Spaltenbreiten automatisch
@@ -113,7 +114,10 @@ export function SearchableTable<T extends { id: number | string }>({
   const handleRow = onRowClick
     ? onRowClick
     : hrefFor
-      ? (row: T) => router.push(hrefFor(row))
+      ? (row: T) => {
+          navProgress.start(); // sofortiges Lade-Feedback beim Zeilenklick
+          router.push(hrefFor(row));
+        }
       : undefined;
 
   // Eigene Toolbar (Suche + Spalten-Reset) nur im Standalone-Einsatz. Wird die Suche

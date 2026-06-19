@@ -199,7 +199,15 @@ export async function getMyProjectsPreview(
   resourceId: number,
 ): Promise<ProjectsPreview> {
   const { rows } = await getMyProjects(resourceId);
-  return { count: rows.length, items: rows.slice(0, 5) };
+  // Sortierung nach Fälligkeit aufsteigend (dringendste zuerst); Projekte ohne
+  // Enddatum ans Ende. Die schmale Dashboard-Spalte zeigt nur die Top-Einträge,
+  // deshalb hier die sinnvolle Reihenfolge fürs Deckeln.
+  const byDueDate = [...rows].sort((a, b) => {
+    const ta = a.endDateTime ? new Date(a.endDateTime).getTime() : Infinity;
+    const tb = b.endDateTime ? new Date(b.endDateTime).getTime() : Infinity;
+    return ta - tb;
+  });
+  return { count: rows.length, items: byDueDate.slice(0, 5) };
 }
 
 // Alle aktiven Projekte (team-weit, status != 5) – für den „Alle"-Blick. Gedeckelt

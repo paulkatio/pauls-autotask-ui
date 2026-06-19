@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useProgressNav } from "@/hooks/use-progress-nav";
+import { cn } from "@/lib/utils";
 
 // URL-gesteuerte Tabs der Kundenakte (B3). Der aktive Tab steckt im `?tab=`-Param,
 // damit der Server nur die Daten des aktiven Tabs lädt (kein 5-fach-Fetch) und das
@@ -24,13 +26,13 @@ export function CompanyTabs({
   active: string;
   children: React.ReactNode;
 }) {
-  const router = useRouter();
+  const { navigate, pending } = useProgressNav();
   const pathname = usePathname();
 
   return (
     <Tabs
       value={active}
-      onValueChange={(v) => router.push(`${pathname}?tab=${String(v)}`)}
+      onValueChange={(v) => navigate(`${pathname}?tab=${String(v)}`)}
     >
       {/* Segmentiert (aktiver Tab im Vordergrund). h-auto + flex-wrap: die 5 Tabs
           brechen mobil sauber um (alle sichtbar), statt überlappend zu überlaufen. */}
@@ -48,7 +50,13 @@ export function CompanyTabs({
           </TabsTrigger>
         ))}
       </TabsList>
-      <TabsContent value={active} className="mt-4">
+      <TabsContent
+        value={active}
+        className={cn(
+          "mt-4 transition-opacity",
+          pending && "pointer-events-none opacity-60",
+        )}
+      >
         {children}
       </TabsContent>
     </Tabs>

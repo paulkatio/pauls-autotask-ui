@@ -54,27 +54,20 @@ const crmItems: NavItem[] = [
 export function AppSidebar({
   user,
   orgName,
-  ticketCounts,
+  ticketCountsPromise,
   showSales,
   ...props
 }: {
   user: SessionUser
   orgName: string
-  // Offene-Tickets-Zähler für die Badges (mir zugewiesen / Team). Optional –
-  // schlägt die Zählung fehl, bleibt die Sidebar einfach ohne Badge.
-  ticketCounts?: { mine: number; team: number }
+  // Offene-Tickets-Zähler als PROMISE (Streaming): Die Badges blockieren die Sidebar
+  // NICHT – sie erscheinen, sobald die Zählung da ist (verhindert den weißen
+  // Kaltstart-Bildschirm). Fehlt/scheitert sie, bleibt die Nav ohne Badge.
+  ticketCountsPromise?: Promise<{ mine: number; team: number } | null>
   // Zugriff auf den Vertriebsbereich (Rechnungen/Verträge/Angebote). Server berechnet
   // das Flag (lib/auth/sales-access); nur dann erscheint der Nav-Eintrag.
   showSales?: boolean
 } & React.ComponentProps<typeof Sidebar>) {
-  // Gruppe „Arbeit": Zähler-Badges (mir zugewiesen / Team) anheften.
-  const work: NavItem[] = workItems.map((it) =>
-    it.url === "/tickets/my"
-      ? { ...it, badge: ticketCounts?.mine }
-      : it.url === "/tickets/team"
-        ? { ...it, badge: ticketCounts?.team }
-        : it,
-  )
   // Gruppe „CRM": Vertrieb nur bei Zugriff, vorangestellt vor Firmen/Kontakte.
   const crm: NavItem[] = showSales
     ? [{ title: "Vertrieb", url: "/vertrieb", icon: Briefcase }, ...crmItems]
@@ -106,7 +99,12 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain label="Arbeit" items={work} />
+        {/* „Arbeit"-Nav sofort sichtbar; die Zähler-Badges streamen per Suspense
+            nach (Fallback = dieselbe Nav ohne Badges → kein Layout-Sprung, nur die
+            Zahlen erscheinen). So blockt die Zählung den Kaltstart nicht. */}
+        <React.Suspense fallback={<NavMain label="Arbeit" items={workItems} />}>
+          <WorkNav promise={ticketCountsPromise} />
+        </React.Suspense>
         <NavMain label="CRM" items={crm} />
       </SidebarContent>
       <SidebarFooter>
@@ -121,4 +119,22 @@ export function AppSidebar({
       <SidebarRail />
     </Sidebar>
   )
+}
+
+// Hängt die Zähler-Badges an die „Arbeit"-Nav. Eigene Komponente, damit NUR sie auf
+// das Counts-Promise wartet (Suspense) – die übrige Sidebar bleibt sofort sichtbar.
+function WorkNav({
+  promise,
+}: {
+  promise?: Promise<{ mine: number; team: number } | null>
+}) {
+  const counts = promise ? React.use(promise) : null
+  const work: NavItem[] = workItems.map((it) =>
+    it.url === "/tickets/my"
+      ? { ...it, badge: counts?.mine }
+      : it.url === "/tickets/team"
+        ? { ...it, badge: counts?.team }
+        : it,
+  )
+  return <NavMain label="Arbeit" items={work} />
 }

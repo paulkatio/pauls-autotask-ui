@@ -11,7 +11,6 @@ import { getTicketPicklists } from "@/lib/autotask/entities/picklists";
 import { getSidebarTicketCounts } from "@/lib/autotask/entities/ticket-counts";
 import { type AutotaskFilter } from "@/lib/autotask/client";
 import { loadOrError } from "@/lib/data/load-or-error";
-import { DataError } from "@/components/data-error";
 import { TicketsList } from "@/components/tickets/tickets-list";
 import { PageHeader } from "@/components/page-header";
 import { NewTicketDialog } from "@/components/tickets/new-ticket-dialog";
@@ -105,51 +104,40 @@ export default async function TeamTicketsPage({
   );
   const defaultDeselectedResourceIds = philipp ? [philipp.id] : [];
 
-  // Alle offenen Teamtickets in EINER Liste (keine Paginierung).
-  const res = await loadOrError(() =>
+  // Alle offenen Teamtickets in EINER Liste (keine Paginierung) – als PROMISE an die
+  // Liste reichen (loadOrError fängt Fehler zu einem Ergebnis, kein Throw). So rendern
+  // Kopf + Filterchips SOFORT; nur die Tabelle hängt am Abruf (Suspense) und streamt.
+  const ticketsResult = loadOrError(() =>
     getTicketsAll(filter, { withAssigned: true }),
   );
-  if (!res.ok)
-    return (
-      <DataError
-        title="Teamtickets konnten nicht geladen werden"
-        rateLimited={res.rateLimited}
-      />
-    );
-  const data = res.data;
 
-    return (
-      <div className="flex flex-col gap-6">
-        <PageHeader
-          title={heading}
-          description="Tickets im gesamten Team – filtern, dem Pool entnehmen und zuweisen."
-          badge={teamBadge}
-          actions={<NewTicketDialog picklists={picklists} />}
-        />
-        <TicketsList
-          data={{ items: data.items, nextCursor: null, prevCursor: null }}
-          picklists={picklists}
-          filters={{
-            status,
-            priority: sp.priority ?? "",
-            queue: sp.queue ?? "",
-            assigned: sp.assigned ?? "",
-          }}
-          columns={{ assigned: true }}
-          assignmentFilter={!scopedToResource}
-          resourceFilter
-          defaultDeselectedResourceIds={defaultDeselectedResourceIds}
-          selectable
-          resources={assignableResources}
-          myResourceId={session.autotaskResourceId}
-          showPager={false}
-          emptyDescription="Für die aktuelle Auswahl gibt es keine Teamtickets."
-        />
-        {data.capped && (
-          <p className="text-muted-foreground text-xs">
-            Sehr viele Tickets – es werden die ersten {data.total} angezeigt.
-          </p>
-        )}
-      </div>
-    );
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={heading}
+        description="Tickets im gesamten Team – filtern, dem Pool entnehmen und zuweisen."
+        badge={teamBadge}
+        actions={<NewTicketDialog picklists={picklists} />}
+      />
+      <TicketsList
+        data={ticketsResult}
+        picklists={picklists}
+        filters={{
+          status,
+          priority: sp.priority ?? "",
+          queue: sp.queue ?? "",
+          assigned: sp.assigned ?? "",
+        }}
+        columns={{ assigned: true }}
+        assignmentFilter={!scopedToResource}
+        resourceFilter
+        defaultDeselectedResourceIds={defaultDeselectedResourceIds}
+        selectable
+        resources={assignableResources}
+        myResourceId={session.autotaskResourceId}
+        showPager={false}
+        emptyDescription="Für die aktuelle Auswahl gibt es keine Teamtickets."
+      />
+    </div>
+  );
 }

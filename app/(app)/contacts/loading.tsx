@@ -1,14 +1,15 @@
-import {
-  PageHeaderSkeleton,
-  FiltersSkeleton,
-  TableSkeleton,
-} from "@/components/skeletons";
+import { FiltersSkeleton, TableSkeleton } from "@/components/skeletons";
+import { PageHeader } from "@/components/page-header";
 
-// Kontaktliste: Kopf + Suche + Firma-Filter + Tabelle (Name/Firma/E-Mail/Telefon).
+// Kontaktliste: ECHTER Kopf (konstant) bleibt sofort stehen; nur Suche +
+// Firma-Filter + Tabelle sind Skeleton. Überschrift „springt" nicht.
 export default function Loading() {
   return (
     <div className="flex flex-col gap-6">
-      <PageHeaderSkeleton />
+      <PageHeader
+        title="Kontakte"
+        description="Aktive Kontakte – tippen zum Suchen (Vor-/Nachname), Spaltenkopf zum Sortieren."
+      />
       <FiltersSkeleton search filters={1} />
       <TableSkeleton columns={4} rows={10} minWidthClass="min-w-2xl" breakpoint="xl" />
     </div>

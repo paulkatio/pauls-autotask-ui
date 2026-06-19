@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useProgressNav } from "@/hooks/use-progress-nav";
+import { cn } from "@/lib/utils";
 
 // URL-gesteuerte Tabs der Projektdetailseite (`?tab=`), analog zur Kundenakte
 // ([company-tabs.tsx]). Der Server lädt nur die Daten des aktiven Tabs – kein
@@ -20,13 +22,13 @@ export function ProjectTabs({
   active: string;
   children: React.ReactNode;
 }) {
-  const router = useRouter();
+  const { navigate, pending } = useProgressNav();
   const pathname = usePathname();
 
   return (
     <Tabs
       value={active}
-      onValueChange={(v) => router.push(`${pathname}?tab=${String(v)}`)}
+      onValueChange={(v) => navigate(`${pathname}?tab=${String(v)}`)}
     >
       {/* Einheitlicher segmentierter Tab-Stil (siehe vertrieb-tabs/url-tabs). */}
       <TabsList className="group-data-horizontal/tabs:h-auto max-w-full flex-wrap justify-start gap-1">
@@ -40,7 +42,13 @@ export function ProjectTabs({
           </TabsTrigger>
         ))}
       </TabsList>
-      <TabsContent value={active} className="mt-4">
+      <TabsContent
+        value={active}
+        className={cn(
+          "mt-4 transition-opacity",
+          pending && "pointer-events-none opacity-60",
+        )}
+      >
         {children}
       </TabsContent>
     </Tabs>

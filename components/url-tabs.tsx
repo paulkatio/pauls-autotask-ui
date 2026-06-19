@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useProgressNav } from "@/hooks/use-progress-nav";
+import { cn } from "@/lib/utils";
 
 // Wiederverwendbare URL-gesteuerte Tabs: der aktive Tab steht im `?<param>=`-Param,
 // damit der Server nur die Daten des aktiven Tabs lädt und das Listen-Paging
@@ -20,7 +22,7 @@ export function UrlTabs({
   children: React.ReactNode;
   param?: string;
 }) {
-  const router = useRouter();
+  const { navigate, pending } = useProgressNav();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -28,7 +30,7 @@ export function UrlTabs({
     const params = new URLSearchParams(searchParams.toString());
     params.set(param, value);
     params.delete("cursor");
-    router.push(`${pathname}?${params.toString()}`);
+    navigate(`${pathname}?${params.toString()}`);
   }
 
   return (
@@ -46,7 +48,15 @@ export function UrlTabs({
           </TabsTrigger>
         ))}
       </TabsList>
-      <TabsContent value={active} className="mt-4">
+      {/* Inhalt beim Tabwechsel dezent abdimmen, solange der Server nachlädt –
+          die Tab-Leiste bleibt voll bedienbar (kein Einfrier-Eindruck). */}
+      <TabsContent
+        value={active}
+        className={cn(
+          "mt-4 transition-opacity",
+          pending && "pointer-events-none opacity-60",
+        )}
+      >
         {children}
       </TabsContent>
     </Tabs>

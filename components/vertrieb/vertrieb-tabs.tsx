@@ -1,31 +1,42 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useProgressNav } from "@/hooks/use-progress-nav";
 
 // Pfad-basierte Unterreiter des Vertriebsbereichs. Anders als UrlTabs (ein Pfad,
 // ?tab=-Param) sind das DREI eigene Routen – der aktive Tab ergibt sich aus dem
-// Pfad, der Wechsel navigiert. Liegt einmal im Section-Layout, bleibt also auch auf
-// Detailseiten markiert (startsWith).
+// Pfad, der Wechsel navigiert.
+//
+// WICHTIG: Diese Leiste sitzt im Section-Layout ([app/(app)/vertrieb/layout.tsx]),
+// NICHT mehr in den einzelnen Seiten. Dadurch bleibt sie beim Tabwechsel stehen
+// (kein Remount/Flackern der Chips); nur der Inhalt darunter wird neu geladen
+// (zeigt dabei das jeweilige loading.tsx-Skelett, dazu der globale Ladebalken).
+// Auf Detailseiten (/vertrieb/<x>/[id]) blendet sie sich selbst aus (dort führt ein
+// Breadcrumb), ebenso auf der bloßen /vertrieb-Route.
 const TABS = [
   { value: "rechnungen", label: "Rechnungen" },
   { value: "vertraege", label: "Verträge" },
   { value: "angebote", label: "Angebote" },
 ];
 
-// `heading` = unsichtbare H1 (a11y/Landmark) – sichtbar führt die aktive Tab-Leiste
-// als Seitenüberschrift (kein doppeltes „Rechnungen"-H1 daneben).
-export function VertriebTabs({ heading }: { heading?: string }) {
+export function VertriebTabs() {
   const pathname = usePathname();
-  const router = useRouter();
-  const active =
-    TABS.find((t) => pathname.startsWith(`/vertrieb/${t.value}`))?.value ??
-    "rechnungen";
+  const { navigate } = useProgressNav();
+
+  // Nur auf den drei LISTEN-Routen anzeigen (exakter Pfad – schließt /[id]-Details aus).
+  const match = TABS.find((t) => pathname === `/vertrieb/${t.value}`);
+  if (!match) return null;
 
   return (
-    <Tabs value={active} onValueChange={(v) => router.push(`/vertrieb/${String(v)}`)}>
-      {heading && <h1 className="sr-only">{heading}</h1>}
+    <Tabs
+      value={match.value}
+      onValueChange={(v) => navigate(`/vertrieb/${String(v)}`)}
+    >
+      {/* sr-only H1 (a11y/Landmark) – sichtbar führt die aktive Tab-Leiste als
+          Seitenüberschrift (kein doppeltes sichtbares H1 daneben). */}
+      <h1 className="sr-only">{match.label}</h1>
       {/* Segmentiert (aktiver Tab im Vordergrund = erhabener Pill). h-auto + flex-wrap:
           mehrere Tabs brechen sauber in eine zweite Zeile um, statt zu überlaufen. */}
       <TabsList className="group-data-horizontal/tabs:h-auto max-w-full flex-wrap justify-start gap-1">
