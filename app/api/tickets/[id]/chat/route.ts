@@ -121,7 +121,14 @@ export async function POST(
   }
 
   try {
-    const result = await sendTicketChatNote(num, text, notify, files, html);
+    const result = await sendTicketChatNote(
+      num,
+      text,
+      notify,
+      session.displayName,
+      files,
+      html,
+    );
     return NextResponse.json(result);
   } catch (e) {
     return autotaskErrorResponse(e);

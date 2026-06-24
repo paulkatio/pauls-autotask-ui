@@ -132,6 +132,7 @@ export async function sendTicketChatNote(
   ticketId: number,
   text: string,
   notify: boolean,
+  technicianName: string,
   files: ChatAttachment[] = [],
   rawHtml: string = "",
 ): Promise<SendChatResult> {
@@ -142,11 +143,28 @@ export async function sendTicketChatNote(
     // (HTML rendert dort sauber). Listen werden via plainTextFromRich zu „• …"-Zeilen.
     const sanitized = rawHtml.trim() ? sanitizeRichHtml(rawHtml) : "";
     const useHtml = sanitized.length > 0 && hasRichMarkup(sanitized);
-    // title ist beim Anlegen Pflicht – aus der ersten Zeile des PLAINTEXTS ableiten.
-    const firstLine = text.split("\n")[0].trim();
-    const title =
-      (firstLine.length > 120 ? firstLine.slice(0, 117) + "…" : firstLine) ||
-      "Chat-Nachricht";
+
+    // Ticket + Kontakt vorab laden: der Kontaktname steckt im Notiz-Titel
+    // („Nachricht von … an …") und der Kontakt wird unten für die Kundenmail
+    // wiederverwendet (kein Doppel-Abruf). Best effort: schlägt der Abruf fehl,
+    // fällt der Titel-Kunde auf „Kunde" zurück und die Notiz wird trotzdem angelegt.
+    let ticket: Awaited<ReturnType<typeof tickets.get>> = null;
+    let contact: Awaited<ReturnType<typeof contacts.get>> = null;
+    try {
+      ticket = await tickets.get(ticketId);
+      const contactId = ticket?.contactID ?? null;
+      if (contactId != null) contact = await contacts.get(contactId);
+    } catch {
+      // Abruf egal fürs Anlegen – Titel fällt auf „Kunde" zurück.
+    }
+
+    // title ist beim Anlegen Pflicht. Format (Paul): „Nachricht von <Techniker>
+    // an <Kunde>:" – nicht mehr die erste Textzeile (Titel == Inhalt war doppelt).
+    const technician = technicianName.trim() || "Support";
+    const rawContactName =
+      `${contact?.firstName ?? ""} ${contact?.lastName ?? ""}`.trim();
+    const customerName = rawContactName || "Kunde";
+    const title = `Nachricht von ${technician} an ${customerName}:`;
     const noteData = {
       title,
       description: useHtml ? plainTextFromRich(sanitized) : text,
@@ -187,17 +205,15 @@ export async function sendTicketChatNote(
       return { itemId, mail, attachmentError };
     }
 
-    // 3) Empfänger = Mail des Ticket-Kontakts auflösen; dann Resend.
+    // 3) Empfänger = Mail des vorab geladenen Ticket-Kontakts; dann Resend.
     mail.attempted = true;
     try {
-      const ticket = await tickets.get(ticketId);
       const contactId = ticket?.contactID ?? null;
       if (contactId == null) {
         mail.attempted = false;
         mail.skipped = "Ticket hat keinen Kontakt – keine Mail versendet.";
         return { itemId, mail, attachmentError };
       }
-      const contact = await contacts.get(contactId);
       const to = contact?.emailAddress?.trim();
       if (!to) {
         mail.attempted = false;
@@ -209,9 +225,8 @@ export async function sendTicketChatNote(
       // den Betreff baut buildCustomerEmail (eine Quelle).
       const number = ticket?.ticketNumber ?? `#${ticketId}`;
       const orgName = await getOrgName();
-      const contactName = `${contact?.firstName ?? ""} ${contact?.lastName ?? ""}`.trim();
       const { html, text: textBody, subject } = buildCustomerEmail({
-        contactName,
+        contactName: rawContactName,
         message: useHtml ? sanitized : text,
         orgName,
         ticketNumber: number,
