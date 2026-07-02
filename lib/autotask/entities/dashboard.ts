@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { unstable_cache } from "next/cache";
 
 import { autotask, type AutotaskFilter } from "@/lib/autotask/client";
@@ -64,16 +65,21 @@ export async function getSecondaryTicketIds(resourceId: number): Promise<number[
 
 // Offene unter diesen IDs zählen – defensiv in Blöcken summiert. Exportiert, damit
 // der „Meine Tickets"-Zähler (Sidebar/Heading) die Sekundär-Tickets mitzählt.
-export async function countSecondaryOpen(resourceId: number): Promise<number> {
-  const ids = await getSecondaryTicketIds(resourceId);
-  if (ids.length === 0) return 0;
-  const counts = await Promise.all(
-    chunk(ids, IN_BLOCK).map((block) =>
-      autotask.count("Tickets", [{ op: "in", field: "id", value: block }, OPEN]),
-    ),
-  );
-  return counts.reduce((a, c) => a + c, 0);
-}
+// React cache() = REQUEST-SCOPE-Dedup: auf dem Dashboard rufen BEIDE Ketten diese
+// Funktion (fetchCounts/Sidebar UND computeDashboardKpis/Kachel) im selben Request →
+// nur EINE Berechnung (TicketSecondaryResources-Query + Tickets-Count-Blöcke) statt zwei.
+export const countSecondaryOpen = cache(
+  async (resourceId: number): Promise<number> => {
+    const ids = await getSecondaryTicketIds(resourceId);
+    if (ids.length === 0) return 0;
+    const counts = await Promise.all(
+      chunk(ids, IN_BLOCK).map((block) =>
+        autotask.count("Tickets", [{ op: "in", field: "id", value: block }, OPEN]),
+      ),
+    );
+    return counts.reduce((a, c) => a + c, 0);
+  },
+);
 
 // K4: meine offenen MIT lastActivityPersonType laden (gedeckelt), clientseitig
 // === 2 (Contact) zählen. isQueryable:false -> kein Server-Count möglich (B15).

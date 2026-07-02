@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { unstable_cache } from "next/cache";
 
 import { autotask, type AutotaskFilter } from "@/lib/autotask/client";
@@ -33,14 +34,16 @@ async function fetchCounts(resourceId: number): Promise<SidebarTicketCounts> {
   return { mine: primaryMine + secondaryMine, team };
 }
 
-// Gecachte Variante (60 s, Schlüssel inkl. Resource-ID). Fehler werden NICHT hier
-// geschluckt – der Aufrufer (Layout) fängt sie ab, damit die App nie kippt.
-export function getSidebarTicketCounts(
-  resourceId: number,
-): Promise<SidebarTicketCounts> {
-  return unstable_cache(
-    () => fetchCounts(resourceId),
-    ["sidebar-ticket-counts", String(resourceId)],
-    { revalidate: 120 },
-  )();
-}
+// React cache() = REQUEST-SCOPE-Dedup: Layout UND Seite (Dashboard/Meine/Team) rufen
+// dieselbe rid im selben Server-Request → nur EIN Aufruf statt paralleler Doppel-Fetch
+// (unstable_cache dedupliziert kalt/in-flight nicht garantiert; Layout↔Page-Vertrag).
+// Das 120-s-Cross-Request-Caching bleibt (unstable_cache innen). Fehler werden NICHT
+// hier geschluckt – der Aufrufer (Layout/Seite) fängt sie ab, damit die App nie kippt.
+export const getSidebarTicketCounts = cache(
+  (resourceId: number): Promise<SidebarTicketCounts> =>
+    unstable_cache(
+      () => fetchCounts(resourceId),
+      ["sidebar-ticket-counts", String(resourceId)],
+      { revalidate: 120 },
+    )(),
+);

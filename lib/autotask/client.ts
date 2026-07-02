@@ -78,6 +78,17 @@ export class AutotaskError extends Error {
   }
 }
 
+// Erkennt ein Autotask-Rate-Limit (429) typunabhängig: sowohl den nach aussen
+// gemappten AutotaskError(429) als auch – defensiv – einen noch nicht gemappten
+// RetryableError(429). Für die 429-UI-Unterscheidung UND den späteren API-User-Pool
+// (Member/Scope bei 429 als krank markieren, neu wählen).
+export function isRateLimitError(err: unknown): boolean {
+  return (
+    (err instanceof AutotaskError && err.status === 429) ||
+    (err instanceof RetryableError && err.status === 429)
+  );
+}
+
 interface QueryResponse<T> {
   items: T[];
   pageDetails?: { nextPageUrl: string | null; prevPageUrl: string | null };
@@ -163,40 +174,51 @@ async function request<T = unknown>(
   key: string,
   body?: unknown,
 ): Promise<T> {
-  return gated(key, () =>
-    withRetry(async () => {
-      // Jeder echte HTTP-Versuch (inkl. Retries) zählt aufs 10k/h-Tenant-Limit.
-      recordApiCall();
-      const res = await fetch(resolveUrl(pathOrUrl), {
-        method,
-        headers: authHeaders(),
-        body: body ? JSON.stringify(body) : undefined,
-        cache: "no-store",
+  return gated(key, async () => {
+    try {
+      return await withRetry(async () => {
+        // Jeder echte HTTP-Versuch (inkl. Retries) zählt aufs 10k/h-Tenant-Limit.
+        recordApiCall();
+        const res = await fetch(resolveUrl(pathOrUrl), {
+          method,
+          headers: authHeaders(),
+          body: body ? JSON.stringify(body) : undefined,
+          cache: "no-store",
+        });
+
+        if (res.status === 429) {
+          throw new RetryableError(429); // blind drosseln (keine Header von Autotask)
+        }
+
+        const text = await res.text();
+        let json: unknown;
+        try {
+          json = JSON.parse(text);
+        } catch {
+          json = text;
+        }
+
+        if (!res.ok) {
+          const errs = (json as { errors?: unknown })?.errors;
+          const message = Array.isArray(errs)
+            ? errs.join("; ")
+            : `Autotask-Fehler (HTTP ${res.status})`;
+          throw new AutotaskError(res.status, message);
+        }
+
+        return json as T;
       });
-
-      if (res.status === 429) {
-        throw new RetryableError(429); // blind drosseln (keine Header von Autotask)
+    } catch (err) {
+      // Nach erschöpften Retries bleibt ein RetryableError(429) übrig. Nach aussen als
+      // AutotaskError(429) geben, damit loadOrError/Dashboard die 429-Fehler-UI zeigen
+      // (vorher toter Zweig). Das interne Rate-Limit-Signal liest isRateLimitError()
+      // typunabhängig – u. a. der spätere API-User-Pool (Member als krank markieren).
+      if (err instanceof RetryableError && err.status === 429) {
+        throw new AutotaskError(429, "Autotask-Rate-Limit (429) – Versuche erschöpft.");
       }
-
-      const text = await res.text();
-      let json: unknown;
-      try {
-        json = JSON.parse(text);
-      } catch {
-        json = text;
-      }
-
-      if (!res.ok) {
-        const errs = (json as { errors?: unknown })?.errors;
-        const message = Array.isArray(errs)
-          ? errs.join("; ")
-          : `Autotask-Fehler (HTTP ${res.status})`;
-        throw new AutotaskError(res.status, message);
-      }
-
-      return json as T;
-    }),
-  );
+      throw err;
+    }
+  });
 }
 
 export const autotask = {
