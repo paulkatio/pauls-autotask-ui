@@ -1,9 +1,17 @@
 import "server-only";
 
 import { createLimiter } from "@/lib/autotask/limiter";
-import { withRetry, RetryableError } from "@/lib/autotask/backoff";
+import { RetryableError, backoffDelay } from "@/lib/autotask/backoff";
 import { recordApiCall } from "@/lib/autotask/rate-monitor";
 import { globalLimiterEnabled, globalRun } from "@/lib/autotask/global-limiter";
+import {
+  poolEnabled,
+  pickReadMember,
+  primaryMember,
+  markRateLimited,
+  markAuthFailed,
+  type PoolMember,
+} from "@/lib/autotask/user-pool";
 
 // Zentrale, server-only Brücke zur Autotask REST API (BFF, CLAUDE.md §5).
 // Generischer Kern: query / get / create / update. Entitätsspezifische Wrapper
@@ -16,18 +24,24 @@ import { globalLimiterEnabled, globalRun } from "@/lib/autotask/global-limiter";
 const MAX_CONCURRENCY_PER_ENTITY = 2; // Autotask: max 3/Tabelle; defensiv 2.
 const MAX_PAGES = 50; // harte Obergrenze beim Auto-Paging.
 
-// „Tickets" ist die mit Abstand heißeste Tabelle (Dashboard-Counts, Listen, Badges)
-// und löst die „Thread Threshold Exceeded"-Alerts aus. Die App hat einen EIGENEN
-// API-User (nicht mit n8n geteilt) → die Alerts stammen aus der App-eigenen
-// Parallelität. Der Limiter ist PRO PROZESS; auf Vercel laufen mehrere Instanzen
-// gleichzeitig und summieren sich über das 3er-Limit. Darum Tickets pro Instanz auf
-// EINEN gleichzeitigen Request drosseln (andere Tabellen bleiben bei 2).
-const limiter = createLimiter(MAX_CONCURRENCY_PER_ENTITY, { Tickets: 1 });
+// Concurrency-Drossel PRO BUDGET × Objekt. OHNE Pool = ein Budget (der eine API-User) →
+// Key ist die Entität, „Tickets" defensiv auf 1/Prozess (heißeste Tabelle, löste die
+// „Thread Threshold"-Alerts aus). MIT Pool hat JEDER Member ein eigenes 3-Thread-Budget
+// (eigener Login + eigener Integration-Code) → Key wird `member:entity`, jeder Member
+// darf die Default-2 fahren (bleibt unter seinen 3). Limiter pro Prozess; der globale
+// Upstash-Semaphore koordiniert instanzenübergreifend über denselben Key.
+const limiter = createLimiter(
+  MAX_CONCURRENCY_PER_ENTITY,
+  poolEnabled ? {} : { Tickets: 1 },
+);
+
+type RequestKind = "read" | "write";
+const poolDebug = process.env.AUTOTASK_POOL_DEBUG === "1"; // opt-in Member-Selektions-Log
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 // Drosselung pro Aufruf: ZUERST der lokale Pre-Gate (pro Prozess, hält die Redis-Last
 // niedrig + ist der Fallback), DANN – falls Upstash konfiguriert – der globale
-// Semaphore, der instanzenübergreifend unter dem Autotask-3er-Limit bleibt. Ohne
-// Upstash bleibt es exakt beim lokalen Limiter.
+// Semaphore. Der `key` ist bei aktivem Pool `member:entity`, sonst die Entität.
 function gated<T>(key: string, fn: () => Promise<T>): Promise<T> {
   return limiter(key, () => (globalLimiterEnabled ? globalRun(key, fn) : fn()));
 }
@@ -123,16 +137,13 @@ function baseUrl(): string {
   return base.replace(/\/$/, "");
 }
 
-function authHeaders(): Record<string, string> {
-  const { AUTOTASK_INTEGRATION_CODE, AUTOTASK_API_USERNAME, AUTOTASK_API_SECRET } =
-    process.env;
-  if (!AUTOTASK_INTEGRATION_CODE || !AUTOTASK_API_USERNAME || !AUTOTASK_API_SECRET) {
-    throw new Error("Autotask-Zugangsdaten fehlen in der Umgebung.");
-  }
+// Auth-Header für EINEN Pool-Member. Secrets bleiben server-only und tauchen nie in
+// Logs/Antworten auf. Fehlende Creds werden vorher bei der Member-Auswahl abgefangen.
+function authHeaders(member: PoolMember): Record<string, string> {
   return {
-    ApiIntegrationCode: AUTOTASK_INTEGRATION_CODE,
-    UserName: AUTOTASK_API_USERNAME,
-    Secret: AUTOTASK_API_SECRET,
+    ApiIntegrationCode: member.integrationCode,
+    UserName: member.username,
+    Secret: member.secret,
     "Content-Type": "application/json",
   };
 }
@@ -167,27 +178,65 @@ function resolveUrl(pathOrUrl: string): string {
   return pathOrUrl.startsWith("http") ? pathOrUrl : `${baseUrl()}/${pathOrUrl}`;
 }
 
-// Ein einzelner HTTP-Aufruf: gedrosselt (Limiter pro Entität) + 429-Backoff.
+// Ein einzelner HTTP-Aufruf mit Member-Wahl, Failover und 429-Backoff. Reads werden
+// über die für die Entität GESUNDEN Pool-Member verteilt (Round-Robin), Writes gehen
+// IMMER an den Primär. 429 markiert `member:entity` kurz als krank; der nächste Versuch
+// wählt neu → Failover IN der Retry-Schleife. 401 markiert den ganzen Member: Reads
+// versuchen sofort einen anderen, Writes scheitern strikt (kein fremder Schreiber).
+const MAX_ATTEMPTS = 5; // 1 + 4 Retries (wie das bisherige withRetry retries=4)
+
 async function request<T = unknown>(
   method: string,
   pathOrUrl: string,
   key: string,
+  kind: RequestKind,
   body?: unknown,
 ): Promise<T> {
-  return gated(key, async () => {
+  let lastErr: unknown;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    let picked: PoolMember | null;
+    if (kind === "write" || !poolEnabled) {
+      // Writes IMMER an den Primär. OHNE Pool gibt es nur Member 1 → direkt nehmen,
+      // KEIN Health-Routing → exakt das Verhalten vor Phase B (Marks bleiben inert).
+      picked = primaryMember();
+    } else {
+      const pick = pickReadMember(key);
+      if (pick.allDownAuth) {
+        // Alle Member wegen 401 unten → nicht weiter gegen kaputte Creds hämmern.
+        throw new AutotaskError(
+          401,
+          "Alle Autotask-API-User wurden abgelehnt (401) – Konfiguration prüfen.",
+        );
+      }
+      picked = pick.member;
+    }
+    if (!picked) throw new Error("Autotask-Zugangsdaten fehlen in der Umgebung.");
+    const member = picked;
+
+    const gateKey = poolEnabled ? `${member.id}:${key}` : key;
+    if (poolDebug) {
+      console.log(`[pool] ${kind} ${key} -> member ${member.id} (gate ${gateKey})`);
+    }
+
     try {
-      return await withRetry(async () => {
+      return await gated(gateKey, async () => {
         // Jeder echte HTTP-Versuch (inkl. Retries) zählt aufs 10k/h-Tenant-Limit.
         recordApiCall();
         const res = await fetch(resolveUrl(pathOrUrl), {
           method,
-          headers: authHeaders(),
+          headers: authHeaders(member),
           body: body ? JSON.stringify(body) : undefined,
           cache: "no-store",
         });
 
         if (res.status === 429) {
-          throw new RetryableError(429); // blind drosseln (keine Header von Autotask)
+          markRateLimited(member.id, key); // member+entity kurz krank → Failover
+          throw new RetryableError(429);
+        }
+        if (res.status === 401) {
+          markAuthFailed(member.id); // ganzer Member krank (Login abgelehnt)
+          throw new AutotaskError(401, "Autotask lehnte den API-User ab (401).");
         }
 
         const text = await res.text();
@@ -209,16 +258,36 @@ async function request<T = unknown>(
         return json as T;
       });
     } catch (err) {
-      // Nach erschöpften Retries bleibt ein RetryableError(429) übrig. Nach aussen als
-      // AutotaskError(429) geben, damit loadOrError/Dashboard die 429-Fehler-UI zeigen
-      // (vorher toter Zweig). Das interne Rate-Limit-Signal liest isRateLimitError()
-      // typunabhängig – u. a. der spätere API-User-Pool (Member als krank markieren).
-      if (err instanceof RetryableError && err.status === 429) {
-        throw new AutotaskError(429, "Autotask-Rate-Limit (429) – Versuche erschöpft.");
+      lastErr = err;
+      const isLast = attempt === MAX_ATTEMPTS - 1;
+
+      // 429: markiert → nächster Versuch wählt einen anderen (gesunden) Member. Backoff.
+      if (err instanceof RetryableError && err.status === 429 && !isLast) {
+        await sleep(backoffDelay(attempt, 500));
+        continue;
+      }
+      // 401 bei READ MIT aktivem Pool: Member ist unten → sofort einen anderen Member
+      // versuchen (kein Backoff). OHNE Pool (nur Member 1) oder bei WRITE (Primär, strikt)
+      // NICHT failovern → durchwerfen (exakt wie vor Phase B: 401 sofort sichtbar).
+      if (
+        poolEnabled &&
+        err instanceof AutotaskError &&
+        err.status === 401 &&
+        kind === "read" &&
+        !isLast
+      ) {
+        continue;
       }
       throw err;
     }
-  });
+  }
+
+  // Versuche erschöpft: 429 nach aussen als AutotaskError(429) (UI-Unterscheidung +
+  // isRateLimitError). Sonst den letzten Fehler durchreichen.
+  if (lastErr instanceof RetryableError && lastErr.status === 429) {
+    throw new AutotaskError(429, "Autotask-Rate-Limit (429) – Versuche erschöpft.");
+  }
+  throw lastErr;
 }
 
 export const autotask = {
@@ -236,6 +305,7 @@ export const autotask = {
       "POST",
       `${entity}/query`,
       key,
+      "read",
       body,
     );
     items.push(...first.items);
@@ -247,7 +317,7 @@ export const autotask = {
     let next = first.pageDetails?.nextPageUrl ?? null;
     let pages = 1;
     while (autoPage && next && items.length < maxItems && pages < MAX_PAGES) {
-      const page = await request<QueryResponse<T>>("POST", next, key, body);
+      const page = await request<QueryResponse<T>>("POST", next, key, "read", body);
       items.push(...page.items);
       next = page.pageDetails?.nextPageUrl ?? null;
       pages++;
@@ -274,7 +344,7 @@ export const autotask = {
       }
       path = cursorUrl;
     }
-    const res = await request<QueryResponse<T>>("POST", path, key, body);
+    const res = await request<QueryResponse<T>>("POST", path, key, "read", body);
     return {
       items: res.items,
       nextPageUrl: res.pageDetails?.nextPageUrl ?? null,
@@ -307,6 +377,7 @@ export const autotask = {
       "POST",
       `${entity}/query/count`,
       entityKey(entity),
+      "read",
       { Filter: filter },
     );
     return res.queryCount ?? 0;
@@ -318,6 +389,7 @@ export const autotask = {
       "GET",
       `${entity}/entityInformation/fields`,
       entityKey(entity),
+      "read",
     );
     return res.fields ?? [];
   },
@@ -329,6 +401,7 @@ export const autotask = {
       "GET",
       `${entity}/${id}`,
       key,
+      "read",
     );
     return res.item ?? res.items?.[0] ?? null;
   },
@@ -340,6 +413,7 @@ export const autotask = {
       "POST",
       path,
       entityKey(path),
+      "write",
       data,
     );
     return res.itemId;
@@ -351,6 +425,7 @@ export const autotask = {
       "PATCH",
       path,
       entityKey(path),
+      "write",
       data,
     );
     return res.itemId;
@@ -359,7 +434,7 @@ export const autotask = {
   // DELETE {path} -> entfernt einen (Child-)Datensatz. `path` ist der volle Pfad
   // inkl. ID (z. B. "Tickets/123/SecondaryResources/456"). Antwort wird ignoriert.
   async del(path: string): Promise<void> {
-    await request<unknown>("DELETE", path, entityKey(path));
+    await request<unknown>("DELETE", path, entityKey(path), "write");
   },
 };
 
