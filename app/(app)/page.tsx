@@ -95,25 +95,29 @@ export default async function DashboardPage() {
     { op: "noteq", field: "status", value: 5 },
   ];
 
-  const picklists = await getTicketPicklists();
-  // Gesamtzahl offener Tickets (team-weit) für den Badge an der „Offene Tickets"-
-  // Sektion. Gecacht, best effort.
-  const counts = await getSidebarTicketCounts(rid).catch(() => null);
-  // Mitarbeiter für die Bulk-Aktionen der „Offene Tickets"-Liste (Zuweisen).
-  // Best effort: scheitert der Abruf, bleibt die Liste read-only statt zu kippen.
-  const assignableResources = await getAssignableResources().catch(() => []);
-
-  // Datenabruf vom Rendern trennen: Fehler werden zu einem Sentinel, das JSX entsteht
-  // AUSSERHALB von try/catch (React-19-Error-Boundary-Regel, kein JSX im try).
-  const data = await Promise.all([
-    getDashboardKpis(rid),
-    getTicketsPerResource(),
-    getTicketsPage(openFilter, { withAssigned: true }),
-  ]).catch((e) =>
-    e instanceof AutotaskError && e.status === 429
-      ? ("rate-limited" as const)
-      : ("error" as const),
-  );
+  // Unabhängige Reads PARALLEL statt sequentiell. Die früheren Doppel-Fetches sind
+  // bereits per request-scope cache() dedupliziert (getSidebarTicketCounts,
+  // countSecondaryOpen) → kein zusätzlicher Fan-out durch die Parallelität, aber die
+  // Awaits stapeln sich nicht mehr (auch Cache-Hits liefen vorher nacheinander).
+  // Die schwere Live-Kette bleibt ein eigenes Promise.all mit 429-Sentinel; ihr
+  // Ergebnis gate't das Rendern (JSX AUSSERHALB try/catch, React-19-Regel). „Meine
+  // Projekte" ist best effort; ein Picklist-Fehler darf (wie bisher) die Seite kippen.
+  const [picklists, counts, assignableResources, projectsPreview, data] =
+    await Promise.all([
+      getTicketPicklists(),
+      getSidebarTicketCounts(rid).catch(() => null),
+      getAssignableResources().catch(() => []),
+      getMyProjectsPreview(rid).catch(() => ({ count: 0, items: [] })),
+      Promise.all([
+        getDashboardKpis(rid),
+        getTicketsPerResource(),
+        getTicketsPage(openFilter, { withAssigned: true }),
+      ]).catch((e) =>
+        e instanceof AutotaskError && e.status === 429
+          ? ("rate-limited" as const)
+          : ("error" as const),
+      ),
+    ]);
 
   if (data === "rate-limited" || data === "error") {
     return (
@@ -130,14 +134,6 @@ export default async function DashboardPage() {
   }
 
   const [kpis, perResource, openTickets] = data;
-
-  // Vorschau „Meine Projekte" – best effort, aus derselben gecachten Quelle wie die
-  // KPI-Kachel (kein zusätzlicher Collect). Ein Projektfehler darf die Übersicht nicht
-  // blanken, daher eigener Fallback.
-  const projectsPreview = await getMyProjectsPreview(rid).catch(() => ({
-    count: 0,
-    items: [],
-  }));
 
   return (
     <div className="flex flex-col gap-6">
