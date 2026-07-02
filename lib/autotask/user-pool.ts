@@ -63,10 +63,37 @@ function readMembers(): PoolMember[] {
     }));
 }
 
-// Aktive Member: Pool an → alle konfigurierten; Pool aus → nur Primär (Member 1).
-// Bei fehlendem Member 1 leer → der Aufrufer wirft „Creds fehlen" (wie bisher).
 const configured = readMembers();
-const activeMembers: PoolMember[] = poolEnabled
+
+// Der ROHE Flag (poolEnabled) allein genügt nicht: Pool nur WIRKLICH aktivieren, wenn die
+// Konfiguration valide ist — sonst drohen stille Regressionen (z. B. Tickets 1→2 pro Prozess
+// ohne echtes Extra-Budget) oder ein Tenant-Lockout (doppelte/ungültige Integration-Codes).
+function poolConfigError(members: PoolMember[]): string | null {
+  if (members.length < 2) return "weniger als 2 Member konfiguriert";
+  if (!members.some((m) => m.isPrimary)) return "kein Primär (Member 1) konfiguriert";
+  const codes = members.map((m) => m.integrationCode);
+  if (new Set(codes).size !== codes.length)
+    return "doppelte Integration-Codes (kein Extra-Budget + Tenant-Lockout-Risiko)";
+  const users = members.map((m) => m.username.toLowerCase());
+  if (new Set(users).size !== users.length) return "doppelte UserNames";
+  return null;
+}
+
+const configError = poolEnabled ? poolConfigError(configured) : null;
+
+// DER maßgebliche Schalter für den Rest der App: nur true, wenn Flag AN UND Config valide.
+export const poolActive = poolEnabled && configError === null;
+
+if (poolEnabled && !poolActive) {
+  console.warn(
+    `[pool] AUTOTASK_POOL_ENABLED=1, aber Pool NICHT aktiv (${configError}). ` +
+      `Fallback auf Single-Member (Member 1) — Verhalten exakt wie ohne Pool.`,
+  );
+}
+
+// Aktive Member: Pool aktiv → alle konfigurierten; sonst → nur Primär (Member 1). Bei
+// fehlendem Member 1 leer → der Aufrufer wirft „Creds fehlen" (wie bisher).
+const activeMembers: PoolMember[] = poolActive
   ? configured
   : configured.filter((m) => m.isPrimary);
 
@@ -132,13 +159,21 @@ export function pickReadMember(entity: string, now = Date.now()): PickResult {
 // Sekundär — Writes sind unumkehrbar (Notizen/Mails); lieber sichtbar scheitern als still
 // unter fremdem Namen schreiben. Ist der Primär selbst 401-unten, meldet der Aufrufer das.
 export function primaryMember(): PoolMember | null {
-  return activeMembers.find((m) => m.isPrimary) ?? activeMembers[0] ?? null;
+  // STRIKT: Writes brauchen den echten Primär (Member 1). KEIN Fallback auf einen
+  // Sekundär — lieber sichtbar scheitern als unumkehrbar unter fremdem Namen schreiben.
+  return activeMembers.find((m) => m.isPrimary) ?? null;
 }
 
 // Sichtbar für Diagnose/Verify (keine Secrets): welche Member aktiv, Pool an/aus.
-export function poolInfo(): { enabled: boolean; memberIds: string[]; primaryId: string | null } {
+export function poolInfo(): {
+  enabled: boolean;
+  active: boolean;
+  memberIds: string[];
+  primaryId: string | null;
+} {
   return {
     enabled: poolEnabled,
+    active: poolActive,
     memberIds: activeMembers.map((m) => m.id),
     primaryId: primaryMember()?.id ?? null,
   };

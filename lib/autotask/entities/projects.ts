@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { unstable_cache } from "next/cache";
 
 import { autotask, type AutotaskFilter } from "@/lib/autotask/client";
@@ -172,16 +173,21 @@ async function enrich(rows: Project[]): Promise<ProjectRow[]> {
 // „Meine" Projekte (Leiter oder eigene Tasks), angereichert + Cap-Hinweis. 60 s
 // gecacht pro Resource. EINZIGE Quelle für „meine Projekte": Liste, Zähler und
 // Dashboard-Vorschau leiten sich alle hieraus ab (ein Collect statt mehrerer).
-export function getMyProjects(resourceId: number): Promise<ProjectListResult> {
-  return unstable_cache(
-    async (): Promise<ProjectListResult> => {
-      const { projects, capped } = await collectMyOpenProjects(resourceId);
-      return { rows: await enrich(projects), capped };
-    },
-    ["my-projects", String(resourceId)],
-    { revalidate: 60 },
-  )();
-}
+// React cache() = REQUEST-SCOPE-Dedup: auf dem Dashboard rufen KPI-Kette
+// (countMyOpenProjects) UND Vorschau (getMyProjectsPreview) dies im selben Request →
+// nur EIN Collect statt zwei (unstable_cache dedupliziert den kalten in-flight Race nicht;
+// 60s Cross-Request-Cache bleibt innen).
+export const getMyProjects = cache(
+  (resourceId: number): Promise<ProjectListResult> =>
+    unstable_cache(
+      async (): Promise<ProjectListResult> => {
+        const { projects, capped } = await collectMyOpenProjects(resourceId);
+        return { rows: await enrich(projects), capped };
+      },
+      ["my-projects", String(resourceId)],
+      { revalidate: 60 },
+    )(),
+);
 
 // Zähler für die Dashboard-Kachel (aus derselben gecachten Quelle wie getMyProjects).
 export async function countMyOpenProjects(resourceId: number): Promise<number> {

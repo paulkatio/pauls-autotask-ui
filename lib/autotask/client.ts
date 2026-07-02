@@ -5,7 +5,7 @@ import { RetryableError, backoffDelay } from "@/lib/autotask/backoff";
 import { recordApiCall } from "@/lib/autotask/rate-monitor";
 import { globalLimiterEnabled, globalRun } from "@/lib/autotask/global-limiter";
 import {
-  poolEnabled,
+  poolActive,
   pickReadMember,
   primaryMember,
   markRateLimited,
@@ -32,8 +32,19 @@ const MAX_PAGES = 50; // harte Obergrenze beim Auto-Paging.
 // Upstash-Semaphore koordiniert instanzenübergreifend über denselben Key.
 const limiter = createLimiter(
   MAX_CONCURRENCY_PER_ENTITY,
-  poolEnabled ? {} : { Tickets: 1 },
+  poolActive ? {} : { Tickets: 1 },
 );
+
+// Precondition-Warnung: Auf Vercel laufen mehrere Instanzen. Ist der Pool aktiv, aber der
+// globale Upstash-Semaphore NICHT konfiguriert, koordiniert nur der Prozess-Limiter — die
+// Instanzen summieren sich über die (jetzt member-getrennten) Budgets und können erneut
+// „Thread Threshold"-Alerts auslösen. Pool-Speed daher nur MIT Upstash scharf fahren.
+if (poolActive && !globalLimiterEnabled) {
+  console.warn(
+    "[pool] Pool aktiv, aber Upstash (UPSTASH_REDIS_REST_URL/_TOKEN) fehlt → nur Prozess-" +
+      "Limiter, keine instanzenübergreifende Koordination. Auf Vercel riskant (Threshold-Alerts).",
+  );
+}
 
 type RequestKind = "read" | "write";
 const poolDebug = process.env.AUTOTASK_POOL_DEBUG === "1"; // opt-in Member-Selektions-Log
@@ -196,7 +207,7 @@ async function request<T = unknown>(
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     let picked: PoolMember | null;
-    if (kind === "write" || !poolEnabled) {
+    if (kind === "write" || !poolActive) {
       // Writes IMMER an den Primär. OHNE Pool gibt es nur Member 1 → direkt nehmen,
       // KEIN Health-Routing → exakt das Verhalten vor Phase B (Marks bleiben inert).
       picked = primaryMember();
@@ -214,7 +225,7 @@ async function request<T = unknown>(
     if (!picked) throw new Error("Autotask-Zugangsdaten fehlen in der Umgebung.");
     const member = picked;
 
-    const gateKey = poolEnabled ? `${member.id}:${key}` : key;
+    const gateKey = poolActive ? `${member.id}:${key}` : key;
     if (poolDebug) {
       console.log(`[pool] ${kind} ${key} -> member ${member.id} (gate ${gateKey})`);
     }
@@ -262,15 +273,21 @@ async function request<T = unknown>(
       const isLast = attempt === MAX_ATTEMPTS - 1;
 
       // 429: markiert → nächster Versuch wählt einen anderen (gesunden) Member. Backoff.
-      if (err instanceof RetryableError && err.status === 429 && !isLast) {
-        await sleep(backoffDelay(attempt, 500));
-        continue;
+      // WICHTIG: bei erschöpften Versuchen NICHT den rohen RetryableError werfen, sondern
+      // `break` → der Mapping-Block NACH der Schleife macht daraus AutotaskError(429) (sonst
+      // erkennt loadOrError/Dashboard die 429 nicht → Rate-Limit-UI wäre wieder tot).
+      if (err instanceof RetryableError && err.status === 429) {
+        if (!isLast) {
+          await sleep(backoffDelay(attempt, 500));
+          continue;
+        }
+        break;
       }
       // 401 bei READ MIT aktivem Pool: Member ist unten → sofort einen anderen Member
       // versuchen (kein Backoff). OHNE Pool (nur Member 1) oder bei WRITE (Primär, strikt)
       // NICHT failovern → durchwerfen (exakt wie vor Phase B: 401 sofort sichtbar).
       if (
-        poolEnabled &&
+        poolActive &&
         err instanceof AutotaskError &&
         err.status === 401 &&
         kind === "read" &&
