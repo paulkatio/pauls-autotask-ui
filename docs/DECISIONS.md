@@ -2509,3 +2509,16 @@ Member 2/3 = `_2`/`_3`. `AUTOTASK_POOL_ENABLED` DEFAULT AUS → nur Member 1, Ga
 
 Diagnose: `AUTOTASK_POOL_DEBUG=1` loggt Member-Auswahl (`[pool] read Tickets -> member 2`) und
 Health-Marks (`[pool-mark] 401 member=2`).
+
+**Nachschärfung nach Review (commit 4955f34):**
+- **429-Mapping-Regression gefixt.** Die Phase-B-Retry-Schleife warf auf dem LETZTEN Versuch den
+  rohen `RetryableError(429)` (`throw err`), BEVOR der Mapping-Block lief → `loadOrError`/Dashboard
+  erkannten die 429 nicht mehr. Jetzt `break` statt `throw` → Mapping macht `AutotaskError(429)`.
+- **`poolActive` (harte Validierung) statt rohem Flag.** Pool wird nur aktiv bei ≥2 Membern, genau
+  einem Primär, eindeutigen Integration-Codes UND UserNames; sonst Warnung + Fallback auf
+  Single-Member. Verhindert die stille Regression „Tickets 1→2 pro Prozess ohne Extra-Budget"
+  (Flag an mit nur Member 1) und Tenant-Lockout durch doppelte Codes. `primaryMember()` strikt.
+- **Upstash-Precondition** als Startup-Warnung (Pool aktiv ohne Upstash = auf Vercel riskant) +
+  in `.env.example` dokumentiert.
+- **Projekt-Doppelabruf gefixt:** `getMyProjects` jetzt auch React `cache()` → Collect 1× statt 2×
+  (KPI-Kette `countMyOpenProjects` ∥ `getMyProjectsPreview`). Verifiziert 2→1.
