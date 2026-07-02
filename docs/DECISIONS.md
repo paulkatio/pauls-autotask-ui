@@ -2466,3 +2466,46 @@ Von `npx shadcn add` mitgelieferte lucide-Icons daher **manuell auf Phosphor ums
 
 **Verifiziert:** `typecheck` + `lint` + `next build` grün (alle Icon-Namen aus `/ssr`
 aufgelöst). Live-Browser-Smoke steht aus (Build deckt RSC-Auflösung ab).
+
+## [2026-07-02] Dashboard-Last gesenkt (Dedup + Entserialisierung) + API-User-Pool (Phase B)
+
+Ziel: Dashboard schneller + weniger „Thread Threshold"-Alerts. Drei Blöcke, alle klein
+committet, gegen Mock+Sandbox verifiziert (nie Prod).
+
+**A. Request-scope Dedup (commit 94474e4).** `unstable_cache` dedupliziert den KALTEN
+in-flight Layout↔Page-Race **NICHT** — empirisch belegt: pro kaltem Dashboard-Load lief
+`fetchCounts` (Sidebar-Counts) und `countSecondaryOpen` je **2×**. Fix: beide zusätzlich in
+**React `cache()`** (request-scope) gewrappt → je **1×** (120s/180s `unstable_cache` bleibt
+innen für Cross-Request). Layout↔Page ist ein Shell/Page-Vertrag, kein Prop-Passing → `cache()`
+ist der richtige Hebel.
+
+**B. 429-Mapping (commit 94474e4).** Ein 429 warf IMMER `RetryableError`, auch nach erschöpften
+Retries — `loadOrError`/Dashboard prüfen aber nur `AutotaskError` → der „rate-limited"-Zweig war
+**toter Code**. Fix: nach Retry-Erschöpfung `RetryableError(429)`→`AutotaskError(429)` mappen;
+`isRateLimitError()`-Helper typunabhängig (auch für Pool-Health).
+
+**C. API-User-Pool, feature-flagged OFF (commit 3b99b9b).** `lib/autotask/user-pool.ts` +
+`client.ts`-Refactor. Member 1 = unsuffixierte `AUTOTASK_*` (Primär, EINZIGER Schreib-User),
+Member 2/3 = `_2`/`_3`. `AUTOTASK_POOL_ENABLED` DEFAULT AUS → nur Member 1, Gate-Key = Entität,
+`Tickets:1`, Verhalten **exakt wie vorher**. AN → Reads Round-Robin über gesunde Member, Gate-Key
+`member:entity` (getrennte Budgets), Writes strikt Primär. Failover IN der Retry-Schleife.
+
+**Verifizierte Autotask-Fakten (Sandbox):**
+- **B0 (Limit-Bezugsgröße) durch Konstruktion gelöst:** Die 3 Prod-User haben DREI
+  VERSCHIEDENE Integration-Codes → getrenntes 3-Thread-Budget unter BEIDER Lesart (pro
+  Integration ODER pro Login). Voller empirischer Parallelitäts-Beweis bräuchte ≥2 echte
+  Sandbox-Logins (nur 1 vorhanden) → nicht live erzwungen.
+- **BEFUND Tenant-Lockout:** Ein Member mit UNGÜLTIGEM Integration-Code (bogus) löst einen
+  **tenant-weiten 401-Lockout** aus — dann werden AUCH die gültigen Member abgelehnt
+  (im Test: alle 3 → 401). Der Pool reagiert korrekt: alle als down markiert → **fail-fast**
+  „Alle API-User abgelehnt" (kein Hämmern), Seite bleibt via best-effort-`.catch` 200.
+  **Betriebs-Konsequenz:** Pool-Member müssen alle GÜLTIG bleiben; ein in Autotask gelöschter/
+  ungültiger Member kann den ganzen Tenant kurz sperren. Deshalb Pool-Flag erst scharf schalten,
+  wenn alle Member verifiziert gültig sind.
+- **Verifiziert (Mock+Sandbox):** Pool-OFF rendert 200 ohne Pool-Pfad (Parität, 0 `[pool]`-Logs);
+  Pool-ON verteilt Reads sauber 1/2/3 (Verteilung 6/5/5) mit Gate-Keys `member:entity`; 401-Marking
+  + fail-fast + graceful Degradation greifen. Einzel-Member-Exklusion nicht isoliert live beweisbar
+  (siehe Tenant-Lockout) — Logik simpel + aus verifizierten Teilen. `typecheck` + `build` grün.
+
+Diagnose: `AUTOTASK_POOL_DEBUG=1` loggt Member-Auswahl (`[pool] read Tickets -> member 2`) und
+Health-Marks (`[pool-mark] 401 member=2`).
